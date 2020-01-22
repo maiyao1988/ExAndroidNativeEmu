@@ -38,8 +38,8 @@ def hook_code(mu, address, size, user_data):
         emu = user_data
         ms = emu.modules
         #判断是否arm，用不同的decoder
-        b = mu.reg_read(UC_ARM_REG_CPSR)
-        if (b & (1<<5)):
+        cpsr = mu.reg_read(UC_ARM_REG_CPSR)
+        if (cpsr & (1<<5)):
             md = g_md_thumb
         else:
             md = g_md_arm
@@ -63,7 +63,24 @@ def hook_code(mu, address, size, user_data):
                 base = module.base
                 funName = module.is_symbol_addr(addr)
             #
-            
+            r0 = mu.reg_read(UC_ARM_REG_R0)
+            r1 = mu.reg_read(UC_ARM_REG_R1)
+            r2 = mu.reg_read(UC_ARM_REG_R2)
+            r3 = mu.reg_read(UC_ARM_REG_R3)
+            r4 = mu.reg_read(UC_ARM_REG_R4)
+            r5 = mu.reg_read(UC_ARM_REG_R5)
+            r6 = mu.reg_read(UC_ARM_REG_R6)
+            r7 = mu.reg_read(UC_ARM_REG_R7)
+            r8 = mu.reg_read(UC_ARM_REG_R8)
+            r9 = mu.reg_read(UC_ARM_REG_R8)
+            r10 = mu.reg_read(UC_ARM_REG_R10)
+            r11 = mu.reg_read(UC_ARM_REG_R11)
+            r12 = mu.reg_read(UC_ARM_REG_R12)
+            lr = mu.reg_read(UC_ARM_REG_LR)
+            pc = mu.reg_read(UC_ARM_REG_PC)
+            regs = "\tR0=0x%08X,R1=0x%08X,R2=0x%08X,R3=0x%08X,R4=0x%08X,R5=0x%08X,R6=0x%08X,R7=0x%08X,\n\tR8=0x%08X,R9=0x%08X,R10=0x%08X,R11=0x%08X,R12=0x%08X\n\tLR=0x%08X,PC=0x%08X,CPSR=0x%08X"\
+                %(r0, r1, r2, r3, r4, r5, r6, r7, r8, r9,r10,r11,r12, lr, pc, cpsr)
+            #print(regs)
             if (base == 0 and (addr < androidemu.config.HEAP_BASE or addr>androidemu.config.HEAP_BASE+androidemu.config.HEAP_SIZE) and \
             (addr<androidemu.config.HOOK_MEMORY_BASE or addr>androidemu.config.HOOK_MEMORY_BASE+androidemu.config.HOOK_MEMORY_SIZE)):
                 logger.error("code %s\t%s in addr 0x%08X out of range"%(i.mnemonic, i.op_str, addr))
@@ -72,11 +89,12 @@ def hook_code(mu, address, size, user_data):
             
             instruction_str = ''.join('{:02X} '.format(x) for x in i.bytes)
             #print("sz:%d", size)
-            line = "(%20s)[%-12s]0x%08X:\t%s\t%s"%(name, instruction_str, addr-base, i.mnemonic, i.op_str)
+            line = "(%20s)[%-12s]0x%08X:\t%s\t%s"%(name, instruction_str, addr-base, i.mnemonic, i.op_str.upper())
             if (funName != None):
                 line = line + " ; %s"%funName
             #
             print(line)
+
         #
     except Exception as e:
         logger.exception("exception in hook_code")
