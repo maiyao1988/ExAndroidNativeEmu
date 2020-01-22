@@ -37,6 +37,7 @@ class VirtualFileSystem:
         self._file_descriptors[2] = VirtualFile('stderr', 2)
 
         syscall_handler.set_handler(0x3, "read", 3, self._handle_read)
+        syscall_handler.set_handler(0x4, "write", 3, self._handle_write)
         syscall_handler.set_handler(0x5, "open", 3, self._handle_open)
         syscall_handler.set_handler(0x6, "close", 1, self._handle_close)
         syscall_handler.set_handler(0x21, "access", 2, self._handle_access)
@@ -66,7 +67,12 @@ class VirtualFileSystem:
         self._file_descriptors[next_fd] = VirtualFile(name, file_descriptor, name_virt=name_virt)
         return next_fd
 
-    def _open_file(self, filename):
+    def _open_file(self, filename, mode):
+        #define O_RDONLY 00000000
+        #define O_WRONLY 00000001
+        #define O_RDWR 00000002
+        #ifndef O_CREAT
+        #define O_CREAT 00000100
         # Special cases, such as /dev/urandom.
         orig_filename = filename
 
@@ -81,6 +87,12 @@ class VirtualFileSystem:
             flags = os.O_RDWR
             if hasattr(os, "O_BINARY"):
                 flags |= os.O_BINARY
+            if (mode & 100):
+                flags | os.O_CREAT
+            #
+            if (mode & 2000):
+                flags | os.O_APPEND
+            #
             return self._store_fd(orig_filename, file_path, os.open(file_path, flags=flags))
         else:
             logger.warning("File does not exist '%s'" % orig_filename)
@@ -122,6 +134,28 @@ class VirtualFileSystem:
         mu.mem_write(buf_addr, buf)
         return result
 
+    def _handle_write(self, mu, fd, buf_addr, count):
+        
+        data = mu.mem_read(buf_addr, count)
+        if (fd == 1):
+            s = bytes(data).decode("utf-8")
+            logger.info("stdout:[%s]"%s)
+            return len(data)
+        elif(fd == 2):
+            s = bytes(data).decode("utf-8")
+            logger.warning("stderr:[%s]"%s)
+            return len(data)
+        #
+
+        if fd not in self._file_descriptors:
+            # TODO: Return valid error.
+            raise NotImplementedError()
+
+        file = self._file_descriptors[fd]
+        r = os.write(file.descriptor, data)
+        return r
+    #
+
     def _handle_open(self, mu, filename_ptr, flags, mode):
         """
         int open(const char *pathname, int flags, mode_t mode);
@@ -130,7 +164,7 @@ class VirtualFileSystem:
         """
         filename = memory_helpers.read_utf8(mu, filename_ptr)
 
-        return self._open_file(filename)
+        return self._open_file(filename, mode)
 
     def _handle_close(self, mu, fd):
         """
@@ -210,7 +244,7 @@ class VirtualFileSystem:
         if not filename.startswith("/") and dfd != 0:
             raise NotImplementedError("Directory file descriptor has not been implemented yet.")
 
-        return self._open_file(filename)
+        return self._open_file(filename, mode)
 
     def _handle_fstatat64(self, mu, dirfd, pathname_ptr, buf, flags):
         """

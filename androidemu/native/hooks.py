@@ -29,10 +29,13 @@ class NativeHooks:
         modules.add_symbol_hook('dlclose', hooker.write_function(self.dlclose) + 1)
         modules.add_symbol_hook('dladdr', hooker.write_function(self.dladdr) + 1)
         modules.add_symbol_hook('dlsym', hooker.write_function(self.dlsym) + 1)
+        modules.add_symbol_hook('dl_unwind_find_exidx', hooker.write_function(self.dl_unwind_find_exidx) + 1)
         modules.add_symbol_hook('pthread_create', hooker.write_function(self.nop('pthread_create')) + 1)
         modules.add_symbol_hook('pthread_join', hooker.write_function(self.nop('pthread_join')) + 1)
-        modules.add_symbol_hook('vfprintf', hooker.write_function(self.nop('vfprintf')) + 1)
-        modules.add_symbol_hook('fprintf', hooker.write_function(self.nop('fprintf')) + 1)
+
+        modules.add_symbol_hook('abort', hooker.write_function(self.abort) + 1)
+        #modules.add_symbol_hook('vfprintf', hooker.write_function(self.nop('vfprintf')) + 1)
+        #modules.add_symbol_hook('fprintf', hooker.write_function(self.nop('fprintf')) + 1)
         modules.add_symbol_hook('dlerror', hooker.write_function(self.nop('dlerror')) + 1)
 
     @native_method
@@ -104,6 +107,17 @@ class NativeHooks:
             return 0
 
         raise NotImplementedError
+
+    @native_method
+    def abort(self, uc):
+        raise RuntimeError("abort called!!!")
+        sys.exit(-1)
+    #
+
+    @native_method
+    def dl_unwind_find_exidx(self, uc, pc, pcount_ptr):
+        return 0
+    #
 
     def nop(self, name):
         @native_method

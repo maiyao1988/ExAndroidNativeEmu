@@ -3,6 +3,8 @@ import logging
 import math
 import os
 import time
+import sys
+import ctypes
 from random import randint
 
 import hexdump
@@ -33,12 +35,16 @@ class SyscallHooks:
     """
     def __init__(self, mu, syscall_handler):
         self._mu = mu
+ 
         self._syscall_handler = syscall_handler
         self._syscall_handler.set_handler(0x14, "getpid", 0, self._getpid)
+        self._syscall_handler.set_handler(0x43, "sigaction", 3, self._handle_sigaction)
         self._syscall_handler.set_handler(0x4E, "gettimeofday", 2, self._handle_gettimeofday)
         self._syscall_handler.set_handler(0xAC, "prctl", 5, self._handle_prctl)
+        self._syscall_handler.set_handler(0xAF, "sigprocmask", 3, self._handle_sigprocmask)
         self._syscall_handler.set_handler(0xE0, "gettid", 0, self._gettid)
         self._syscall_handler.set_handler(0xF0, "futex", 6, self._handle_futex)
+        self._syscall_handler.set_handler(0x10c, "tgkill", 3, self._handle_tgkill)
         self._syscall_handler.set_handler(0x107, "clock_gettime", 2, self._handle_clock_gettime)
         self._syscall_handler.set_handler(0x119, "socket", 3, self._socket)
         self._syscall_handler.set_handler(0x11a, "bind", 3, self._bind)
@@ -46,8 +52,6 @@ class SyscallHooks:
         self._syscall_handler.set_handler(0x14e, "faccessat", 4, self._faccessat)
         self._syscall_handler.set_handler(0x159, "getcpu", 3, self._getcpu)
         self._syscall_handler.set_handler(0x14e, "faccessat", 4, self._faccessat)
-        self._syscall_handler.set_handler(0x14, "getpid", 0, self._getpid)
-        self._syscall_handler.set_handler(0xe0, "gettid", 0, self._gettid)
         # self._syscall_handler.set_handler(0x180,"null1",0, self._null)
         self._syscall_handler.set_handler(0x180, "getrandom", 3, self._getrandom)
         self._clock_start = time.time()
@@ -57,6 +61,10 @@ class SyscallHooks:
 
     def _getpid(self, mu):
         return 0x1122
+        
+    def _handle_sigaction(self, mu, sig, act, oact):
+        return 0
+    #
 
     def _gettid(self, mu):
         return 0x2211
@@ -110,6 +118,11 @@ class SyscallHooks:
             return 0
         else:
             raise NotImplementedError("Unsupported prctl option %d (0x%x)" % (option, option))
+    #
+
+    def _handle_sigprocmask(self, mu, how, set, oset):
+        return 0
+    #
 
     def _handle_futex(self, mu, uaddr, op, val, timeout, uaddr2, val3):
         """
@@ -128,6 +141,14 @@ class SyscallHooks:
         elif op & FUTEX_CMP_REQUEUE:
             raise NotImplementedError()
 
+        return 0
+    
+    def _handle_tgkill(self, mu, tgid, tid, sig):
+        if (tgid ==  self._getpid(mu) and sig == 6):
+            logger.warn("tgkill abort self, skip!!!")
+            return 0
+        #
+        raise NotImplementedError()
         return 0
 
     def _handle_clock_gettime(self, mu, clk_id, tp_ptr):
@@ -197,7 +218,8 @@ class SyscallHooks:
         hexdump.hexdump(mu.mem_read(addr, addr_len))
         
         # return 0
-        raise NotImplementedError()
+        return -1
+        # raise NotImplementedError()
 
     def _getrandom(self, mu, buf, count, flags):
         mu.mem_write(buf, b"\x01" * count)

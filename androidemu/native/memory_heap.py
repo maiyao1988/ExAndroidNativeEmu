@@ -76,7 +76,6 @@ class UnicornSimpleHeap:
                 self._blocks.pop(addr_in)
             else:
                 raise Exception('Attempted to unmap memory that was not mapped.')
-
         return True
 
     @staticmethod

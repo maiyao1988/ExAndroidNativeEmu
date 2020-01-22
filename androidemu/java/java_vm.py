@@ -1,4 +1,5 @@
 import logging
+import traceback
 
 from androidemu.hooker import Hooker
 from androidemu.java.helpers.native_method import native_method
@@ -43,6 +44,7 @@ class JavaVM:
 
     @native_method
     def get_env(self, mu, java_vm, env, version):
+
         logger.debug("java_vm: 0x%08x" % java_vm)
         logger.debug("env: 0x%08x" % env)
         logger.debug("version: 0x%08x" % version)

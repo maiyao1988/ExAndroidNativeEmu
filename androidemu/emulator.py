@@ -140,8 +140,7 @@ class Emulator:
             native_write_args(self, *argv)
             stop_pos = randint(HOOK_MEMORY_BASE, HOOK_MEMORY_BASE + HOOK_MEMORY_SIZE) | 1
             self.mu.reg_write(UC_ARM_REG_LR, stop_pos)
-            self.mu.emu_start(addr, stop_pos - 1)
-
+            r = self.mu.emu_start(addr, stop_pos - 1)
             # Read result from locals if jni.
             if is_jni:
                 result_idx = self.mu.reg_read(UC_ARM_REG_R0)

@@ -1,6 +1,8 @@
 from keystone import Ks, KS_ARCH_ARM, KS_MODE_THUMB
 from unicorn import *
 from unicorn.arm_const import *
+import sys
+import traceback
 
 STACK_OFFSET = 8
 
@@ -91,11 +93,14 @@ class Hooker:
         # Find hook.
         hook_id = self._emu.mu.reg_read(UC_ARM_REG_R4)
         hook_func = self._hooks[hook_id]
+        print ("hook_id:%d, hook_func:%r"%(hook_id, hook_func))
 
         # Call hook.
         try:
             hook_func(self._emu)
-        except:
+        except Exception as e:
             # Make sure we catch exceptions inside hooks and stop emulation.
             mu.emu_stop()
+            traceback.print_exc()
+            sys.exit(-1)
             raise
