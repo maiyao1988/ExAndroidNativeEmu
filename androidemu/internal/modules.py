@@ -5,10 +5,10 @@ from elftools.elf.relocation import RelocationSection
 from elftools.elf.sections import SymbolTableSection
 from unicorn import UC_PROT_ALL
 
-from androidemu.internal import get_segment_protection, arm
+from androidemu.internal import get_segment_protection, arm,align
 from androidemu.internal.module import Module
 from androidemu.internal.symbol_resolved import SymbolResolved
-
+from androidemu import config
 import struct
 
 logger = logging.getLogger(__name__)
@@ -23,6 +23,8 @@ class Modules:
         self.emu = emu
         self.modules = list()
         self.symbol_hooks = dict()
+        self.counter_memory = config.BASE_ADDR
+    #
 
     def add_symbol_hook(self, symbol_name, addr):
         self.symbol_hooks[symbol_name] = addr
@@ -45,6 +47,12 @@ class Modules:
             if module.base == addr:
                 return module
         return None
+    
+    def mem_reserve(self, size):
+        (_, size_aligned) = align(0, size, True)
+        ret = self.counter_memory
+        self.counter_memory += size_aligned
+        return ret
 
     def load_module(self, filename):
         logger.debug("Loading module '%s'." % filename)
@@ -79,14 +87,15 @@ class Modules:
                     bound_high = high
 
             # Retrieve a base address for this module.
-            load_base = self.emu.memory.mem_reserve(bound_high - bound_low)
+            load_base = self.mem_reserve(bound_high - bound_low)
 
             for segment in load_segments:
                 prot = get_segment_protection(segment.header.p_flags)
                 prot = prot if prot is not 0 else UC_PROT_ALL
 
-                self.emu.memory.mem_map(load_base + segment.header.p_vaddr, segment.header.p_memsz, prot)
-                self.emu.memory.mem_write(load_base + segment.header.p_vaddr, segment.data())
+                self.emu.memory.map(load_base + segment.header.p_vaddr, segment.header.p_memsz, prot)
+                self.emu.mu.mem_write(load_base + segment.header.p_vaddr, segment.data())
+            #
 
             rel_section = None
             for section in elf.iter_sections():

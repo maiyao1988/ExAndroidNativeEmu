@@ -3,7 +3,7 @@ import posixpath
 import sys
 import os
 
-from unicorn import UcError, UC_HOOK_CODE, UC_HOOK_MEM_UNMAPPED
+from unicorn import *
 from unicorn.arm_const import *
 
 from androidemu.emulator import Emulator
@@ -33,6 +33,7 @@ def hex_to_int32(hex):
 
 # Add debugging.
 def hook_code(mu, address, size, user_data):
+
     try:
         instruction = mu.mem_read(address, size)
         emu = user_data
@@ -76,10 +77,11 @@ def hook_code(mu, address, size, user_data):
             r10 = mu.reg_read(UC_ARM_REG_R10)
             r11 = mu.reg_read(UC_ARM_REG_R11)
             r12 = mu.reg_read(UC_ARM_REG_R12)
+            sp =  mu.reg_read(UC_ARM_REG_SP)
             lr = mu.reg_read(UC_ARM_REG_LR)
             pc = mu.reg_read(UC_ARM_REG_PC)
-            regs = "\tR0=0x%08X,R1=0x%08X,R2=0x%08X,R3=0x%08X,R4=0x%08X,R5=0x%08X,R6=0x%08X,R7=0x%08X,\n\tR8=0x%08X,R9=0x%08X,R10=0x%08X,R11=0x%08X,R12=0x%08X\n\tLR=0x%08X,PC=0x%08X,CPSR=0x%08X"\
-                %(r0, r1, r2, r3, r4, r5, r6, r7, r8, r9,r10,r11,r12, lr, pc, cpsr)
+            regs = "\tR0=0x%08X,R1=0x%08X,R2=0x%08X,R3=0x%08X,R4=0x%08X,R5=0x%08X,R6=0x%08X,R7=0x%08X,\n\tR8=0x%08X,R9=0x%08X,R10=0x%08X,R11=0x%08X,R12=0x%08X\n\tLR=0x%08X,PC=0x%08X, SP=0x%08X,CPSR=0x%08X"\
+                %(r0, r1, r2, r3, r4, r5, r6, r7, r8, r9,r10,r11,r12, lr, pc, sp, cpsr)
             #print(regs)
             if (base == 0 and (addr < androidemu.config.HEAP_BASE or addr>androidemu.config.HEAP_BASE+androidemu.config.HEAP_SIZE) and \
             (addr<androidemu.config.HOOK_MEMORY_BASE or addr>androidemu.config.HOOK_MEMORY_BASE+androidemu.config.HOOK_MEMORY_SIZE)):
@@ -89,7 +91,7 @@ def hook_code(mu, address, size, user_data):
             
             instruction_str = ''.join('{:02X} '.format(x) for x in i.bytes)
             #print("sz:%d", size)
-            line = "(%20s)[%-12s]0x%08X:\t%s\t%s"%(name, instruction_str, addr-base, i.mnemonic, i.op_str.upper())
+            line = "(%20s[0x%08X])[%-12s]0x%08X:\t%s\t%s"%(name, base, instruction_str, addr-base, i.mnemonic.upper(), i.op_str.upper())
             if (funName != None):
                 line = line + " ; %s"%funName
             #
@@ -100,6 +102,24 @@ def hook_code(mu, address, size, user_data):
         logger.exception("exception in hook_code")
         sys.exit(-1)
     #
+#
+
+def hook_mem_read(uc, access, address, size, value, user_data):
+    pc = uc.reg_read(UC_ARM_REG_PC)
+    data = uc.mem_read(address, size)
+    #logger.debug(">>> Memory READ at 0x%08X, data size = %u, pc: 0x%08X, data value = 0x%s" % (address, size, pc, data.hex()))
+    
+    if (address == 0x02081270 + 0x1C):
+        logger.debug("read arena_bin")
+    #
+#
+
+def hook_mem_write(uc, access, address, size, value, user_data):
+    pc = uc.reg_read(UC_ARM_REG_PC)
+    #logger.debug(">>> Memory WRITE at 0x%08X, data size = %u, data value = 0x%08X, pc: %x" % (address, size, value, pc))
+    if (address == 0x02081270 + 0x1C):
+        logger.debug("write arena_bin")
+    #N
 #
 
 class MainActivity(metaclass=JavaClassDef, jvm_name='local/myapp/testnativeapp/MainActivity'):
@@ -130,10 +150,19 @@ emulator = Emulator(
     vfs_root=posixpath.join(posixpath.dirname(__file__), "vfs")
 )
 
+emulator.mu.mem_map(0x10000000, 0x2000, UC_PROT_NONE)
+
+emulator.mu.mem_map(0x10000000, 0x2000, UC_PROT_NONE)
+
+'''
 # Register Java class.
 emulator.java_classloader.add_class(MainActivity)
 
 emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
+
+emulator.mu.hook_add(UC_HOOK_MEM_WRITE, hook_mem_write)
+emulator.mu.hook_add(UC_HOOK_MEM_READ, hook_mem_read)
+
 # Load all libraries.
 emulator.load_library("samples/example_binaries/libdl.so")
 emulator.load_library("samples/example_binaries/libc.so")
@@ -180,3 +209,4 @@ try:
 except UcError as e:
     print("Exit at %x" % emulator.mu.reg_read(UC_ARM_REG_PC))
     raise
+'''

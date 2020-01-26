@@ -4,7 +4,7 @@ import time
 from random import randint
 
 import hexdump
-from unicorn import Uc, UC_ARCH_ARM, UC_MODE_ARM
+from unicorn import *
 from unicorn.arm_const import UC_ARM_REG_SP, UC_ARM_REG_LR, UC_ARM_REG_R0
 
 from androidemu import config
@@ -13,13 +13,13 @@ from androidemu.cpu.interrupt_handler import InterruptHandler
 from androidemu.cpu.syscall_handlers import SyscallHandlers
 from androidemu.cpu.syscall_hooks import SyscallHooks
 from androidemu.hooker import Hooker
-from androidemu.internal.memory import Memory
 from androidemu.internal.modules import Modules
 from androidemu.java.helpers.native_method import native_write_args
 from androidemu.java.java_classloader import JavaClassLoader
 from androidemu.java.java_vm import JavaVM
 from androidemu.native.hooks import NativeHooks
 from androidemu.native.memory import NativeMemory
+from androidemu.native.memory_heap import UnicornSimpleHeap
 from androidemu.tracer import Tracer
 from androidemu.vfs.file_system import VirtualFileSystem
 
@@ -27,54 +27,6 @@ logger = logging.getLogger(__name__)
 
 
 class Emulator:
-    """
-    :type mu Uc
-    :type modules Modules
-    :type memory Memory
-    """
-    def __init__(self, vfs_root=None, vfp_inst_set=False):
-        # Unicorn.
-        self.mu = Uc(UC_ARCH_ARM, UC_MODE_ARM)
-
-        if vfp_inst_set:
-            self._enable_vfp()
-
-        # Android
-        self.system_properties = {"libc.debug.malloc.options": ""}
-
-        # Stack.
-        self.mu.mem_map(config.STACK_ADDR, config.STACK_SIZE)
-        self.mu.reg_write(UC_ARM_REG_SP, config.STACK_ADDR + config.STACK_SIZE)
-
-        # Executable data.
-        self.modules = Modules(self)
-        self.memory = Memory(self)
-
-        # CPU
-        self.interrupt_handler = InterruptHandler(self.mu)
-        self.syscall_handler = SyscallHandlers(self.interrupt_handler)
-        self.syscall_hooks = SyscallHooks(self.mu, self.syscall_handler)
-
-        # File System
-        if vfs_root is not None:
-            self.vfs = VirtualFileSystem(vfs_root, self.syscall_handler)
-        else:
-            self.vfs = None
-
-        # Hooker
-        self.mu.mem_map(config.HOOK_MEMORY_BASE, config.HOOK_MEMORY_SIZE)
-        self.hooker = Hooker(self, config.HOOK_MEMORY_BASE, config.HOOK_MEMORY_SIZE)
-
-        # JavaVM
-        self.java_classloader = JavaClassLoader()
-        self.java_vm = JavaVM(self, self.java_classloader, self.hooker)
-
-        # Native
-        self.native_memory = NativeMemory(self.mu, config.HEAP_BASE, config.HEAP_SIZE, self.syscall_handler)
-        self.native_hooks = NativeHooks(self, self.native_memory, self.modules, self.hooker)
-
-        # Tracer
-        self.tracer = Tracer(self.mu, self.modules)
 
     # https://github.com/unicorn-engine/unicorn/blob/8c6cbe3f3cabed57b23b721c29f937dd5baafc90/tests/regress/arm_fp_vfp_disabled.py#L15
     def _enable_vfp(self):
@@ -107,6 +59,62 @@ class Emulator:
             self.mu.emu_start(address | 1, address + len(code_bytes))
         finally:
             self.mu.mem_unmap(address, mem_size)
+        #
+    #
+
+    """
+    :type mu Uc
+    :type modules Modules
+    :type memory Memory
+    """
+    def __init__(self, vfs_root=None, vfp_inst_set=False):
+        # Unicorn.
+        self.mu = Uc(UC_ARCH_ARM, UC_MODE_ARM)
+
+        if vfp_inst_set:
+            self._enable_vfp()
+        #
+
+        # Android
+        self.system_properties = {"libc.debug.malloc.options": ""}
+        self.memory = UnicornSimpleHeap(self.mu, 0x0, 0xFFFFFFFF)
+
+        # Stack.
+        addr = self.memory.map(config.STACK_ADDR, config.STACK_SIZE, UC_PROT_READ | UC_PROT_WRITE)
+        self.mu.reg_write(UC_ARM_REG_SP, config.STACK_ADDR + config.STACK_SIZE)
+        sp = self.mu.reg_read(UC_ARM_REG_SP)
+        print ("stack addr %x"%sp)
+
+        # CPU
+        self.interrupt_handler = InterruptHandler(self.mu)
+        self.syscall_handler = SyscallHandlers(self.interrupt_handler)
+        self.syscall_hooks = SyscallHooks(self.mu, self.syscall_handler)
+
+        # File System
+        if vfs_root is not None:
+            self.vfs = VirtualFileSystem(vfs_root, self.syscall_handler)
+        else:
+            self.vfs = None
+
+        # Hooker
+        self.memory.map(config.HOOK_MEMORY_BASE, config.HOOK_MEMORY_SIZE, UC_PROT_READ | UC_PROT_WRITE | UC_PROT_EXEC)
+        self.hooker = Hooker(self, config.HOOK_MEMORY_BASE, config.HOOK_MEMORY_SIZE)
+
+        # JavaVM
+        self.java_classloader = JavaClassLoader()
+        self.java_vm = JavaVM(self, self.java_classloader, self.hooker)
+
+        # Executable data.
+        self.modules = Modules(self)
+        # Native
+        self.native_memory = NativeMemory(self.mu, self.memory, self.syscall_handler, self.vfs)
+        self.native_hooks = NativeHooks(self, self.native_memory, self.modules, self.hooker)
+
+        # Tracer
+        self.tracer = Tracer(self.mu, self.modules)
+
+    #
+
 
     def load_library(self, filename, do_init=True):
         libmod = self.modules.load_module(filename)

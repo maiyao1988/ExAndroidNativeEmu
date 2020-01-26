@@ -83,7 +83,7 @@ def native_translate_arg(emu, val):
 
 def native_write_arg_register(emu, reg, val):
     emu.mu.reg_write(reg, native_translate_arg(emu, val))
-
+#
 
 def native_method(func):
     def native_method_wrapper(*argv):
