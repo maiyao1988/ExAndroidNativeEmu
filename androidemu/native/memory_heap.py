@@ -43,14 +43,13 @@ class UnicornSimpleHeap:
                     break
         #
         else:
-            for addr in range(address, self._heap_max_addr, PAGE_SIZE):
+            for addr in range(address, address + size, PAGE_SIZE):
                 if (addr in self._blocks):
                     for r in self.__mu.mem_regions():
                         print("region begin :0x%08X end:0x%08X, prot:%d"%(r[0], r[1], r[2]))
                     #
-
                     raise Exception('Failed to mmap memory on base 0x%08X'%(address, ))
-                    return 0
+                    return -1 #MAP_FAILED
                 #
             #
             data_addr = address
@@ -58,7 +57,7 @@ class UnicornSimpleHeap:
         # Check if nothing was found.
         if data_addr is None:
             raise Exception('Failed to mmap memory.')
-            return 0
+            return -1
         #
 
         # Reserve.
@@ -98,6 +97,14 @@ class UnicornSimpleHeap:
             else:
                 raise Exception('Attempted to unmap memory that was not mapped.')
         return True
+
+    def check_addr(self , addr, prot):
+        for r in self.__mu.mem_regions():
+            if (addr>=r[0] and addr < r[1] and prot & r[2]):
+                return True
+        #
+        return False
+    #
 
     @staticmethod
     def is_multiple(addr):

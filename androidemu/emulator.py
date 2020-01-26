@@ -5,7 +5,7 @@ from random import randint
 
 import hexdump
 from unicorn import *
-from unicorn.arm_const import UC_ARM_REG_SP, UC_ARM_REG_LR, UC_ARM_REG_R0
+from unicorn.arm_const import *
 
 from androidemu import config
 from androidemu.config import HOOK_MEMORY_BASE, HOOK_MEMORY_SIZE
@@ -75,9 +75,14 @@ class Emulator:
             self._enable_vfp()
         #
 
+        #注意，原有缺陷，libc_preinit init array中访问R1参数是从内核传过来的
+        #而这里直接将0映射空间，,强行运行过去，因为R1刚好为0,否则会报memory unmap异常
+        #TODO 初始化libc时候R1参数模拟内核传过去的KernelArgumentBlock
+        self.mu.mem_map(0x0, 0x00100000, UC_PROT_READ | UC_PROT_WRITE)
+
         # Android
         self.system_properties = {"libc.debug.malloc.options": ""}
-        self.memory = UnicornSimpleHeap(self.mu, 0x0, 0xFFFFFFFF)
+        self.memory = UnicornSimpleHeap(self.mu, config.HEAP_BASE, config.HEAP_BASE+config.HEAP_SIZE)
 
         # Stack.
         addr = self.memory.map(config.STACK_ADDR, config.STACK_SIZE, UC_PROT_READ | UC_PROT_WRITE)

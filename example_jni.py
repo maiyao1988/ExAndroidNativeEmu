@@ -83,12 +83,17 @@ def hook_code(mu, address, size, user_data):
             regs = "\tR0=0x%08X,R1=0x%08X,R2=0x%08X,R3=0x%08X,R4=0x%08X,R5=0x%08X,R6=0x%08X,R7=0x%08X,\n\tR8=0x%08X,R9=0x%08X,R10=0x%08X,R11=0x%08X,R12=0x%08X\n\tLR=0x%08X,PC=0x%08X, SP=0x%08X,CPSR=0x%08X"\
                 %(r0, r1, r2, r3, r4, r5, r6, r7, r8, r9,r10,r11,r12, lr, pc, sp, cpsr)
             #print(regs)
+            '''
             if (base == 0 and (addr < androidemu.config.HEAP_BASE or addr>androidemu.config.HEAP_BASE+androidemu.config.HEAP_SIZE) and \
             (addr<androidemu.config.HOOK_MEMORY_BASE or addr>androidemu.config.HOOK_MEMORY_BASE+androidemu.config.HOOK_MEMORY_SIZE)):
                 logger.error("code %s\t%s in addr 0x%08X out of range"%(i.mnemonic, i.op_str, addr))
                 sys.exit(-1)
             #
-            
+            '''
+            if (not emu.memory.check_addr(addr, UC_PROT_EXEC)):
+                logger.error("code %s\t%s in addr 0x%08X out of range"%(i.mnemonic, i.op_str, addr))
+                sys.exit(-1)
+            #
             instruction_str = ''.join('{:02X} '.format(x) for x in i.bytes)
             #print("sz:%d", size)
             line = "(%20s[0x%08X])[%-12s]0x%08X:\t%s\t%s"%(name, base, instruction_str, addr-base, i.mnemonic.upper(), i.op_str.upper())
@@ -150,11 +155,7 @@ emulator = Emulator(
     vfs_root=posixpath.join(posixpath.dirname(__file__), "vfs")
 )
 
-emulator.mu.mem_map(0x10000000, 0x2000, UC_PROT_NONE)
 
-emulator.mu.mem_map(0x10000000, 0x2000, UC_PROT_NONE)
-
-'''
 # Register Java class.
 emulator.java_classloader.add_class(MainActivity)
 
@@ -209,4 +210,3 @@ try:
 except UcError as e:
     print("Exit at %x" % emulator.mu.reg_read(UC_ARM_REG_PC))
     raise
-'''
