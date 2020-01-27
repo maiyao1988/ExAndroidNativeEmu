@@ -12,7 +12,7 @@ from androidemu.java.java_method_def import java_method_def
 import androidemu.config
 
 import capstone
-
+import traceback
 
 # Create java class.
 from samples import debug_utils
@@ -83,13 +83,7 @@ def hook_code(mu, address, size, user_data):
             regs = "\tR0=0x%08X,R1=0x%08X,R2=0x%08X,R3=0x%08X,R4=0x%08X,R5=0x%08X,R6=0x%08X,R7=0x%08X,\n\tR8=0x%08X,R9=0x%08X,R10=0x%08X,R11=0x%08X,R12=0x%08X\n\tLR=0x%08X,PC=0x%08X, SP=0x%08X,CPSR=0x%08X"\
                 %(r0, r1, r2, r3, r4, r5, r6, r7, r8, r9,r10,r11,r12, lr, pc, sp, cpsr)
             #print(regs)
-            '''
-            if (base == 0 and (addr < androidemu.config.HEAP_BASE or addr>androidemu.config.HEAP_BASE+androidemu.config.HEAP_SIZE) and \
-            (addr<androidemu.config.HOOK_MEMORY_BASE or addr>androidemu.config.HOOK_MEMORY_BASE+androidemu.config.HOOK_MEMORY_SIZE)):
-                logger.error("code %s\t%s in addr 0x%08X out of range"%(i.mnemonic, i.op_str, addr))
-                sys.exit(-1)
-            #
-            '''
+
             if (not emu.memory.check_addr(addr, UC_PROT_EXEC)):
                 logger.error("code %s\t%s in addr 0x%08X out of range"%(i.mnemonic, i.op_str, addr))
                 sys.exit(-1)
@@ -124,7 +118,7 @@ def hook_mem_write(uc, access, address, size, value, user_data):
     #logger.debug(">>> Memory WRITE at 0x%08X, data size = %u, data value = 0x%08X, pc: %x" % (address, size, value, pc))
     if (address == 0x02081270 + 0x1C):
         logger.debug("write arena_bin")
-    #N
+    #
 #
 
 class MainActivity(metaclass=JavaClassDef, jvm_name='local/myapp/testnativeapp/MainActivity'):
@@ -155,10 +149,19 @@ emulator = Emulator(
     vfs_root=posixpath.join(posixpath.dirname(__file__), "vfs")
 )
 
-
+'''
+emulator.mu.mem_map(0x50000000, 0x1000, UC_PROT_NONE)
+try:
+    emulator.mu.mem_protect(0x50001000, 0x1000)
+except unicorn.UcError as e:
+    print(e.args)
+    print(e.errno)
+    print(dir(e))
+    traceback.print_exc()
+#
+'''
 # Register Java class.
 emulator.java_classloader.add_class(MainActivity)
-
 emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
 
 emulator.mu.hook_add(UC_HOOK_MEM_WRITE, hook_mem_write)
@@ -210,3 +213,4 @@ try:
 except UcError as e:
     print("Exit at %x" % emulator.mu.reg_read(UC_ARM_REG_PC))
     raise
+

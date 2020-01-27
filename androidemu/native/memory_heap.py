@@ -8,11 +8,15 @@ PAGE_SIZE = 0x1000
 
 class UnicornSimpleHeap:
 
+    @staticmethod
+    def is_contains(addr1, end1, addr2, end2):
+        return (addr1 <= addr2 and end1 >= end2)
+    #
+
     def __init__(self, mu, heap_min_addr, heap_max_addr):
         self.__mu = mu
         self._heap_min_addr = heap_min_addr
         self._heap_max_addr = heap_max_addr
-        self._blocks = OrderedDict()
 
     def map(self, address, size, prot=UC_PROT_READ | UC_PROT_WRITE):
         if size <= 0:
@@ -20,55 +24,67 @@ class UnicornSimpleHeap:
         print("map addr:0x%08X, sz:0x%08X"%(address, size))
         #traceback.print_stack()
         address, size = align(address, size, True)
-        data_size = size
-        data_addr = None
-        if (address == 0):
-            available_start = None
-            available_size = 0
-
-            # Find empty space big enough for data_size.
-            for addr in range(self._heap_min_addr, self._heap_max_addr, PAGE_SIZE):
-                if addr in self._blocks:
-                    available_start = None
-                    available_size = 0
-                    continue
-
-                if available_start is None:
-                    available_start = addr
-
-                available_size = available_size + PAGE_SIZE
-
-                if available_size == data_size:
-                    data_addr = available_start
-                    break
-        #
-        else:
-            for addr in range(address, address + size, PAGE_SIZE):
-                if (addr in self._blocks):
-                    for r in self.__mu.mem_regions():
-                        print("region begin :0x%08X end:0x%08X, prot:%d"%(r[0], r[1], r[2]))
+        try:
+            if (address == 0):
+                regions = list()
+                for r in self.__mu.mem_regions():
+                    regions.append(r)
+                #
+                regions.sort()
+                last_end = -1
+                for r in regions:
+                    #print("region begin :0x%08X end:0x%08X, prot:%d"%(r[0], r[1], r[2]))
+                    #取最大的end，在后面直接map出来
+                    if (r[1] <= self._heap_min_addr):
+                        continue
+                    if (last_end < 0):
+                        last_end = r[1]+1
+                        continue
+                    else:
+                        empty_sz =  r[0] - last_end
+                        if (empty_sz >= size):
+                            #print (hex(empty_sz))
+                            print(hex(r[0]))
+                            print(hex(last_end))
+                            break
+                        last_end = r[1]+1
                     #
-                    raise Exception('Failed to mmap memory on base 0x%08X'%(address, ))
-                    return -1 #MAP_FAILED
+                #
+                if (last_end < 0):
+                    last_end = self._heap_min_addr
+                #
+                print("before mem_map addr:0x%08X, sz:0x%08X"%(last_end, size))
+
+                self.__mu.mem_map(last_end, size, perms=prot)
+                return last_end
+            #
+            else:
+                try:
+                    self.__mu.mem_map(address, size, perms=prot)
+                except unicorn.UcError as e:
+                    if (e.errno == UC_ERR_MAP):
+                        for r in self.__mu.mem_regions():
+                            #如果是原来映射为prot_none，则修改模式即可
+                            if (self.is_contains(r[0], r[1]+1, address, address + size)):
+                                if (r[2]==0):
+                                    print("modify %X-%X from %d to %d"%(address, address + size, r[2], prot))
+                                    self.__mu.mem_protect(address, size, prot)
+                                    return 0
+                                #
+                                break
+                            #
+                        #
+                    #
+                    raise
+                    return -1
                 #
             #
-            data_addr = address
+        except unicorn.UcError as e:
+            for r in self.__mu.mem_regions():
+                print("region begin :0x%08X end:0x%08X, prot:%d"%(r[0], r[1], r[2]))
+            #
+            raise
         #
-        # Check if nothing was found.
-        if data_addr is None:
-            raise Exception('Failed to mmap memory.')
-            return -1
-        #
-
-        # Reserve.
-        for addr in range(data_addr, data_addr + data_size, PAGE_SIZE):
-            self._blocks[addr] = 1
-        #
-        # Actually map in emulator.
-        
-        print("before mem_map addr:0x%08X, sz:0x%08X"%(data_addr, data_size))
-        r = self.__mu.mem_map(data_addr, data_size, perms=prot)
-        return data_addr
     #
 
     def protect(self, addr, len_in, prot):
@@ -78,25 +94,33 @@ class UnicornSimpleHeap:
         if not self.is_multiple(len_in):
             raise Exception('len_in was not multiple of page size (%d, %d).' % (addr, PAGE_SIZE))
 
-        for addr_in in range(addr, addr + len_in - 1, PAGE_SIZE):
-            if addr_in in self._blocks:
-                self.__mu.mem_protect(addr_in, len_in, prot)
-
-        return True
+        try:
+            self.__mu.mem_protect(addr, len_in, prot)
+        except unicorn.UcError as e:
+            #TODO:just for debug
+            raise
+            return -1
+        #
+        return 0
 
     def unmap(self, addr, size):
-        print("unmap 0x%08X sz=0x0x%08X"%(addr,size))
         if not self.is_multiple(addr):
             raise Exception('addr was not multiple of page size (%d, %d).' % (addr, PAGE_SIZE))
 
         _, size = align(addr, size, True)
-        for addr_in in range(addr, size, PAGE_SIZE):
-            if addr_in in self._blocks:
-                self.__mu.mem_unmap(addr_in, PAGE_SIZE)
-                self._blocks.pop(addr_in)
-            else:
-                raise Exception('Attempted to unmap memory that was not mapped.')
-        return True
+        try:
+            print("unmap 0x%08X sz=0x0x%08X end=0x0x%08X"%(addr,size, addr+size))
+            self.__mu.mem_unmap(addr, size)
+        except unicorn.UcError as e:
+            #TODO:just for debug
+
+            for r in self.__mu.mem_regions():
+                print("region begin :0x%08X end:0x%08X, prot:%d"%(r[0], r[1], r[2]))
+            #
+            raise
+            return -1
+        #
+        return 0
 
     def check_addr(self , addr, prot):
         for r in self.__mu.mem_regions():

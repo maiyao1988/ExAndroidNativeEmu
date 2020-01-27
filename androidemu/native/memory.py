@@ -23,19 +23,28 @@ class NativeMemory:
         return self._memory.map(0, length, prot)
 
     def _handle_munmap(self, uc, addr, len_in):
-        self._memory.unmap(addr, len_in)
+        #TODO: set errno
+        return self._memory.unmap(addr, len_in)
+    #
 
     def _handle_mmap2(self, mu, addr, length, prot, flags, fd, offset):
         """
         void *mmap2(void *addr, size_t length, int prot, int flags, int fd, off_t pgoffset);
         """
 
+        #define PROT_EXEC 0x4
+        #define PROT_SEM 0x8
+        #define PROT_NONE 0x0
+        #define PROT_GROWSDOWN 0x01000000
+        #define PROT_GROWSUP 0x02000000
+        #define MAP_SHARED 0x01
+        #define MAP_PRIVATE 0x02
+        #define MAP_TYPE 0x0f
+        #define MAP_FIXED 0x10
+        #define MAP_ANONYMOUS 0x20
+        #define MAP_UNINITIALIZED 0x0
         addr = self._memory.map(addr, length, prot)
-        # MAP_FILE	    0
-        # MAP_SHARED	0x01
-        # MAP_PRIVATE	0x02
-        # MAP_FIXED	    0x10
-        # MAP_ANONYMOUS	0x20
+
         if fd != 0xffffffff: # 如果有fd
             if fd <= 2:
                 raise NotImplementedError("Unsupported read operation for file descriptor %d." % fd)
@@ -67,5 +76,5 @@ class NativeMemory:
         mprotect() changes protection for the calling process's memory page(s) containing any part of the address
         range in the interval [addr, addr+len-1]. addr must be aligned to a page boundary.
         """
-        self._memory.protect(addr, len_in, prot)
-        return 0
+        return self._memory.protect(addr, len_in, prot)
+    #
