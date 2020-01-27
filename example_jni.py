@@ -150,16 +150,16 @@ emulator = Emulator(
 )
 
 '''
-emulator.mu.mem_map(0x50000000, 0x1000, UC_PROT_NONE)
-try:
-    emulator.mu.mem_protect(0x50001000, 0x1000)
-except unicorn.UcError as e:
-    print(e.args)
-    print(e.errno)
-    print(dir(e))
-    traceback.print_exc()
-#
+emulator.mu.mem_map(0x50000000, 0x2000, UC_PROT_NONE)
+
+emulator.mu.mem_protect(0x50001000, 0x1000)
+
+emulator.mu.mem_protect(0x50000000, 0x1000)
+emulator.mu.mem_unmap(0x50000000, 0x2000)
+
+sys.exit(-1)
 '''
+
 # Register Java class.
 emulator.java_classloader.add_class(MainActivity)
 emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
@@ -180,7 +180,7 @@ for m in emulator.modules:
         print ("%08X(%08X):%s"%(addr, addr - m.base, v[0]))
     #
 #
-sys.exit(-1)
+
 # Show loaded modules.
 logger.info("Loaded modules:")
 

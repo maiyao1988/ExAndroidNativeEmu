@@ -26,7 +26,7 @@ class UnicornSimpleHeap:
         address, size = align(address, size, True)
         try:
             if (address == 0):
-                regions = list()
+                regions = []
                 for r in self.__mu.mem_regions():
                     regions.append(r)
                 #
@@ -59,24 +59,35 @@ class UnicornSimpleHeap:
                 return last_end
             #
             else:
+                #MAP_FIXED
                 try:
                     self.__mu.mem_map(address, size, perms=prot)
                 except unicorn.UcError as e:
                     if (e.errno == UC_ERR_MAP):
+                        blocks = set()
+                        extra_protect = set()
+                        for b in range(address, address+size, 0x1000):
+                            blocks.add(b)
+                        #
                         for r in self.__mu.mem_regions():
-                            #如果是原来映射为prot_none，则修改模式即可
-                            if (self.is_contains(r[0], r[1]+1, address, address + size)):
-                                if (r[2]==0):
-                                    print("modify %X-%X from %d to %d"%(address, address + size, r[2], prot))
-                                    self.__mu.mem_protect(address, size, prot)
-                                    return 0
+                            #修改属性
+                            raddr = r[0]
+                            rend = r[1]+1
+                            for b in range(raddr, rend, 0x1000):
+                                if (b in blocks):
+                                    blocks.remove(b)
+                                    extra_protect.add(b)
                                 #
-                                break
                             #
                         #
+                        for b_map in blocks:
+                            self.__mu.mem_map(b_map, 0x1000, prot)
+                        #
+                        for b_protect in extra_protect:
+                            self.__mu.mem_protect(b_protect, 0x1000, prot)
+                        #
                     #
-                    raise
-                    return -1
+                    return address
                 #
             #
         except unicorn.UcError as e:
@@ -84,6 +95,9 @@ class UnicornSimpleHeap:
                 print("region begin :0x%08X end:0x%08X, prot:%d"%(r[0], r[1], r[2]))
             #
             raise
+        #
+        for r in self.__mu.mem_regions():
+            print("region begin :0x%08X end:0x%08X, prot:%d"%(r[0], r[1], r[2]))
         #
     #
 
