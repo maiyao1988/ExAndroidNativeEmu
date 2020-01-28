@@ -22,7 +22,6 @@ g_md_thumb.detail = True
 
 g_md_arm = capstone.Cs(capstone.CS_ARCH_ARM, capstone.CS_MODE_ARM)
 g_md_arm.detail = True
-
 # Add debugging.
 def hook_code(mu, address, size, user_data):
 
@@ -74,7 +73,7 @@ def hook_code(mu, address, size, user_data):
             pc = mu.reg_read(UC_ARM_REG_PC)
             regs = "\tR0=0x%08X,R1=0x%08X,R2=0x%08X,R3=0x%08X,R4=0x%08X,R5=0x%08X,R6=0x%08X,R7=0x%08X,\n\tR8=0x%08X,R9=0x%08X,R10=0x%08X,R11=0x%08X,R12=0x%08X\n\tLR=0x%08X,PC=0x%08X, SP=0x%08X,CPSR=0x%08X"\
                 %(r0, r1, r2, r3, r4, r5, r6, r7, r8, r9,r10,r11,r12, lr, pc, sp, cpsr)
-            print(regs)
+            #print(regs)
 
             if (not emu.memory.check_addr(addr, UC_PROT_EXEC)):
                 logger.error("code %s\t%s in addr 0x%08X out of range"%(i.mnemonic, i.op_str, addr))

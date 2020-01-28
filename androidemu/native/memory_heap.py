@@ -13,15 +13,15 @@ class UnicornSimpleHeap:
         return (addr1 <= addr2 and end1 >= end2)
     #
 
-    def __init__(self, mu, heap_min_addr, heap_max_addr):
+    def __init__(self, mu, alloc_min_addr, alloc_max_addr):
         self.__mu = mu
-        self._heap_min_addr = heap_min_addr
-        self._heap_max_addr = heap_max_addr
+        self._alloc_min_addr = alloc_min_addr
+        self._alloc_max_addr = alloc_max_addr
 
     def map(self, address, size, prot=UC_PROT_READ | UC_PROT_WRITE):
         if size <= 0:
             raise Exception('Heap map size was <= 0.')
-        print("map addr:0x%08X, sz:0x%08X"%(address, size))
+        print("map addr:0x%08X, end:0x%08X, sz:0x%08X"%(address, address+size, size))
         #traceback.print_stack()
         address, size = align(address, size, True)
         try:
@@ -31,32 +31,28 @@ class UnicornSimpleHeap:
                     regions.append(r)
                 #
                 regions.sort()
-                last_end = -1
-                for r in regions:
-                    #print("region begin :0x%08X end:0x%08X, prot:%d"%(r[0], r[1], r[2]))
-                    #取最大的end，在后面直接map出来
-                    if (r[1] <= self._heap_min_addr):
-                        continue
-                    if (last_end < 0):
-                        last_end = r[1]+1
-                        continue
-                    else:
+                map_base = -1
+                if(len(regions)<1):
+                    map_base = self._alloc_min_addr
+                else:
+                    last_end = regions[0][1]+1
+                    for r in regions[1:]:
                         empty_sz =  r[0] - last_end
                         if (empty_sz >= size):
-                            #print (hex(empty_sz))
-                            print(hex(r[0]))
-                            print(hex(last_end))
+                            map_base = last_end
                             break
                         last_end = r[1]+1
                     #
                 #
-                if (last_end < 0):
-                    last_end = self._heap_min_addr
+                if (map_base >= self._alloc_min_addr and map_base <= self._alloc_max_addr):
+                    map_base = self._alloc_min_addr
+                    return -1
                 #
-                print("before mem_map addr:0x%08X, sz:0x%08X"%(last_end, size))
 
-                self.__mu.mem_map(last_end, size, perms=prot)
-                return last_end
+                print("before mem_map addr:0x%08X, sz:0x%08X"%(map_base, size))
+
+                self.__mu.mem_map(map_base, size, perms=prot)
+                return map_base
             #
             else:
                 #MAP_FIXED
@@ -91,13 +87,11 @@ class UnicornSimpleHeap:
                 #
             #
         except unicorn.UcError as e:
+            #impossible
             for r in self.__mu.mem_regions():
                 print("region begin :0x%08X end:0x%08X, prot:%d"%(r[0], r[1], r[2]))
             #
             raise
-        #
-        for r in self.__mu.mem_regions():
-            print("region begin :0x%08X end:0x%08X, prot:%d"%(r[0], r[1], r[2]))
         #
     #
 

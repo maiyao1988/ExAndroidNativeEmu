@@ -43,7 +43,7 @@ def hook_interrupt(uc, intno, data):
     return
 
 
-def dump_memory(uc, fd):
+def dump_memory(uc, fd, min_addr=0, max_addr=0xFFFFFFFF):
     line_connt = 16
     offset = 0
     regions = []
@@ -55,6 +55,9 @@ def dump_memory(uc, fd):
         offset = r[0]
         fd.write("region (0x%08X-0x%08X) prot:%d\n"%(r[0], r[1], r[2]))
         for addr in range(r[0], r[1]+1):
+            if (addr < min_addr or addr > max_addr):
+                continue
+            #
             if (offset % line_connt == 0):
                 fd.write("0x%08X: "%offset)
             #

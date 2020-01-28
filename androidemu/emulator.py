@@ -77,12 +77,13 @@ class Emulator:
 
         #注意，原有缺陷，libc_preinit init array中访问R1参数是从内核传过来的
         #而这里直接将0映射空间，,强行运行过去，因为R1刚好为0,否则会报memory unmap异常
+        #FIXME:MRC指令总是返回0
         #TODO 初始化libc时候R1参数模拟内核传过去的KernelArgumentBlock
         self.mu.mem_map(0x0, 0x00001000, UC_PROT_READ | UC_PROT_WRITE)
 
         # Android
         self.system_properties = {"libc.debug.malloc.options": ""}
-        self.memory = UnicornSimpleHeap(self.mu, config.HEAP_BASE, config.HEAP_BASE+config.HEAP_SIZE)
+        self.memory = UnicornSimpleHeap(self.mu, config.MAP_ALLOC_BASE, config.MAP_ALLOC_BASE+config.MAP_ALLOC_SIZE)
 
         # Stack.
         addr = self.memory.map(config.STACK_ADDR, config.STACK_SIZE, UC_PROT_READ | UC_PROT_WRITE)
