@@ -1,11 +1,4 @@
-import hexdump
 import struct
-
-
-def hex_dump(mu, address, size):
-    data = mu.mem_read(address, size)
-    return hexdump.hexdump(data)
-
 
 def read_ptr(mu, address):
     return int.from_bytes(mu.mem_read(address, 4), byteorder='little')

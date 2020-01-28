@@ -3,7 +3,6 @@ import os
 import time
 from random import randint
 
-import hexdump
 from unicorn import *
 from unicorn.arm_const import *
 
@@ -19,7 +18,7 @@ from androidemu.java.java_classloader import JavaClassLoader
 from androidemu.java.java_vm import JavaVM
 from androidemu.native.hooks import NativeHooks
 from androidemu.native.memory import NativeMemory
-from androidemu.native.memory_heap import UnicornSimpleHeap
+from androidemu.native.memory_map import MemoryMap
 from androidemu.tracer import Tracer
 from androidemu.vfs.file_system import VirtualFileSystem
 
@@ -83,7 +82,7 @@ class Emulator:
 
         # Android
         self.system_properties = {"libc.debug.malloc.options": ""}
-        self.memory = UnicornSimpleHeap(self.mu, config.MAP_ALLOC_BASE, config.MAP_ALLOC_BASE+config.MAP_ALLOC_SIZE)
+        self.memory = MemoryMap(self.mu, config.MAP_ALLOC_BASE, config.MAP_ALLOC_BASE+config.MAP_ALLOC_SIZE)
 
         # Stack.
         addr = self.memory.map(config.STACK_ADDR, config.STACK_SIZE, UC_PROT_READ | UC_PROT_WRITE)
@@ -169,11 +168,3 @@ class Emulator:
             if is_jni:
                 self.java_vm.jni_env.clear_locals()
 
-    def dump(self, out_dir):
-        os.makedirs(out_dir)
-
-        for begin, end, prot in [reg for reg in self.mu.mem_regions()]:
-            filename = "{:#010x}-{:#010x}.bin".format(begin, end)
-            pathname = os.path.join(out_dir, filename)
-            with open(pathname, "w") as f:
-                f.write(hexdump.hexdump(self.mu.mem_read(begin, end - begin), result='return'))

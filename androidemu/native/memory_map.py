@@ -6,7 +6,7 @@ from ..internal import align
 PAGE_SIZE = 0x1000
 
 
-class UnicornSimpleHeap:
+class MemoryMap:
 
     @staticmethod
     def is_contains(addr1, end1, addr2, end2):

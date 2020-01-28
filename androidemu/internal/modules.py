@@ -103,7 +103,7 @@ class Modules:
                     continue
                 rel_section = section
                 break
-
+            #
             # Parse section header (Linking view).
             dynsym = elf.get_section_by_name(".dynsym")
             dynstr = elf.get_section_by_name(".dynstr")

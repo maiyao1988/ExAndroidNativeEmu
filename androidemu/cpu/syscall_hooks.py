@@ -16,7 +16,6 @@ from androidemu.cpu.syscall_handlers import SyscallHandlers
 from androidemu.data import socket_info
 from androidemu.data.socket_info import SocketInfo
 from androidemu.utils import memory_helpers
-import samples.debug_utils
 
 OVERRIDE_TIMEOFDAY = False
 OVERRIDE_TIMEOFDAY_SEC = 0
@@ -135,8 +134,6 @@ class SyscallHooks:
         cmd = op & FUTEX_CMD_MASK
         if cmd == FUTEX_WAIT or cmd == FUTEX_WAIT_BITSET:
             if v == val:
-                with open("./mem.txt", "w") as f:
-                    samples.debug_utils.dump_memory(mu, f)
                 raise RuntimeError("ERROR!!! FUTEX_WAIT or FUTEX_WAIT_BITSET dead lock !!! *uaddr == val, impossible for single thread program!!!")
             return 0
         elif cmd == FUTEX_WAKE:
