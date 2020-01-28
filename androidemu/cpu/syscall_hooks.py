@@ -16,6 +16,7 @@ from androidemu.cpu.syscall_handlers import SyscallHandlers
 from androidemu.data import socket_info
 from androidemu.data.socket_info import SocketInfo
 from androidemu.utils import memory_helpers
+import samples.debug_utils
 
 OVERRIDE_TIMEOFDAY = False
 OVERRIDE_TIMEOFDAY_SEC = 0
@@ -125,24 +126,34 @@ class SyscallHooks:
     #
 
     def _handle_futex(self, mu, uaddr, op, val, timeout, uaddr2, val3):
+        v = mu.mem_read(uaddr, 4)
+        v = int.from_bytes(v, byteorder='little', signed=False)
+        logger.info("futext call op=0x%08X *uaddr=0x%08X val=0x%08X"%(op, v, val))
         """
         See: https://linux.die.net/man/2/futex
         """
-
-        if op & FUTEX_WAIT:
-            raise NotImplementedError()
-        elif op & FUTEX_WAKE:
-            wakes_at_most = val
+        cmd = op & FUTEX_CMD_MASK
+        if cmd == FUTEX_WAIT or cmd == FUTEX_WAIT_BITSET:
+            if v == val:
+                with open("./mem.txt", "w") as f:
+                    samples.debug_utils.dump_memory(mu, f)
+                raise RuntimeError("ERROR!!! FUTEX_WAIT or FUTEX_WAIT_BITSET dead lock !!! *uaddr == val, impossible for single thread program!!!")
             return 0
-        elif op & FUTEX_FD:
+        elif cmd == FUTEX_WAKE:
+            return 0
+        elif cmd == FUTEX_FD:
             raise NotImplementedError()
-        elif op & FUTEX_REQUEUE:
+        elif cmd == FUTEX_REQUEUE:
             raise NotImplementedError()
-        elif op & FUTEX_CMP_REQUEUE:
+        elif cmd == FUTEX_CMP_REQUEUE:
             raise NotImplementedError()
-
+        elif cmd == FUTEX_WAKE_BITSET:
+            return 0
+        else:
+            raise NotImplementedError()
         return 0
-    
+    #
+
     def _handle_tgkill(self, mu, tgid, tid, sig):
         if (tgid ==  self._getpid(mu) and sig == 6):
             logger.warn("tgkill abort self, skip!!!")

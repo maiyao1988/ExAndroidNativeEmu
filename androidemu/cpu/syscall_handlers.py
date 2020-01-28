@@ -51,7 +51,7 @@ class SyscallHandlers:
                 mu.reg_write(UC_ARM_REG_R0, result)
         else:
 
-            args_formatted = ", ".join(["%08x" % arg for arg in args])
+            args_formatted = ", ".join(["0x%08X" % arg for arg in args])
             error = "Unhandled syscall 0x%x (%u) at 0x%x, args(%s) stopping emulation" % (idx, idx,
                                                                                       mu.reg_read(UC_ARM_REG_PC), args_formatted)
             

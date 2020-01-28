@@ -1,5 +1,6 @@
 import logging
-
+import sys
+import io
 from unicorn.arm_const import *
 
 logger = logging.getLogger(__name__)
@@ -40,3 +41,29 @@ def hook_mem_read(uc, access, address, size, value, user_data):
 def hook_interrupt(uc, intno, data):
     logger.debug(">>> Triggering interrupt %d" % intno)
     return
+
+
+def dump_memory(uc, fd):
+    line_connt = 16
+    offset = 0
+    regions = []
+    for r in uc.mem_regions():
+        regions.append(r)
+    #
+    regions.sort()
+    for r in regions:
+        offset = r[0]
+        fd.write("region (0x%08X-0x%08X) prot:%d\n"%(r[0], r[1], r[2]))
+        for addr in range(r[0], r[1]+1):
+            if (offset % line_connt == 0):
+                fd.write("0x%08X: "%offset)
+            #
+            b = uc.mem_read(addr, 1).hex().upper()
+            fd.write(" %s"%b)
+            offset = offset + 1
+            if (offset % line_connt == 0):
+                fd.write("\n")
+            #
+        #
+    #
+#

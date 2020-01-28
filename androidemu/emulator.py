@@ -78,7 +78,7 @@ class Emulator:
         #注意，原有缺陷，libc_preinit init array中访问R1参数是从内核传过来的
         #而这里直接将0映射空间，,强行运行过去，因为R1刚好为0,否则会报memory unmap异常
         #TODO 初始化libc时候R1参数模拟内核传过去的KernelArgumentBlock
-        self.mu.mem_map(0x0, 0x00100000, UC_PROT_READ | UC_PROT_WRITE)
+        self.mu.mem_map(0x0, 0x00001000, UC_PROT_READ | UC_PROT_WRITE)
 
         # Android
         self.system_properties = {"libc.debug.malloc.options": ""}
