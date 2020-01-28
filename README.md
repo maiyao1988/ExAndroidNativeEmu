@@ -1,20 +1,13 @@
-# AndroidNativeEmu
+# ExAndroidNativeEmu
 
-Allows you to partly emulate an Android native library.
+This a improved version from [AndroidNativeEmu](https://github.com/AeonLucid/AndroidNativeEmu).
 
-This is an educational project to learn more about the ELF file format and [Unicorn](https://github.com/unicorn-engine/unicorn).
-
-[中文README](README_cn.md)
-
-## Features
-
-- Emulation of the [JNI Invocation API](https://docs.oracle.com/javase/7/docs/technotes/guides/jni/spec/invocation.html) so `JNI_OnLoad` can be called properly.
-- Emulation of native memory for malloc / memcpy.
-- Emulation of syscalls (SVC #0) instruction.
-- Hooking through the symbol table.
-- All JavaVM, JNIEnv and hooked functions are handled by python.
-- Enable VFP support.
-
+## Features Besides AndroidNativeEmu
+ - rewrite memory mapping module, fully support jemalloc
+ - more debug utils.
+ - some misc bug fix
+ - stop all runing when exception instead of just skip one emulator runing
+ 
 ## Usage
 
 > In the future this will be possible through pypi.
@@ -32,27 +25,11 @@ Make sure you are using python 3.7.
 > 4. Download their `Windows - Core engine` package [here](http://www.keystone-engine.org/download/) for your python arch.
 > 5. Put the `keystone.dll` in `C:\location_to_python\Lib\site-packages\keystone\`.
 
-## TODO
-
-- Improve file descriptors in `vfs/file_system.py` so they are re-useable.
-- Add a way for the VirtualFileSystem to give back dynamic files, such as `/proc/self/status`, `/proc/self/status` but also `/dev/urandom`.
-- Library consumers must be able to easily rebuild the needed Java classes for a native library, which are used by the native library through the JNIEnv.
-  - ~~Classes~~
-  - ~~Objects~~
-  - ~~Methods~~
-  - ~~Native methods~~
-  - Fields
-  - Types
-  - Reflection
-
 ## Dependencies
 
 - [Unicorn CPU emulator framework](https://github.com/unicorn-engine/unicorn)
 - [Keystone assembler framework](https://github.com/keystone-engine/keystone)
 
-## Resources
-
-All resources used while developing AndroidNativeEmu.
 
 ### Text sources
 - https://greek0.net/elf.html
@@ -66,3 +43,4 @@ All resources used while developing AndroidNativeEmu.
 ### Code sources
 - https://github.com/lunixbochs/usercorn
 - https://github.com/slick1015/pad_unpacker (SVC 0 instruction)
+- https://github.com/AeonLucid/AndroidNativeEmu
