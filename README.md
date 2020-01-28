@@ -1,12 +1,12 @@
 # ExAndroidNativeEmu
 
-This a improved version from [AndroidNativeEmu](https://github.com/AeonLucid/AndroidNativeEmu).
+This a personal improved version from [AndroidNativeEmu](https://github.com/AeonLucid/AndroidNativeEmu).
 
-## Features Besides AndroidNativeEmu
+## Difference between AndroidNativeEmu
  - rewrite memory mapping module, fully support jemalloc
- - more debug utils.
+ - more debug utils, pretty printing for instrction and memory.
  - some misc bug fix
- - stop all runing when exception instead of just skip one emulator runing
+ - stop all runing when getting exception  nstead of just skip one emulator runing for easily bug detecting...
  
 ## Usage
 
