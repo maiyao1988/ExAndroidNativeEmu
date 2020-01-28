@@ -101,7 +101,7 @@ def hook_mem_read(uc, access, address, size, value, user_data):
         logger.debug("read mutex")
         data = uc.mem_read(address, size)
         v = int.from_bytes(data, byteorder='little', signed=False)
-        logger.debug(">>> Memory READ at 0x%08X, data size = %u, pc: 0x%08X, data value = 0x%s" % (address, size, pc, v))
+        logger.debug(">>> Memory READ at 0x%08X, data size = %u,  data value = 0x%08X, pc: 0x%08X," % (address, size, v, pc))
     #
 #
 
