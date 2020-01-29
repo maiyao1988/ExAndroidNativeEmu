@@ -32,3 +32,15 @@ class Module:
         else:
             return None
 
+    def call_init(self, emu):                
+        if (self.init_addr != 0):
+            print("Calling init 0x%08X for: %s " % (self.init_addr, self.filename))
+            emu.call_native(self.init_addr)
+        #
+        for fun_ptr in self.init_array:
+            print("Calling Init_array %s function: 0x%08X " %(self.filename, fun_ptr))
+            emu.call_native(fun_ptr)
+        #
+        
+    #
+

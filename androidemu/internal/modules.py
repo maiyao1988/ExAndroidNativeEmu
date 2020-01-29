@@ -266,16 +266,9 @@ class Modules:
             }
             '''
             if do_init:
-                if (module.init_addr != 0):
-                    logger.debug("Calling init 0x%08X for: %s " % (module.init_addr, filename))
-                    self.emu.call_native(module.init_addr)
-                #
-                logger.debug("Calling init_array for: %s " % filename)
-                for fun_ptr in module.init_array:
-                    logger.debug("Calling Init function: 0x%08X " % fun_ptr)
-                    self.emu.call_native(fun_ptr)
-                #
+                module.call_init(self.emu)
             #
+            logger.info("finish load lib %s"%filename)
             return module
 
     def _elf_get_symval(self, elf, elf_base, symbol):
