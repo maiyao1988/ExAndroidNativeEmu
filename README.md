@@ -4,7 +4,7 @@ This a personal improved version from [AndroidNativeEmu](https://github.com/Aeon
 
 ## Difference between AndroidNativeEmu
  - Rewrite memory mapping module, fully support jemalloc
- - More debug utils, pretty printing for instrction and memory.
+ - More debug utils, pretty printing for instruction and memory.
  - Some misc bug fix
  - Stop all runing when getting exception  instead of just skip one emulator runing for easily bug detecting...
  - Support ELF DT_INIT call
