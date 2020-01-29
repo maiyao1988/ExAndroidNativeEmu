@@ -208,7 +208,7 @@ class Modules:
                         logger.error("Unhandled relocation type %i." % rel_info_type)
 
             # Store information about loaded module.
-            module = Module(filename, load_base, bound_high - bound_low, symbols_resolved, init_array)
+            module = Module(filename, load_base, bound_high - bound_low, symbols_resolved, init_addr, init_array)
             self.modules.append(module)
             #TODO init tls like linker
             '''
