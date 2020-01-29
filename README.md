@@ -9,6 +9,11 @@ This a personal improved version from [AndroidNativeEmu](https://github.com/Aeon
  - Stop all runing when getting exception  instead of just skip one emulator runing for easily bug detecting...
  - Support ELF DT_INIT call
  
+## TODO
+ - Simulate linker TLS initialization.
+ - Support well known virtual file like /proc/self/maps...
+ - Get rid of dependency on Section Header when loading ELF.
+ 
 ## Usage
 
 > In the future this will be possible through pypi.
