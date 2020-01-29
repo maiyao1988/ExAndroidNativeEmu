@@ -1,6 +1,6 @@
 # ExAndroidNativeEmu
 
-This a personal improved version from [AndroidNativeEmu](https://github.com/AeonLucid/AndroidNativeEmu).
+This a personal improved version of [AndroidNativeEmu](https://github.com/AeonLucid/AndroidNativeEmu).
 
 ## Difference between AndroidNativeEmu
  - Rewrite memory mapping module, fully support jemalloc
