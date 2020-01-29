@@ -1,6 +1,6 @@
 import logging
 import os
-
+import sys
 from androidemu.hooker import Hooker
 from androidemu.internal.modules import Modules
 from androidemu.native.memory import NativeMemory
@@ -18,10 +18,11 @@ class NativeHooks:
     :type hooker Hooker
     """
 
-    def __init__(self, emu, memory, modules, hooker):
+    def __init__(self, emu, memory, modules, hooker, vfs_root):
         self._emu = emu
         self._memory = memory
         self._modules = modules
+        self.__vfs_root = vfs_root
         self.atexit = []
 
         modules.add_symbol_hook('__system_property_get', hooker.write_function(self.system_property_get) + 1)
@@ -55,13 +56,22 @@ class NativeHooks:
         path = memory_helpers.read_utf8(uc, path)
         logger.debug("Called dlopen(%s)" % path)
 
-        if path == 'libvendorconn.so':
-            lib = os.path.realpath(os.path.join(__file__, '..', '..', '..', 'samples', 'example_binaries', 'libvendorconn.so'))
-            mod = self._emu.load_library(lib)
-
+        #redirect path on matter what path in vm runing
+        fullpath = None
+        if (os.path.isabs(path)):
+            fullpath = "%s/%s"%(self.__vfs_root, path)
+        else:
+            fullpath = "%s/system/lib/%s"%(self.__vfs_root, path)
+        #
+        if (os.path.exists(fullpath)):
+            mod = self._emu.load_library(fullpath)
             return mod.base
+        else:
+            #raise RuntimeError("dlopen %s not found!!!"%fullpath)
+            return 0
+        #
+    #
 
-        return None
 
     @native_method
     def dlclose(self, uc, handle):

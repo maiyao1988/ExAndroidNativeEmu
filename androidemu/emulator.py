@@ -66,9 +66,10 @@ class Emulator:
     :type modules Modules
     :type memory Memory
     """
-    def __init__(self, vfs_root=None, vfp_inst_set=False):
+    def __init__(self, vfs_root="vfs", vfp_inst_set=False):
         # Unicorn.
         self.mu = Uc(UC_ARCH_ARM, UC_MODE_ARM)
+        self.__vfs_root = vfs_root
 
         if vfp_inst_set:
             self._enable_vfp()
@@ -76,7 +77,7 @@ class Emulator:
 
         #注意，原有缺陷，libc_preinit init array中访问R1参数是从内核传过来的
         #而这里直接将0映射空间，,强行运行过去，因为R1刚好为0,否则会报memory unmap异常
-        #FIXME:MRC指令总是返回0
+        #FIXME:MRC指令总是返回0,TLS模擬
         #TODO 初始化libc时候R1参数模拟内核传过去的KernelArgumentBlock
         self.mu.mem_map(0x0, 0x00001000, UC_PROT_READ | UC_PROT_WRITE)
 
@@ -96,11 +97,7 @@ class Emulator:
         self.syscall_hooks = SyscallHooks(self.mu, self.syscall_handler)
 
         # File System
-        if vfs_root is not None:
-            self.vfs = VirtualFileSystem(vfs_root, self.syscall_handler)
-        else:
-            self.vfs = None
-
+        self.vfs = VirtualFileSystem(vfs_root, self.syscall_handler)
         # Hooker
         self.memory.map(config.HOOK_MEMORY_BASE, config.HOOK_MEMORY_SIZE, UC_PROT_READ | UC_PROT_WRITE | UC_PROT_EXEC)
         self.hooker = Hooker(self, config.HOOK_MEMORY_BASE, config.HOOK_MEMORY_SIZE)
@@ -113,13 +110,12 @@ class Emulator:
         self.modules = Modules(self)
         # Native
         self.native_memory = NativeMemory(self.mu, self.memory, self.syscall_handler, self.vfs)
-        self.native_hooks = NativeHooks(self, self.native_memory, self.modules, self.hooker)
+        self.native_hooks = NativeHooks(self, self.native_memory, self.modules, self.hooker, self.__vfs_root)
 
         # Tracer
         self.tracer = Tracer(self.mu, self.modules)
 
     #
-
 
     def load_library(self, filename, do_init=True):
         libmod = self.modules.load_module(filename)
