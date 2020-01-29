@@ -6,6 +6,7 @@ from androidemu.config import WRITE_FSTAT_TIMES
 from androidemu.cpu.syscall_handlers import SyscallHandlers
 from androidemu.utils import memory_helpers
 from androidemu.vfs import file_helpers
+import androidemu.utils.misc_utils
 
 logger = logging.getLogger(__name__)
 
@@ -47,20 +48,9 @@ class VirtualFileSystem:
         syscall_handler.set_handler(0x147, "fstatat64", 4, self._handle_fstatat64)
 
     def translate_path(self, filename):
-        if filename.startswith("/"):
-            filename = filename[1:]
-
-        if os.name == 'nt':
-            filename = filename.replace(':', '_')
-
-        file_path = posixpath.join(self._root_path, filename)
-        file_path = posixpath.normpath(file_path)
-
-        if posixpath.commonpath([file_path, self._root_path]) != self._root_path:
-            raise RuntimeError("Emulated binary tried to escape vfs jail.")
-
-        return file_path
-
+        return androidemu.utils.misc_utils.redirect_path(self._root_path, filename)
+    #
+    
     def _store_fd(self, name, name_virt, file_descriptor):
         next_fd = self._file_descriptor_counter
         self._file_descriptor_counter += 1

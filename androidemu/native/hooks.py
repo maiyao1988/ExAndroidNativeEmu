@@ -7,6 +7,7 @@ from androidemu.native.memory import NativeMemory
 
 from androidemu.java.helpers.native_method import native_method
 from androidemu.utils import memory_helpers
+import androidemu.utils.misc_utils
 
 logger = logging.getLogger(__name__)
 
@@ -57,12 +58,7 @@ class NativeHooks:
         logger.debug("Called dlopen(%s)" % path)
 
         #redirect path on matter what path in vm runing
-        fullpath = None
-        if (os.path.isabs(path)):
-            fullpath = "%s/%s"%(self.__vfs_root, path)
-        else:
-            fullpath = "%s/system/lib/%s"%(self.__vfs_root, path)
-        #
+        fullpath = androidemu.utils.misc_utils.redirect_path(self.__vfs_root, path)
         if (os.path.exists(fullpath)):
             mod = self._emu.load_library(fullpath)
             return mod.base
