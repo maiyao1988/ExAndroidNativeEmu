@@ -8,6 +8,7 @@ This a personal improved version from [AndroidNativeEmu](https://github.com/Aeon
  - Some misc bug fix
  - Stop all runing when getting exception  instead of just skip one emulator runing for easily bug detecting...
  - Support ELF DT_INIT call
+ - Auto Load dependency so.
  
 ## TODO
  - Simulate linker TLS initialization.
