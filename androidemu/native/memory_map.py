@@ -9,8 +9,9 @@ PAGE_SIZE = 0x1000
 class MemoryMap:
 
     @staticmethod
-    def is_contains(addr1, end1, addr2, end2):
-        return (addr1 <= addr2 and end1 >= end2)
+    def __is_overlap(addr1, end1, addr2, end2):
+        r= (addr1 <= addr2 and end1 >= end2) or (addr2 <= addr1 and end2 >= end1) or (end1 > addr2 and addr1 < end2) or  (end2 > addr1 and addr2 < end1)
+        return r
     #
 
     def __init__(self, mu, alloc_min_addr, alloc_max_addr):
@@ -32,23 +33,28 @@ class MemoryMap:
                 #
                 regions.sort()
                 map_base = -1
-                if(len(regions)<1):
+                l_regions = len(regions)
+                if(l_regions<1):
                     map_base = self._alloc_min_addr
                 else:
-                    last_end = regions[0][1]+1
-                    for r in regions[1:]:
-                        empty_sz =  r[0] - last_end
-                        if (empty_sz >= size):
-                            map_base = last_end
-                            break
-                        last_end = r[1]+1
+                    prefer_start = self._alloc_min_addr
+                    next_loop = True
+                    while next_loop:
+                        next_loop = False
+                        for r in regions:
+                            if (self.__is_overlap(prefer_start, prefer_start+size, r[0], r[1]+1)):
+                                prefer_start = r[1]+1
+                                next_loop = True
+                                break
+                            #
+                        #
                     #
-                #
-                if (map_base >= self._alloc_min_addr and map_base <= self._alloc_max_addr):
-                    map_base = self._alloc_min_addr
-                    return -1
-                #
+                    map_base = prefer_start
+                #    
 
+                if (map_base > self._alloc_max_addr or map_base < self._alloc_min_addr):
+                    raise RuntimeError("mmap error map_base 0x%08X out of range (0x%08X-0x%08X)!!!"%(map_base, self._alloc_min_addr, self._alloc_max_addr))
+                #
                 print("before mem_map addr:0x%08X, sz:0x%08X"%(map_base, size))
 
                 self.__mu.mem_map(map_base, size, perms=prot)

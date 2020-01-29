@@ -23,7 +23,7 @@ def hook_code(mu, address, size, user_data):
             logger.error("addr 0x%08X out of range"%(address,))
             sys.exit(-1)
         #
-        androidemu.utils.debug_utils.dump_registers(mu, sys.stdout)
+        #androidemu.utils.debug_utils.dump_registers(mu, sys.stdout)
         androidemu.utils.debug_utils.dump_code(emu, address, size, sys.stdout)
     except Exception as e:
         logger.exception("exception in hook_code")
@@ -92,7 +92,7 @@ emulator.load_library("samples/example_binaries/libstdc++.so")
 emulator.load_library("samples/example_binaries/libm.so")
 lib_module = emulator.load_library("samples/example_binaries/libnative-lib_jni.so")
 
-androidemu.utils.debug_utils.dump_symbols(emulator, sys.stdout)
+#androidemu.utils.debug_utils.dump_symbols(emulator, sys.stdout)
 
 # Show loaded modules.
 logger.info("Loaded modules:")

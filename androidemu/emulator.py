@@ -124,7 +124,7 @@ class Emulator:
     def load_library(self, filename, do_init=True):
         libmod = self.modules.load_module(filename)
         if do_init:
-            logger.debug("Calling init for: %s " % filename)
+            logger.debug("Calling init_array for: %s " % filename)
             for fun_ptr in libmod.init_array:
                 logger.debug("Calling Init function: %x " % fun_ptr)
                 self.call_native(fun_ptr)

@@ -57,6 +57,7 @@ class Modules:
     def load_module(self, filename):
         logger.debug("Loading module '%s'." % filename)
 
+        #do sth like linker
         with open(filename, 'rb') as fstream:
             elf = ELFFile(fstream)
 
@@ -112,6 +113,7 @@ class Modules:
             init_array_size = 0
             init_array_offset = 0
             init_array = []
+            init_addr = 0
             for x in elf.iter_segments():
                 if x.header.p_type == "PT_DYNAMIC":
                     for tag in x.iter_tags():
@@ -119,15 +121,15 @@ class Modules:
                             init_array_size = tag.entry.d_val
                         elif tag.entry.d_tag == "DT_INIT_ARRAY":
                             init_array_offset = tag.entry.d_val
-
+                        elif tag.entry.d_tag == "DT_INIT":
+                            init_addr = tag.entry.d_val + load_base
+                        #
+                    #
+                #
+            #
             for _ in range(int(init_array_size / 4)):
-                # covert va to file offset
-                for seg in load_segments:
-                    if seg.header.p_vaddr <= init_array_offset < seg.header.p_vaddr + seg.header.p_memsz:
-                        init_array_foffset = init_array_offset - seg.header.p_vaddr + seg.header.p_offset
-                fstream.seek(init_array_foffset)
-                data = fstream.read(4)
-                fun_ptr = struct.unpack('I', data)[0]
+                b = self.emu.mu.mem_read(load_base+init_array_offset, 4)
+                fun_ptr = int.from_bytes(b, byteorder='little', signed = False)
                 if fun_ptr != 0:
                     # fun_ptr += load_base
                     init_array.append(fun_ptr + load_base)
@@ -208,7 +210,24 @@ class Modules:
             # Store information about loaded module.
             module = Module(filename, load_base, bound_high - bound_low, symbols_resolved, init_array)
             self.modules.append(module)
-
+            #TODO init tls like linker
+            '''
+            void __libc_init_tls(KernelArgumentBlock& args) {
+                __libc_auxv = args.auxv;
+                unsigned stack_top = (__get_sp() & ~(PAGE_SIZE - 1)) + PAGE_SIZE;
+                unsigned stack_size = 128 * 1024;
+                unsigned stack_bottom = stack_top - stack_size;
+                static void* tls[BIONIC_TLS_SLOTS];
+                static pthread_internal_t thread;
+                thread.tid = gettid();
+                thread.tls = tls;
+                pthread_attr_init(&thread.attr);
+                pthread_attr_setstack(&thread.attr, (void*) stack_bottom, stack_size);
+                _init_thread(&thread, false);
+                __init_tls(&thread);
+                tls[TLS_SLOT_BIONIC_PREINIT] = &args;
+            }
+            '''
             return module
 
     def _elf_get_symval(self, elf, elf_base, symbol):
