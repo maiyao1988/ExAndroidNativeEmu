@@ -7,6 +7,7 @@ This a personal improved version from [AndroidNativeEmu](https://github.com/Aeon
  - more debug utils, pretty printing for instrction and memory.
  - some misc bug fix
  - stop all runing when getting exception  nstead of just skip one emulator runing for easily bug detecting...
+ - support ELF DT_INIT call
  
 ## Usage
 
