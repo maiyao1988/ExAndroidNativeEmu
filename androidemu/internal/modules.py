@@ -59,6 +59,7 @@ class Modules:
 
         #do sth like linker
         with open(filename, 'rb') as fstream:
+            #TODO: load elf without Section Header,pyelftools do not support.
             elf = ELFFile(fstream)
 
             dynamic = elf.header.e_type == 'ET_DYN'
@@ -125,6 +126,7 @@ class Modules:
                             init_addr = tag.entry.d_val + load_base
                         #
                     #
+                    break
                 #
             #
             for _ in range(int(init_array_size / 4)):
