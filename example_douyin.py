@@ -147,13 +147,13 @@ try:
     emulator.call_symbol(lib_module, 'JNI_OnLoad', emulator.java_vm.address_ptr, 0x00)
 
     # bypass douyin checks
-    '''
+    
     with open("samples/misc/app_process32", 'rb') as ap:
         data = ap.read()
         len1 = len(data) + 1024 - (len(data) % 1024)
         emulator.mu.mem_map(0xab006000, len1)
         emulator.mu.mem_write(0xab006000, data)
-    '''
+    
     x = XGorgen()
     data = 'acde74a94e6b493a3399fac83c7c08b35D58B21D9582AF77647FC9902E36AE70f9c001e9334e6e94916682224fbe4e5f00000000000000000000000000000000'
     data = bytearray(bytes.fromhex(data))
