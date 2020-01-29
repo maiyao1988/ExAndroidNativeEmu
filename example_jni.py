@@ -80,16 +80,12 @@ emulator = Emulator(
 
 # Register Java class.
 emulator.java_classloader.add_class(MainActivity)
-emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
+#emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
 
 emulator.mu.hook_add(UC_HOOK_MEM_WRITE, hook_mem_write)
 emulator.mu.hook_add(UC_HOOK_MEM_READ, hook_mem_read)
 
 # Load all libraries.
-emulator.load_library("samples/example_binaries/libdl.so")
-emulator.load_library("samples/example_binaries/libc.so")
-emulator.load_library("samples/example_binaries/libstdc++.so")
-emulator.load_library("samples/example_binaries/libm.so")
 lib_module = emulator.load_library("samples/example_binaries/libnative-lib_jni.so")
 
 #androidemu.utils.debug_utils.dump_symbols(emulator, sys.stdout)
@@ -99,12 +95,6 @@ logger.info("Loaded modules:")
 
 for module in emulator.modules:
     logger.info("=> 0x%08x - %s" % (module.base, module.filename))
-
-# Debug
-# emulator.mu.hook_add(UC_HOOK_CODE, debug_utils.hook_code)
-# emulator.mu.hook_add(UC_HOOK_MEM_UNMAPPED, debug_utils.hook_unmapped)
-# emulator.mu.hook_add(UC_HOOK_MEM_WRITE, debug_utils.hook_mem_write)
-# emulator.mu.hook_add(UC_HOOK_MEM_READ, debug_utils.hook_mem_read)
 
 try:
     # Run JNI_OnLoad.

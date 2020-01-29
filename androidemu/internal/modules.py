@@ -8,8 +8,9 @@ from unicorn import UC_PROT_ALL
 from androidemu.internal import get_segment_protection, arm,align
 from androidemu.internal.module import Module
 from androidemu.internal.symbol_resolved import SymbolResolved
+from androidemu.utils import memory_helpers,misc_utils
 from androidemu import config
-import struct
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -19,11 +20,12 @@ class Modules:
     :type emu androidemu.emulator.Emulator
     :type modules list[Module]
     """
-    def __init__(self, emu):
+    def __init__(self, emu, vfs_root):
         self.emu = emu
         self.modules = list()
         self.symbol_hooks = dict()
         self.counter_memory = config.BASE_ADDR
+        self.__vfs_root = vfs_root
     #
 
     def add_symbol_hook(self, symbol_name, addr):
@@ -47,6 +49,15 @@ class Modules:
             if module.base == addr:
                 return module
         return None
+    #
+
+    def find_module_by_name(self, filename):
+        for m in self.modules:
+            if (m.filename == filename):
+                return m
+            #
+        #
+    #
     
     def mem_reserve(self, size):
         (_, size_aligned) = align(0, size, True)
@@ -54,9 +65,12 @@ class Modules:
         self.counter_memory += size_aligned
         return ret
 
-    def load_module(self, filename):
+    def load_module(self, filename, do_init=True):
+        m = self.find_module_by_name(filename)
+        if (m != None):
+            return m
+        #
         logger.debug("Loading module '%s'." % filename)
-
         #do sth like linker
         with open(filename, 'rb') as fstream:
             #TODO: load elf without Section Header,pyelftools do not support.
@@ -99,22 +113,13 @@ class Modules:
                 self.emu.mu.mem_write(load_base + segment.header.p_vaddr, segment.data())
             #
 
-            rel_section = None
-            for section in elf.iter_sections():
-                if not isinstance(section, RelocationSection):
-                    continue
-                rel_section = section
-                break
-            #
-            # Parse section header (Linking view).
-            dynsym = elf.get_section_by_name(".dynsym")
-            dynstr = elf.get_section_by_name(".dynstr")
-
             # Find init array.
             init_array_size = 0
             init_array_offset = 0
             init_array = []
             init_addr = 0
+            dynstr_addr = 0
+            dt_needed= []
             for x in elf.iter_segments():
                 if x.header.p_type == "PT_DYNAMIC":
                     for tag in x.iter_tags():
@@ -124,11 +129,39 @@ class Modules:
                             init_array_offset = tag.entry.d_val
                         elif tag.entry.d_tag == "DT_INIT":
                             init_addr = tag.entry.d_val + load_base
+                        elif tag.entry.d_tag == "DT_STRTAB":
+                            dynstr_addr = tag.entry.d_val + load_base
+                        elif tag.entry.d_tag == "DT_NEEDED":
+                            dt_needed.append(tag.entry.d_val)
                         #
                     #
                     break
                 #
             #
+            so_needed = []
+            for str_off in dt_needed:
+                str_addr = dynstr_addr + str_off
+                so_name = memory_helpers.read_utf8(self.emu.mu, str_addr)
+                so_needed.append(so_name)
+            #
+            for so_name in so_needed:
+                path = misc_utils.redirect_path(self.__vfs_root, so_name)
+                if (not os.path.exists(path)):
+                    logger.warn("%s needed by %s do not exist in vfs %s"%(so_name, filename, self.__vfs_root))
+                    continue
+                #
+                libmod = self.load_module(path)
+            #
+
+            rel_section = None
+            for section in elf.iter_sections():
+                if not isinstance(section, RelocationSection):
+                    continue
+                rel_section = section
+                break
+            #
+            # Parse section header (Linking view).
+            dynsym = elf.get_section_by_name(".dynsym")
             for _ in range(int(init_array_size / 4)):
                 b = self.emu.mu.mem_read(load_base+init_array_offset, 4)
                 fun_ptr = int.from_bytes(b, byteorder='little', signed = False)
@@ -147,6 +180,8 @@ class Modules:
                             init_array.append(load_base + sym_value)
                             # print ("find init array for :%s %x" % (filename, sym_value))
                             break
+                        #
+                    #
                 init_array_offset += 4
 
             # Resolve all symbols.
@@ -230,6 +265,17 @@ class Modules:
                 tls[TLS_SLOT_BIONIC_PREINIT] = &args;
             }
             '''
+            if do_init:
+                if (module.init_addr != 0):
+                    logger.debug("Calling init 0x%08X for: %s " % (module.init_addr, filename))
+                    self.emu.call_native(module.init_addr)
+                #
+                logger.debug("Calling init_array for: %s " % filename)
+                for fun_ptr in module.init_array:
+                    logger.debug("Calling Init function: 0x%08X " % fun_ptr)
+                    self.emu.call_native(fun_ptr)
+                #
+            #
             return module
 
     def _elf_get_symval(self, elf, elf_base, symbol):

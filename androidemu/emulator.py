@@ -107,7 +107,7 @@ class Emulator:
         self.java_vm = JavaVM(self, self.java_classloader, self.hooker)
 
         # Executable data.
-        self.modules = Modules(self)
+        self.modules = Modules(self, self.__vfs_root)
         # Native
         self.native_memory = NativeMemory(self.mu, self.memory, self.syscall_handler, self.vfs)
         self.native_hooks = NativeHooks(self, self.native_memory, self.modules, self.hooker, self.__vfs_root)
@@ -118,16 +118,7 @@ class Emulator:
     #
 
     def load_library(self, filename, do_init=True):
-        libmod = self.modules.load_module(filename)
-        if do_init:
-            if (libmod.init_addr != 0):
-                logger.debug("Calling init 0x%08X for: %s " % (libmod.init_addr, filename))
-                self.call_native(libmod.init_addr)
-            #
-            logger.debug("Calling init_array for: %s " % filename)
-            for fun_ptr in libmod.init_array:
-                logger.debug("Calling Init function: 0x%08X " % fun_ptr)
-                self.call_native(fun_ptr)
+        libmod = self.modules.load_module(filename, True)
         return libmod
 
     def call_symbol(self, module, symbol_name, *argv):
