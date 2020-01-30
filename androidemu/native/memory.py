@@ -4,7 +4,8 @@ from androidemu.native.memory_map import MemoryMap
 import os
 
 class NativeMemory:
-
+    #system call table
+    #https://chromium.googlesource.com/chromiumos/docs/+/master/constants/syscalls.md#arm-32_bit_EABI
     """
     :type mu Uc
     :type syscall_handler SyscallHandlers
@@ -14,6 +15,7 @@ class NativeMemory:
         self._file_system = file_system
         self._memory = memory
         self._syscall_handler = syscall_handler
+        self._syscall_handler.set_handler(0x2d, "brk", 1, self._handle_brk)
         self._syscall_handler.set_handler(0x5B, "munmap", 2, self._handle_munmap)
         self._syscall_handler.set_handler(0x7D, "mprotect", 3, self._handle_mprotect)
         self._syscall_handler.set_handler(0xC0, "mmap2", 6, self._handle_mmap2)
@@ -21,6 +23,12 @@ class NativeMemory:
 
     def allocate(self, length, prot=UC_PROT_READ | UC_PROT_WRITE):
         return self._memory.map(0, length, prot)
+
+    def _handle_brk(self, uc, brk):
+        #TODO: set errno
+        #TODO: implement 
+        return -1
+    #
 
     def _handle_munmap(self, uc, addr, len_in):
         #TODO: set errno

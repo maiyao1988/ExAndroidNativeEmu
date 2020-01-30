@@ -2,12 +2,13 @@ import logging
 import os
 import posixpath
 
+from androidemu.const.linux import *
 from androidemu.config import WRITE_FSTAT_TIMES
 from androidemu.cpu.syscall_handlers import SyscallHandlers
 from androidemu.utils import memory_helpers
 from androidemu.vfs import file_helpers
 import androidemu.utils.misc_utils
-
+import fcntl
 logger = logging.getLogger(__name__)
 
 OVERRIDE_URANDOM = False
@@ -42,8 +43,11 @@ class VirtualFileSystem:
         syscall_handler.set_handler(0x5, "open", 3, self._handle_open)
         syscall_handler.set_handler(0x6, "close", 1, self._handle_close)
         syscall_handler.set_handler(0x21, "access", 2, self._handle_access)
+        syscall_handler.set_handler(0x37, "fcntl", 6, self.__fcntl64)
         syscall_handler.set_handler(0x92, "writev", 3, self._handle_writev)
         syscall_handler.set_handler(0xC5, "fstat64", 2, self._handle_fstat64)
+        syscall_handler.set_handler(0xDD, "fcntl64", 6, self.__fcntl64)
+        syscall_handler.set_handler(0x10A, "statfs64", 3, self.__statfs64)
         syscall_handler.set_handler(0x142, "openat", 4, self._handle_openat)
         syscall_handler.set_handler(0x147, "fstatat64", 4, self._handle_fstatat64)
 
@@ -216,6 +220,21 @@ class VirtualFileSystem:
         file_helpers.stat_to_memory(mu, buf_ptr, stat, WRITE_FSTAT_TIMES)
 
         return 0
+
+    def __fcntl64(self, mu, fd, cmd, arg1, arg2, arg3, arg4):
+        if (fd in self._file_descriptors):
+            if (F_GETFL == cmd):
+                return fcntl.fcntl(fd, cmd)
+            elif(F_SETFL == cmd):
+                return fcntl.fcntl(fd, cmd, arg1)
+        #
+        raise NotImplementedError()
+    #
+
+    def __statfs64(self, mu, path, sz, buf):
+        #TODO
+        return -1
+    #
 
     def _handle_openat(self, mu, dfd, filename_ptr, flags, mode):
         """

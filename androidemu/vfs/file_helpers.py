@@ -6,8 +6,31 @@ from unicorn import Uc
 
 from androidemu.config import WRITE_FSTAT_TIMES
 
-
+def _get_def_dic():
+   return {
+        'st_dev': 0,
+        '__st_ino': 0,
+        'st_mode': 0,
+        'st_nlink': 0,
+        'st_uid': 0,
+        'st_gid': 0,
+        'st_rdev': 0,
+        'st_size': 0,
+        'st_blksize': 0,
+        'st_blocks': 0,
+        'st_atime': 0,
+        'st_atime_ns': 0,
+        'st_mtime': 0,
+        'st_mtime_ns': 0,
+        'st_ctime': 0,
+        'st_ctime_ns': 0,
+        'st_ino': 0
+    }
+#
 def stat64(path):
+    if (path == None):
+        return _get_def_dic()
+    #
     meta_path = path + '.meta_emu'
 
     if not os.path.exists(meta_path):
@@ -17,25 +40,7 @@ def stat64(path):
             os.makedirs(meta_path_dir)
 
         with open(meta_path, 'w') as f:
-            json.dump({
-                'st_dev': 0,
-                '__st_ino': 0,
-                'st_mode': 0,
-                'st_nlink': 0,
-                'st_uid': 0,
-                'st_gid': 0,
-                'st_rdev': 0,
-                'st_size': 0,
-                'st_blksize': 0,
-                'st_blocks': 0,
-                'st_atime': 0,
-                'st_atime_ns': 0,
-                'st_mtime': 0,
-                'st_mtime_ns': 0,
-                'st_ctime': 0,
-                'st_ctime_ns': 0,
-                'st_ino': 0
-            }, fp=f, indent=4)
+            json.dump(self.__get_def_dic(), fp=f, indent=4)
 
     with open(meta_path, 'r') as f:
         return json.load(fp=f)

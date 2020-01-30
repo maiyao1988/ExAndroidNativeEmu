@@ -29,6 +29,8 @@ logger = logging.getLogger(__name__)
 
 class SyscallHooks:
 
+    #system call table
+    #https://chromium.googlesource.com/chromiumos/docs/+/master/constants/syscalls.md#arm-32_bit_EABI
     """
     :type mu Uc
     :type syscall_handler SyscallHandlers
@@ -38,10 +40,12 @@ class SyscallHooks:
  
         self._syscall_handler = syscall_handler
         self._syscall_handler.set_handler(0x14, "getpid", 0, self._getpid)
+        self._syscall_handler.set_handler(0x37, "fcntl", 6, self.__fcntl64)
         self._syscall_handler.set_handler(0x43, "sigaction", 3, self._handle_sigaction)
         self._syscall_handler.set_handler(0x4E, "gettimeofday", 2, self._handle_gettimeofday)
         self._syscall_handler.set_handler(0xAC, "prctl", 5, self._handle_prctl)
         self._syscall_handler.set_handler(0xAF, "sigprocmask", 3, self._handle_sigprocmask)
+        self._syscall_handler.set_handler(0xDD, "fcntl64", 6, self.__fcntl64)
         self._syscall_handler.set_handler(0xE0, "gettid", 0, self._gettid)
         self._syscall_handler.set_handler(0xF0, "futex", 6, self._handle_futex)
         self._syscall_handler.set_handler(0x10c, "tgkill", 3, self._handle_tgkill)
@@ -118,6 +122,12 @@ class SyscallHooks:
             return 0
         else:
             raise NotImplementedError("Unsupported prctl option %d (0x%x)" % (option, option))
+    #
+
+    def __fcntl64(self, mu, fd, cmd, arg1, arg2, arg3, arg4):
+        if (fd == 0):
+            return 0
+        raise NotImplementedError()
     #
 
     def _handle_sigprocmask(self, mu, how, set, oset):

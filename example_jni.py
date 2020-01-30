@@ -80,7 +80,7 @@ emulator = Emulator(
 
 # Register Java class.
 emulator.java_classloader.add_class(MainActivity)
-#emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
+emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
 
 emulator.mu.hook_add(UC_HOOK_MEM_WRITE, hook_mem_write)
 emulator.mu.hook_add(UC_HOOK_MEM_READ, hook_mem_read)

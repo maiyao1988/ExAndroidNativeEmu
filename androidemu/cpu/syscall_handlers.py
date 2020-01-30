@@ -44,7 +44,6 @@ class SyscallHandlers:
             except:
                 logger.exception("An error occured during in %x syscall hander, stopping emulation" % idx)
                 mu.emu_stop()
-                sys.exit(-1)
                 raise
 
             if result is not None:
@@ -57,6 +56,5 @@ class SyscallHandlers:
             
             logger.exception(error)
             mu.emu_stop()
-            sys.exit(-1)
             raise RuntimeError(error)
             
