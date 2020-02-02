@@ -95,12 +95,13 @@ def create_cfg(f, base_addr, size, thumb):
                     target_block = block_starts_map[child_start]
                 #
 
-                print ("cb_now %r child %r"%(cb_now, target_block))
+                #print ("cb_now %r child %r"%(cb_now, target_block))
                 cb_now.childrend.add(target_block)
                 #print(cb_now.childrend)
                 target_block.parent.add(cb_now)
 
                 addr_next = addr + i.size
+                print (addr_next)
                 if (addr_next < base_addr + size):
                     next_block = None
                     if (addr_next not in block_starts_map):
