@@ -32,7 +32,6 @@ def dump_memory(mu, fd, min_addr=0, max_addr=0xFFFFFFFF):
     #
 #
 
-
 def dump_registers(mu, fd):
     r0 = mu.reg_read(UC_ARM_REG_R0)
     r1 = mu.reg_read(UC_ARM_REG_R1)
@@ -112,6 +111,15 @@ def dump_code(emu, address, size, fd):
         line = "(%20s[0x%08X])[%-12s]0x%08X:\t%s\t%s"%(name, base, instruction_str, addr-base, i.mnemonic.upper(), i.op_str.upper())
         if (funName != None):
             line = line + " ; %s"%funName
+        #
+
+        regs_read = i.regs_access()[0]
+        regs = ""
+        for rid in regs_read:
+            regs = regs +"%s=0x%08X "%(i.reg_name(rid).upper(), mu.reg_read(rid))
+        #
+        if (regs != ""):
+            line = "%s\t;(%s)"%(line, regs)
         #
         fd.write(line+"\n")
 #

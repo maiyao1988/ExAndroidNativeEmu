@@ -11,10 +11,12 @@ from androidemu.java.java_class_def import JavaClassDef
 from androidemu.java.java_method_def import java_method_def
 import androidemu.config
 import androidemu.utils.debug_utils
+from androidemu.utils.chain_log import ChainLogger
 
 import capstone
 import traceback
 
+g_cfd = ChainLogger(sys.stdout, "./ins-jni.txt")
 # Add debugging.
 def hook_code(mu, address, size, user_data):
     try:
@@ -24,7 +26,7 @@ def hook_code(mu, address, size, user_data):
             sys.exit(-1)
         #
         #androidemu.utils.debug_utils.dump_registers(mu, sys.stdout)
-        androidemu.utils.debug_utils.dump_code(emu, address, size, sys.stdout)
+        androidemu.utils.debug_utils.dump_code(emu, address, size, g_cfd)
     except Exception as e:
         logger.exception("exception in hook_code")
         sys.exit(-1)

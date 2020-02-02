@@ -23,16 +23,17 @@ def java_method_def(name, signature, native=False, args_list=None, modifier=None
                          # method has been declared in
                 *argv  # Extra args.
             )
-
+        #
         def normal_wrapper(*args, **kwargs):
             result = func(*args, **kwargs)
             return result
-
+        #
         wrapper = native_wrapper if native else normal_wrapper
         wrapper.jvm_method = JavaMethodDef(func.__name__, wrapper, name, signature, native,
                                            args_list=args_list,
                                            modifier=modifier,
                                            ignore=ignore)
         return wrapper
-
+    #
     return java_method_def_real
+#

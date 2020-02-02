@@ -10,6 +10,7 @@ import androidemu.utils.debug_utils
 from androidemu.java.helpers.native_method import native_method
 from androidemu.java.java_class_def import JavaClassDef
 from androidemu.java.java_method_def import java_method_def
+from androidemu.utils.chain_log import ChainLogger
 
 
 class XGorgen(metaclass=JavaClassDef, jvm_name='com/ss/sys/ces/a'):
@@ -91,6 +92,7 @@ class java_lang_Thread(metaclass=JavaClassDef, jvm_name='java/lang/Thread'):
                 java_lang_StackTraceElement("dalvik.system.NativeStart")
                 ]
 
+g_cfd = ChainLogger(sys.stdout, "./ins-douyin.txt")
 # Add debugging.
 def hook_code(mu, address, size, user_data):
     try:
@@ -100,7 +102,7 @@ def hook_code(mu, address, size, user_data):
             sys.exit(-1)
         #
         #androidemu.utils.debug_utils.dump_registers(mu, sys.stdout)
-        androidemu.utils.debug_utils.dump_code(emu, address, size, sys.stdout)
+        androidemu.utils.debug_utils.dump_code(emu, address, size, g_cfd)
     except Exception as e:
         logger.exception("exception in hook_code")
         sys.exit(-1)
@@ -122,7 +124,7 @@ emulator = Emulator(
     vfs_root=posixpath.join(posixpath.dirname(__file__), "vfs")
 )
 
-#emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
+emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
 # Register Java class.
 # emulator.java_classloader.add_class(MainActivity)
 emulator.java_classloader.add_class(XGorgen)

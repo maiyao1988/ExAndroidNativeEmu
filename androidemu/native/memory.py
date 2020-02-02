@@ -4,8 +4,6 @@ from androidemu.native.memory_map import MemoryMap
 import os
 
 class NativeMemory:
-    #system call table
-    #https://chromium.googlesource.com/chromiumos/docs/+/master/constants/syscalls.md#arm-32_bit_EABI
     """
     :type mu Uc
     :type syscall_handler SyscallHandlers
