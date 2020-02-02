@@ -102,7 +102,7 @@ def hook_code(mu, address, size, user_data):
             sys.exit(-1)
         #
         #androidemu.utils.debug_utils.dump_registers(mu, sys.stdout)
-        androidemu.utils.debug_utils.dump_code(emu, address, size, g_cfd)
+        androidemu.utils.debug_utils.dump_code(emu, address, size, sys.stdout)
     except Exception as e:
         logger.exception("exception in hook_code")
         sys.exit(-1)

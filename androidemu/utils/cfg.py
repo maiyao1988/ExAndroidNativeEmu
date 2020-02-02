@@ -75,6 +75,7 @@ def create_cfg(f, base_addr, size, thumb):
         #
 
         mne = i.mnemonic
+        addr_next = addr + i.size
         if (mne[0] == "b" and mne not in ("bl", "blx")):
             op = i.op_str.strip()
             if (op[0] == "#"):
@@ -100,29 +101,26 @@ def create_cfg(f, base_addr, size, thumb):
                 #print(cb_now.childrend)
                 target_block.parent.add(cb_now)
 
-                addr_next = addr + i.size
                 print (addr_next)
                 if (addr_next < base_addr + size):
-                    next_block = None
                     if (addr_next not in block_starts_map):
                         next_block = CodeBlock()
                         next_block.start = addr_next
                         block_starts_map[next_block.start] = next_block
                         blocks.append(next_block)
                     #
-                    else:
-                        next_block = block_starts_map[addr_next]
-                    #
-                    if mne != "b":
-                        #print ("cb_now %r child %r"%(cb_now, next_block))
-                        next_block.parent.add(cb_now)
-                        cb_now.childrend.add(next_block)
-                    #
                 #
                 #print (next_block)
             #
         #
-        
+        if (addr_next in block_starts_map):
+            if mne != "b":
+                #print ("cb_now %r child %r"%(cb_now, next_block))
+                next_block = block_starts_map[addr_next]
+                next_block.parent.add(cb_now)
+                cb_now.childrend.add(next_block)
+            #
+        #
         if (i.size + addr >= base_addr + size):
             cb_now.end = i.size+addr
         #
