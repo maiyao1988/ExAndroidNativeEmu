@@ -32,7 +32,6 @@ class ReferenceTable:
         # Add to table.
         self._table[index] = obj
 
-        # Return local reference.
         return index
 
     def remove(self, obj):
@@ -52,9 +51,10 @@ class ReferenceTable:
     def get(self, idx):
         if idx not in self._table:
             return None
-
-        return self._table[idx]
-
+        r = self._table[idx]
+        return r
+    #
+    
     def in_range(self, idx):
         return self._start <= idx < self._start + self._size
 

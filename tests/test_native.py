@@ -3,10 +3,10 @@ import posixpath
 import sys
 import unittest
 
-from unicorn import UC_HOOK_MEM_UNMAPPED, UC_HOOK_CODE
+from unicorn import *
+from androidemu.utils import debug_utils
 
 from androidemu.emulator import Emulator
-from samples import debug_utils
 
 logging.basicConfig(
     stream=sys.stdout,
@@ -14,8 +14,22 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)7s %(name)34s | %(message)s"
 )
 
-dir_samples = posixpath.join(posixpath.dirname(__file__), "..", "samples")
+logger = logging.getLogger(__name__)
 
+def hook_code(mu, address, size, user_data):
+    try:
+        emu = user_data
+        if (not emu.memory.check_addr(address, UC_PROT_EXEC)):
+            logger.error("addr 0x%08X out of range"%(address,))
+            sys.exit(-1)
+        #
+        #androidemu.utils.debug_utils.dump_registers(mu, sys.stdout)
+        debug_utils.dump_code(emu, address, size, sys.stdout)
+    except Exception as e:
+        logger.exception("exception in hook_code")
+        sys.exit(-1)
+    #
+#
 
 class TestNative(unittest.TestCase):
 
@@ -23,18 +37,14 @@ class TestNative(unittest.TestCase):
         # Initialize emulator
         emulator = Emulator(
             vfp_inst_set=True,
-            vfs_root=posixpath.join(dir_samples, "vfs")
+            vfs_root="vfs"
         )
 
-        emulator.load_library(posixpath.join(dir_samples, "example_binaries", "libdl.so"), do_init=False)
-        emulator.load_library(posixpath.join(dir_samples, "example_binaries", "libc.so"), do_init=False)
-        emulator.load_library(posixpath.join(dir_samples, "example_binaries", "libstdc++.so"), do_init=False)
         module = emulator.load_library(posixpath.join(posixpath.dirname(__file__), "test_binaries", "test_native.so"), do_init=False)
 
-        print(module.base)
+        self.assertTrue(module.base != 0)
 
-        emulator.mu.hook_add(UC_HOOK_CODE, debug_utils.hook_code)
-        emulator.mu.hook_add(UC_HOOK_MEM_UNMAPPED, debug_utils.hook_unmapped)
-        res = emulator.call_symbol(module, 'Java_com_aeonlucid_nativetesting_MainActivity_testOneArg', emulator.java_vm.address_ptr, 0x00, 'Hello', 'asd')
-
-        print(res)
+        #emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
+        res = emulator.call_symbol(module, 'Java_com_aeonlucid_nativetesting_MainActivity_testOneArg', emulator.java_vm.jni_env.address_ptr, 0x00, 'Hello')
+        self.assertEqual(res, "Hello")
+#

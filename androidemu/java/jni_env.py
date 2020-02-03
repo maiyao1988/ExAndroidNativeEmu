@@ -274,7 +274,6 @@ class JNIEnv:
     def add_local_reference(self, obj):
         if not isinstance(obj, jobject):
             raise ValueError('Expected a jobject.')
-
         return self._locals.add(obj)
 
     def set_local_reference(self, idx, newobj):
@@ -284,7 +283,8 @@ class JNIEnv:
         self._locals.set(idx, newobj)
 
     def get_local_reference(self, idx):
-        return self._locals.get(idx)
+        r = self._locals.get(idx)
+        return r
 
     def delete_local_reference(self, obj):
         if not isinstance(obj, jobject):
@@ -1382,11 +1382,12 @@ class JNIEnv:
         raise NotImplementedError()
 
     @native_method
-    def new_string_utf(self, mu, env, bytes_ptr):
-        string = memory_helpers.read_utf8(mu, bytes_ptr)
+    def new_string_utf(self, mu, env, utf8_ptr):
+        string = memory_helpers.read_utf8(mu, utf8_ptr)
         logger.debug("JNIEnv->NewStringUtf(%s) was called" % string)
-
-        return self.add_local_reference(jstring(string))
+        idx = self.add_local_reference(jstring(string))
+        logger.debug("JNIEnv->NewStringUtf(%s) return id(%d)" %(string, idx))
+        return idx
 
     @native_method
     def get_string_utf_length(self, mu, env):
@@ -1411,7 +1412,8 @@ class JNIEnv:
 
     @native_method
     def release_string_utf_chars(self, mu, env, string, utf_ptr):
-        pass
+        logger.debug("JNIEnv->ReleaseStringUtfChars(%u, 0x%08X) was called" % (string, utf_ptr))
+    #
 
     @native_method
     def get_array_length(self, mu, env, array):

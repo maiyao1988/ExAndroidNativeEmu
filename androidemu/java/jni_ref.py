@@ -8,7 +8,8 @@ class jobject:
 
     def __init__(self, value=None):
         self.value = value
-
+    #
+#
 
 class jclass(jobject):
 
@@ -20,7 +21,11 @@ class jstring(jobject):
 
     def __init__(self, value=None):
         super().__init__(value)
+    #
 
+    def __repr__(self):
+        return "jstring(%s)"%self.value
+    #
 
 class jarray(jobject):
 

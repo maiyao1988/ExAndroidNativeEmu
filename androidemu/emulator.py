@@ -128,7 +128,8 @@ class Emulator:
             logger.error('Unable to find symbol \'%s\' in module \'%s\'.' % (symbol_name, module.filename))
             return
 
-        self.call_native(symbol.address, *argv)
+        return self.call_native(symbol.address, *argv)
+    #
 
     def call_native(self, addr, *argv):
         # Detect JNI call
@@ -149,10 +150,8 @@ class Emulator:
             if is_jni:
                 result_idx = self.mu.reg_read(UC_ARM_REG_R0)
                 result = self.java_vm.jni_env.get_local_reference(result_idx)
-
                 if result is None:
                     return result
-
                 return result.value
         finally:
             # Clear locals if jni.
