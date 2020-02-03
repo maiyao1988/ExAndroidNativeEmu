@@ -150,7 +150,7 @@ try:
 
     # bypass douyin checks
     
-    with open("samples/misc/app_process32", 'rb') as ap:
+    with open("tests/bin/app_process32", 'rb') as ap:
         data = ap.read()
         len1 = len(data) + 1024 - (len(data) % 1024)
         emulator.mu.mem_map(0xab006000, len1)
