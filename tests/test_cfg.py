@@ -23,11 +23,20 @@ class TestCfg(unittest.TestCase):
 
         with open("vfs/system/lib/libc.so", "rb") as f:
             blocks = cfg.create_cfg(f, 0x0000D218, 768, False)
+            #print(blocks[9])
+            #print(blocks[9].parent)
+            #print(blocks[9].childs)
+            #print(blocks)
             self.assertTrue(len(cbs), len(blocks))
             for i in range(0, len(cbs)):
-                self.assertTrue(cbs[i].start == blocks[i].start)
-                self.assertTrue(cbs[i].end == blocks[i].end)
+                self.assertEqual(cbs[i].start, blocks[i].start)
+                self.assertEqual(cbs[i].end, blocks[i].end)
             #
+            b = blocks[9]
+            self.assertEqual(b.start, 0x0000D350)
+            self.assertEqual(b.end, 0x0000D364)
+            self.assertEqual(len(b.parent), 3)
+            self.assertEqual(len(b.childs), 0)
         #
     #
 #

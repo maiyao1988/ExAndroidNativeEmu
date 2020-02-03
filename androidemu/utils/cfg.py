@@ -15,7 +15,7 @@ class CodeBlock:
         self.start = start
         self.end = end
         self.parent = set()
-        self.childrend = set()
+        self.childs = set()
     #
 
     def __repr__(self):
@@ -28,7 +28,14 @@ class CodeBlock:
     
 #
 
-
+#判断是否无条件跳转
+def is_jmp_no_ret(regs_write, i):
+    mne = i.mnemonic
+    #b xxxx
+    #mov pc, xxx
+    #pop xxx, pc,xxx
+    return mne == "b" or ((11 in regs_write) and (mne.startswith("pop") or mne.startswith("mov")  or mne.startswith("ldm")))  
+#
 #create cfg like ida
 def create_cfg(f, base_addr, size, thumb):
     #thumb is same as IDA Atl+G
@@ -68,49 +75,56 @@ def create_cfg(f, base_addr, size, thumb):
 
         mne = i.mnemonic
         addr_next = addr + i.size
-        if (mne[0] == "b" and mne not in ("bl", "blx")):
-            op = i.op_str.strip()
-            if (op[0] == "#"):
-                cb_now.end = addr
-                child_start = int(op[1:], 16)
-                target_block = None
-                if (child_start not in block_starts_map):
-                    #print ("hhh %08X"%child_start)
-                    target_block = CodeBlock()
-                    target_block.start = child_start
-                    block_starts_map[child_start] = target_block
-                    blocks.append(target_block)
-                    if (child_start < addr):
-                        block_back_jump.add(target_block)
-                    #
-                #
-                else:
-                    target_block = block_starts_map[child_start]
-                #
+        regs_write = i.regs_access()[1]
 
-                #print ("cb_now %r child %r"%(cb_now, target_block))
-                cb_now.childrend.add(target_block)
-                #print(cb_now.childrend)
-                target_block.parent.add(cb_now)
-
-                print (addr_next)
-                if (addr_next < base_addr + size):
-                    if (addr_next not in block_starts_map):
-                        next_block = CodeBlock()
-                        next_block.start = addr_next
-                        block_starts_map[next_block.start] = next_block
-                        blocks.append(next_block)
+        #11 is REG_PC ID
+        #如果是改pc的指令
+        if (11 in regs_write and mne not in ("bl", "blx")):
+            if (mne[0] == "b"):
+                op = i.op_str.strip()
+                #跳转指令，需要
+                if (op[0] == "#"):
+                    cb_now.end = addr
+                    child_start = int(op[1:], 16)
+                    target_block = None
+                    if (child_start not in block_starts_map):
+                        #print ("hhh %08X"%child_start)
+                        target_block = CodeBlock()
+                        target_block.start = child_start
+                        block_starts_map[child_start] = target_block
+                        blocks.append(target_block)
+                        if (child_start < addr):
+                            block_back_jump.add(target_block)
+                        #
                     #
+                    else:
+                        target_block = block_starts_map[child_start]
+                    #
+
+                    #print ("cb_now %r child %r"%(cb_now, target_block))
+                    cb_now.childs.add(target_block)
+                    #print(cb_now.childs)
+                    target_block.parent.add(cb_now)
                 #
-                #print (next_block)
+            #
+            #print (mne + " " + i.op_str)
+            if (addr_next < base_addr + size):
+                if (addr_next not in block_starts_map):
+                    next_block = CodeBlock()
+                    next_block.start = addr_next
+                    block_starts_map[next_block.start] = next_block
+                    blocks.append(next_block)
+                #
             #
         #
+        #print (hex(addr_next))
         if (addr_next in block_starts_map):
-            if mne != "b":
-                #print ("cb_now %r child %r"%(cb_now, next_block))
+            #print ("cb_now %r child %r"%(cb_now, next_block))
+            #pop xxx, pc mov pc, xxx and so on
+            if not is_jmp_no_ret(regs_write, i):
                 next_block = block_starts_map[addr_next]
                 next_block.parent.add(cb_now)
-                cb_now.childrend.add(next_block)
+                cb_now.childs.add(next_block)
             #
         #
         if (i.size + addr >= base_addr + size):
@@ -119,6 +133,7 @@ def create_cfg(f, base_addr, size, thumb):
     #
     blocks.sort()
 
+    #修复因为有往回跳的指令而出现的block overlap问题
     for bjb in block_back_jump:
         print ("fix bjb:%r"%bjb)
         for b in blocks:
@@ -129,9 +144,10 @@ def create_cfg(f, base_addr, size, thumb):
 
                 bjb.end = b.end
                 b.end = bjb.start
-                bjb.childrend.update(b.childrend)
-                b.childrend.clear()
-                b.childrend.add(bjb)
+                bjb.childs.update(b.childs)
+                b.childs.clear()
+                b.childs.add(bjb)
+                bjb.parent.add(b)
                 break
             #
         #
