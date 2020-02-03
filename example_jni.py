@@ -88,7 +88,7 @@ emulator.mu.hook_add(UC_HOOK_MEM_WRITE, hook_mem_write)
 emulator.mu.hook_add(UC_HOOK_MEM_READ, hook_mem_read)
 
 # Load all libraries.
-lib_module = emulator.load_library("samples/example_binaries/libnative-lib_jni.so")
+lib_module = emulator.load_library("tests/bin/libnative-lib_jni.so")
 
 #androidemu.utils.debug_utils.dump_symbols(emulator, sys.stdout)
 
