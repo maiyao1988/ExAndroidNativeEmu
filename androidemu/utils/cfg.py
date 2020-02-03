@@ -9,31 +9,23 @@ g_md_thumb.detail = True
 g_md_arm = capstone.Cs(capstone.CS_ARCH_ARM, capstone.CS_MODE_ARM)
 g_md_arm.detail = True
 
-def hex2sign_int(hex_str):
-    intval = int(hex_str, 16)
-    if intval >= 0x7FFFFFFF:
-        intval -= 0xFFFFFFFF
-        intval -= 1
-    #
-    return intval
-#
-
 class CodeBlock:
 
-    def __init__(self):
-        self.start = 0
-        self.end = 0
+    def __init__(self, start=0, end=0):
+        self.start = start
+        self.end = end
         self.parent = set()
         self.childrend = set()
     #
 
     def __repr__(self):
-        return "CodeBlock 0x%08X-0x%08X"%(self.start, self.end)
+        return "CodeBlock(0x%08X, 0x%08X)"%(self.start, self.end)
     #
 
     def __lt__(self, others):
         return self.start < others.start
     #
+    
 #
 
 
@@ -60,7 +52,7 @@ def create_cfg(f, base_addr, size, thumb):
     blocks.append(cb)
     block_back_jump = set()
     cb_now = None
-    print (hex(base_addr))
+    #print (hex(base_addr))
     for i in codes:
         addr = i.address
         

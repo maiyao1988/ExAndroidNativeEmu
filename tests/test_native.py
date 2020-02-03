@@ -40,11 +40,12 @@ class TestNative(unittest.TestCase):
             vfs_root="vfs"
         )
 
-        module = emulator.load_library(posixpath.join(posixpath.dirname(__file__), "test_binaries", "test_native.so"), do_init=False)
+        module = emulator.load_library(posixpath.join(posixpath.dirname(__file__), "bin", "test_native.so"), do_init=False)
 
         self.assertTrue(module.base != 0)
 
         #emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
         res = emulator.call_symbol(module, 'Java_com_aeonlucid_nativetesting_MainActivity_testOneArg', emulator.java_vm.jni_env.address_ptr, 0x00, 'Hello')
         self.assertEqual(res, "Hello")
+    #
 #
