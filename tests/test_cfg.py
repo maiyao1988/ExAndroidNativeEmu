@@ -10,7 +10,7 @@ from androidemu.utils.cfg import CodeBlock
 
 class TestCfg(unittest.TestCase):
 
-    def test_cfg(self):
+    def test_cfg_libc_pthread_create(self):
         cbs = [CodeBlock(0x0000D218, 0x0000D268), CodeBlock(0x0000D268, 0x0000D274), 
         CodeBlock(0x0000D274, 0x0000D28C), CodeBlock(0x0000D28C, 0x0000D2C8), 
         CodeBlock(0x0000D2C8, 0x0000D2D4), CodeBlock(0x0000D2D4, 0x0000D314), CodeBlock(0x0000D314, 0x0000D32C), 
