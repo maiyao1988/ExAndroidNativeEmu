@@ -6,7 +6,7 @@ This a personal improved version of [AndroidNativeEmu](https://github.com/AeonLu
  - Rewrite memory mapping module, fully support jemalloc
  - More debug utils, pretty printing for instruction and memory.
  - Some misc bug fix
- - Stop all runing when getting exception  instead of just skip one emulator runing for easily bug detecting...
+ - Stop all runing when getting exception  instead of just skiping one emulator runing for easily bug detecting...
  - Support ELF DT_INIT call
  - Auto Load dependency so.
  
