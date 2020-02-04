@@ -80,7 +80,7 @@ class Emulator:
         #FIXME:MRC指令总是返回0,TLS模擬
         #TODO 初始化libc时候R1参数模拟内核传过去的KernelArgumentBlock
         self.mu.mem_map(0x0, 0x00001000, UC_PROT_READ | UC_PROT_WRITE)
-
+        
         # Android
         self.system_properties = {"libc.debug.malloc.options": ""}
         self.memory = MemoryMap(self.mu, config.MAP_ALLOC_BASE, config.MAP_ALLOC_BASE+config.MAP_ALLOC_SIZE)

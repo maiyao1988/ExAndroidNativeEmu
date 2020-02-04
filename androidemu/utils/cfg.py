@@ -34,7 +34,8 @@ def is_jmp_no_ret(regs_write, i):
     #b xxxx
     #mov pc, xxx
     #pop xxx, pc,xxx
-    return mne == "b" or ((11 in regs_write) and (mne.startswith("pop") or mne.startswith("mov")  or mne.startswith("ldm")))  
+    return mne == "b" or mne == "b.w" or \
+    ((11 in regs_write) and (mne.startswith("pop") or mne.startswith("mov")  or mne.startswith("ldm")))  
 #
 #create cfg like ida
 def create_cfg(f, base_addr, size, thumb):
