@@ -147,14 +147,21 @@ class Emulator:
             self.mu.reg_write(UC_ARM_REG_LR, stop_pos)
             r = self.mu.emu_start(addr, stop_pos - 1)
             # Read result from locals if jni.
+            res = self.mu.reg_read(UC_ARM_REG_R0)
             if is_jni:
-                result_idx = self.mu.reg_read(UC_ARM_REG_R0)
+                result_idx = res
                 result = self.java_vm.jni_env.get_local_reference(result_idx)
                 if result is None:
                     return result
                 return result.value
+            #
+            else:
+                return res
+            #
         finally:
             # Clear locals if jni.
             if is_jni:
                 self.java_vm.jni_env.clear_locals()
+            #
+        #
 
