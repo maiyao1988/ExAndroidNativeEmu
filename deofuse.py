@@ -120,12 +120,17 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, md):
         #TODO:识别所有类型的跳转,现在只支持bxx导致的跳转
         mne = code_last.mnemonic
         if (mne[0] == "b" and mne not in ("blx", "bl")):
+            #主动跳转，结尾为跳转指令
             #print(lb)
             jmp_addr = get_jmp_dest(code_last)
             assert(jmp_addr != None)
             if (jmp_addr in addr2ofb):
-                print ("logic block %r should fix"%lb)
+                print ("logic block with b %r should fix"%lb)
             #
+        #
+        elif(lb.end in addr2ofb):
+            #如果结尾就是控制块的开始，也需要patch
+            print ("logic block %r should fix"%lb)
         #
     #
 #
@@ -151,7 +156,7 @@ if __name__ == "__main__":
     is_thumb = sys.argv[5] != "0"
 
     shutil.copyfile(path, out_path)
-    with  open(path, "rb") as f:
+    with open(path, "rb") as f:
         blocks = cfg.create_cfg(f, base_addr, end_addr - base_addr, is_thumb)
         #print (blocks)
         if (is_thumb):
