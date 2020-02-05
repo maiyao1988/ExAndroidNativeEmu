@@ -96,11 +96,8 @@ def create_cfg(f, base_addr, size, thumb):
         mne = i.mnemonic
         addr_next = addr + i.size
 
-        #11 is REG_PC ID
-        #如果是改pc的指令
         line = "[%16s]0x%08X:\t%s\t%s"%(instruction_str, addr, i.mnemonic.upper(), i.op_str.upper())
         #print (line)
-
         if (is_jmp(i)):
             if (mne[0] == "b"):
                 #print("in")
