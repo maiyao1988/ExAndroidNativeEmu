@@ -29,14 +29,35 @@ class CodeBlock:
 #
 
 #判断是否无条件跳转
-def is_jmp_no_ret(regs_write, i):
+def is_jmp_no_ret(i):
     mne = i.mnemonic
     #b xxxx
     #mov pc, xxx
     #pop xxx, pc,xxx
-    return mne == "b" or mne == "b.w" or \
-    ((11 in regs_write) and (mne.startswith("pop") or mne.startswith("mov")  or mne.startswith("ldm")))  
+    
+    if (mne == "b" or mne == "b.w"):
+        return True
+    elif (mne.startswith("pop") or mne.startswith("ldm")):
+        if (i.op_str.find("pc") > -1):
+            return True
+    elif (mne.startswith("mov")):
+        if (i.op_str.split()[0].strip() == "pc"):
+            return True
+        #
+    #
+    return False
 #
+
+#判断是否无条件跳转
+def is_jmp(i):
+    mne = i.mnemonic
+    if (is_jmp_no_ret(i)):
+        return True
+    if mne[0] == "b" and mne not in ("bl", "blx", "bic"):
+        return True
+    #
+#
+
 #create cfg like ida
 def create_cfg(f, base_addr, size, thumb):
     #thumb is same as IDA Atl+G
@@ -65,8 +86,6 @@ def create_cfg(f, base_addr, size, thumb):
         addr = i.address
         
         instruction_str = ''.join('{:02X} '.format(x) for x in i.bytes)
-        #line = "[%16s]0x%08X:\t%s\t%s"%(instruction_str, addr, i.mnemonic.upper(), i.op_str.upper())
-        #print (line)
         if (addr in block_starts_map):
             if (cb_now != None):
                 cb_now.end = addr
@@ -76,17 +95,21 @@ def create_cfg(f, base_addr, size, thumb):
 
         mne = i.mnemonic
         addr_next = addr + i.size
-        regs_write = i.regs_access()[1]
 
         #11 is REG_PC ID
         #如果是改pc的指令
-        if (11 in regs_write and mne not in ("bl", "blx")):
+        line = "[%16s]0x%08X:\t%s\t%s"%(instruction_str, addr, i.mnemonic.upper(), i.op_str.upper())
+        #print (line)
+
+        if (is_jmp(i)):
             if (mne[0] == "b"):
+                #print("in")
                 op = i.op_str.strip()
                 #跳转指令，需要
                 if (op[0] == "#"):
                     cb_now.end = addr
                     child_start = int(op[1:], 16)
+                    #print ("target_block 0x%08X"%child_start)
                     target_block = None
                     if (child_start not in block_starts_map):
                         #print ("hhh %08X"%child_start)
@@ -95,6 +118,7 @@ def create_cfg(f, base_addr, size, thumb):
                         block_starts_map[child_start] = target_block
                         blocks.append(target_block)
                         if (child_start < addr):
+                            #print ("back jump 0x%08X to 0x%08X"%(addr, child_start))
                             block_back_jump.add(target_block)
                         #
                     #
@@ -122,7 +146,7 @@ def create_cfg(f, base_addr, size, thumb):
         if (addr_next in block_starts_map):
             #print ("cb_now %r child %r"%(cb_now, next_block))
             #pop xxx, pc mov pc, xxx and so on
-            if not is_jmp_no_ret(regs_write, i):
+            if not is_jmp_no_ret(i):
                 next_block = block_starts_map[addr_next]
                 next_block.parent.add(cb_now)
                 cb_now.childs.add(next_block)
@@ -149,6 +173,8 @@ def create_cfg(f, base_addr, size, thumb):
                 b.childs.clear()
                 b.childs.add(bjb)
                 bjb.parent.add(b)
+
+                print ("-new bjb:%r"%bjb)
                 break
             #
         #

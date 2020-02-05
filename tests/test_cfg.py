@@ -10,6 +10,10 @@ from androidemu.utils.cfg import CodeBlock
 
 class TestCfg(unittest.TestCase):
 
+    def hex_addr_assert(self, a, b):
+        self.assertEqual(a, b, "0x%08X != 0x%08X"%(a, b))
+    #
+
     def test_cfg_libc_pthread_create(self):
         cbs = [CodeBlock(0x0000D218, 0x0000D268), CodeBlock(0x0000D268, 0x0000D274), 
         CodeBlock(0x0000D274, 0x0000D28C), CodeBlock(0x0000D28C, 0x0000D2C8), 
@@ -29,12 +33,12 @@ class TestCfg(unittest.TestCase):
             #print(blocks)
             self.assertTrue(len(cbs), len(blocks))
             for i in range(0, len(cbs)):
-                self.assertEqual(cbs[i].start, blocks[i].start)
-                self.assertEqual(cbs[i].end, blocks[i].end)
+                self.hex_addr_assert(cbs[i].start, blocks[i].start)
+                self.hex_addr_assert(cbs[i].end, blocks[i].end)
             #
             b = blocks[9]
-            self.assertEqual(b.start, 0x0000D350)
-            self.assertEqual(b.end, 0x0000D364)
+            self.hex_addr_assert(b.start, 0x0000D350)
+            self.hex_addr_assert(b.end, 0x0000D364)
             self.assertEqual(len(b.parent), 3)
             self.assertEqual(len(b.childs), 0)
         #
