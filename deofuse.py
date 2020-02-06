@@ -6,11 +6,6 @@ from androidemu.utils import cfg
 from androidemu.utils import tracer
 import shutil
 
-g_md_thumb = capstone.Cs(capstone.CS_ARCH_ARM, capstone.CS_MODE_THUMB)
-g_md_thumb.detail = True
-g_md_arm = capstone.Cs(capstone.CS_ARCH_ARM, capstone.CS_MODE_ARM)
-g_md_arm.detail = True
-
 def get_jmp_dest(i):
     if (i.mnemonic[0] == 'b'):
         if (i.op_str[0] == '#'):
@@ -121,7 +116,7 @@ def find_ofuse_control_block(f, blocks, base_addr, md):
 
 #将所有逻辑块最后的跳转，patch到另外一个有意义的逻辑块上
 #而不是去到控制块上再分发。简化逻辑，需要依赖unicorn做虚拟执行找到下一个真实逻辑块
-def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, md):
+def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, md, ks):
     addr2ofb = {}
     for ofb in obfuses_blocks:
         addr2ofb[ofb.start] = ofb
@@ -142,14 +137,49 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, md):
             assert(jmp_addr != None)
             if (jmp_addr in addr2ofb):
                 #跳转到控制块的，说明要修正到真实块
-                print ("logic block with b %r should fix 0x%08X"%(lb, code_last.address))
+                #print ("logic block with b %r should fix 0x%08X"%(lb, code_last.address))
                 nexts = trace.get_next_trace_addr(code_last.address)
-                print("nexts for 0x%08X [%s]"%(code_last.address, nexts))
+                if (nexts == None):
+                    #没有后续原因是后续block没有跑过，暂时不处理
+                    print("warning true block %r has no sub true block, maybe path not run in unicorn"%lb)
+                #
+                else:
+                    n_next = len(nexts)
+
+                    #暂时没见过超过两个的目的地
+                    assert(n_next < 3)
+                    nexts_list = list(nexts)
+                    if (n_next == 0):
+                        print("warning true block %r has no sub true block"%lb)
+                    elif (n_next == 1):
+                        #只有一个目的地
+                        op = mne
+                        #改跳转地址到下一个真实块
+
+                        code = "%s #0x%X"%(op, nexts_list[0])
+
+                        #print("nexts for 0x%08X [%s]"%(code_last.address, nexts))
+
+                        #print("cs code (%s) %r addr %x"%(code, list(code_last.bytes), code_last.address))
+                        code_r = "%s %s"%(code_last.mnemonic, code_last.op_str)
+                        r, count = ks.asm(code, code_last.address)
+                        print("[%r] fix code from (%s) [%r] to (%s) [%r]"%(lb, code_r, list(code_last.bytes), code, r))
+
+                        fo.seek(code_last.address, 0)
+                        fo.write(bytearray(r))
+                    #
+                    elif (n_next == 2):
+                        #TODO:两个目的地，需要根据是否跑过一些指令判断，修正跳转
+                        print ("%r has two destination %r"%(lb, nexts))
+                    #
+                #
             #
         #
         elif(lb.end in addr2ofb):
-            #如果结尾就是控制块的开始，也需要patch
-            print ("logic block %r should fix 0x%08X"%(lb, code_last.address))
+            #TODO:如果结尾就是控制块的开始，也需要patch
+            print ("logic block normal %r should fix 0x%08X"%(lb, code_last.address))
+            nexts = trace.get_next_trace_addr(code_last.address)
+            print("nexts for 0x%08X [%s]"%(code_last.address, nexts))
         #
     #
 #
@@ -181,11 +211,17 @@ if __name__ == "__main__":
     with open(path, "rb") as f:
         blocks = cfg.create_cfg(f, base_addr, end_addr - base_addr, is_thumb)
         #print (blocks)
+        md = None
+        ks = None
         if (is_thumb):
-            md = g_md_thumb
+            md = capstone.Cs(capstone.CS_ARCH_ARM, capstone.CS_MODE_THUMB)
+            ks = keystone.Ks(keystone.KS_ARCH_ARM, keystone.KS_MODE_THUMB)
         else:
-            md = g_md_arm
+            md = g_md_arm = capstone.Cs(capstone.CS_ARCH_ARM, capstone.CS_MODE_ARM)
+            ks = keystone.Ks(keystone.KS_ARCH_ARM, keystone.KS_MODE_ARM) 
         #
+
+        md.detail = True
         of_b, dead_cb = find_ofuse_control_block(f, blocks, base_addr, md)
 
         #print("cbs:%r"%of_b)
@@ -202,7 +238,7 @@ if __name__ == "__main__":
 
         t = tracer.Tracer(trace_path, lib_name, base_addr, end_addr, logic_blocks)
         with open(out_path, "rb+") as fo:
-            codelist = patch_logical_blocks(f, fo, logic_blocks, of_b , t, md)
+            codelist = patch_logical_blocks(f, fo, logic_blocks, of_b , t, md, ks)
         #
     #
 #
