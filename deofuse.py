@@ -1,7 +1,9 @@
 import sys
+import os.path
 import capstone
 import keystone
 from androidemu.utils import cfg
+from androidemu.utils import tracer
 import shutil
 
 g_md_thumb = capstone.Cs(capstone.CS_ARCH_ARM, capstone.CS_MODE_THUMB)
@@ -40,13 +42,13 @@ def find_main_control_block(f, blocks, base_addr, md):
         #实测主控控制块的父亲节点不可能少于4个
         if (len(b.parent) > 4):
             codelist = get_block_codes(f, b, md)
-            #一般主控制块的指令数量少于五个（不完全确定）,且多于一个指令
+            #一般主控制块的指令数量少于6个（不完全确定）,且多于一个指令
             n = len(codelist)
             if (n < 2):
                 continue
             #
             # 这个数量可能需要调整，
-            if (n < 5):
+            if (n < 6):
                 code_last = codelist[n-1]
                 code_cmp = codelist[n-2]
                 if (code_last.mnemonic[0] == "b" and code_cmp.mnemonic=="cmp"):
@@ -87,13 +89,25 @@ def find_ofuse_control_block(f, blocks, base_addr, md):
             #
             continue
         #
-        if (n < 5):
+        if (n < 6):
             code_last = codelist[n-1]
             code_cmp = codelist[n-2]
             
+            maybe_cb = False
             if (code_last.mnemonic[0] == "b"):
+                #如果bxx跟着cmp，则疑似
                 for j in range(n-1):
                     if (codelist[j].mnemonic == "cmp"):
+                        maybe_cb = True
+                        break
+                    #
+                #
+            #
+            if (maybe_cb):
+                #再搜索一次，如果没有出现内存操作，则确认是
+                for j in range(n-1):
+                    mne = codelist[j].mnemonic
+                    if (not mne.startswith("ldr") and not mne.startswith("str")):
                         obfuses_cb.append(b)
                         break
                     #
@@ -107,7 +121,7 @@ def find_ofuse_control_block(f, blocks, base_addr, md):
 
 #将所有逻辑块最后的跳转，patch到另外一个有意义的逻辑块上
 #而不是去到控制块上再分发。简化逻辑，需要依赖unicorn做虚拟执行找到下一个真实逻辑块
-def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, md):
+def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, md):
     addr2ofb = {}
     for ofb in obfuses_blocks:
         addr2ofb[ofb.start] = ofb
@@ -120,17 +134,22 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, md):
         #TODO:识别所有类型的跳转,现在只支持bxx导致的跳转
         mne = code_last.mnemonic
         if (mne[0] == "b" and mne not in ("blx", "bl")):
+            #逻辑块结尾是否还会出现bne这些条件判断？待观察
+            assert(mne == "b" or mne == "b.w")
             #主动跳转，结尾为跳转指令
             #print(lb)
             jmp_addr = get_jmp_dest(code_last)
             assert(jmp_addr != None)
             if (jmp_addr in addr2ofb):
-                print ("logic block with b %r should fix"%lb)
+                #跳转到控制块的，说明要修正到真实块
+                print ("logic block with b %r should fix 0x%08X"%(lb, code_last.address))
+                nexts = trace.get_next_trace_addr(code_last.address)
+                print("nexts for 0x%08X [%s]"%(code_last.address, nexts))
             #
         #
         elif(lb.end in addr2ofb):
             #如果结尾就是控制块的开始，也需要patch
-            print ("logic block %r should fix"%lb)
+            print ("logic block %r should fix 0x%08X"%(lb, code_last.address))
         #
     #
 #
@@ -145,15 +164,18 @@ def list_remove(srclist, listrmove):
 
 #尽量去除控制流平坦化fla
 if __name__ == "__main__":
-    if (len(sys.argv)<5):
-        print("usage %s <elf_path> <elf_out_path> <func_start_hex> <end_start_hex> <is_thumb>"%(sys.argv[0]))
+    if (len(sys.argv)<7):
+        print("usage %s <elf_path> <elf_out_path> <trace_path> <func_start_hex> <end_start_hex> <is_thumb>"%(sys.argv[0]))
         sys.exit(-1)
     #
     path = sys.argv[1]
     out_path = sys.argv[2]
-    base_addr = int(sys.argv[3], 16)
-    end_addr = int(sys.argv[4], 16)
-    is_thumb = sys.argv[5] != "0"
+    trace_path = sys.argv[3]
+    base_addr = int(sys.argv[4], 16)
+    end_addr = int(sys.argv[5], 16)
+    is_thumb = sys.argv[6] != "0"
+
+    lib_name = os.path.basename(path)
 
     shutil.copyfile(path, out_path)
     with open(path, "rb") as f:
@@ -178,8 +200,9 @@ if __name__ == "__main__":
 
         #print ("logic_block:%r"%logic_blocks)
 
-        with open(out_path, "w+") as fo:
-            codelist = patch_logical_blocks(f, fo, logic_blocks, of_b , md)
+        t = tracer.Tracer(trace_path, lib_name, base_addr, end_addr, logic_blocks)
+        with open(out_path, "rb+") as fo:
+            codelist = patch_logical_blocks(f, fo, logic_blocks, of_b , t, md)
         #
     #
 #
