@@ -10,7 +10,7 @@ g_md_arm = capstone.Cs(capstone.CS_ARCH_ARM, capstone.CS_MODE_ARM)
 g_md_arm.detail = True
 
 def get_jmp_dest(i):
-    if (i.mnemonic == 'b'):
+    if (i.mnemonic[0] == 'b'):
         if (i.op_str[0] == '#'):
             jmp_addr = int(i.op_str[1:], 16)
             return jmp_addr
