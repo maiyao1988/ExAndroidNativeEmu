@@ -114,6 +114,17 @@ def find_ofuse_control_block(f, blocks, base_addr, md):
     return obfuses_cb, dead_cb
 #
 
+def clear_control_block(fo, obfuses_blocks):
+    for ob in obfuses_blocks:
+        sz = ob.end - ob.start
+        fo.seek(ob.start, 0)
+        for _ in range(0, sz):
+            b = bytearray([0])
+            fo.write(b)
+        #
+    #
+#
+
 #将所有逻辑块最后的跳转，patch到另外一个有意义的逻辑块上
 #而不是去到控制块上再分发。简化逻辑，需要依赖unicorn做虚拟执行找到下一个真实逻辑块
 def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, md, ks):
@@ -255,6 +266,7 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, md, ks)
             #
         #
     #
+    clear_control_block(fo, obfuses_blocks)
 #
 
 def list_remove(srclist, listrmove):
