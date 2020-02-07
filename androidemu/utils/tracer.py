@@ -1,22 +1,6 @@
 import os
 import sys
 
-class TraceInfo:
-
-    def __init__(self, addr):
-        self.addr = addr
-        self.next = set()
-    #
-
-    def __repr__(self):
-        return "TraceInfo(0x%08X)"%(self.addr,)
-    #
-
-    def __lt__(self, others):
-        return self.addr < others.addr
-    #
-#
-
 #标识指令运行的运行信息
 class Tracer:
 
@@ -33,10 +17,10 @@ class Tracer:
         self.__lib_name = lib_name
         self.__start_addr = start_addr
         self.__end_addr = end_addr
-        self.__addr2trace = {}
+
+        self.__trace_list = []
 
         with open(trace_path, "r") as f:
-            prev_trace_info = None
             for line in f:
                 line = line.strip()
                 if (line.find(lib_name)<0):
@@ -54,6 +38,8 @@ class Tracer:
                     continue
                 #
 
+                self.__trace_list.append(addr)
+                '''
                 trace_info = None
                 if (addr not in self.__addr2trace):
                     trace_info = TraceInfo(addr)
@@ -67,19 +53,41 @@ class Tracer:
                     continue
                 #
                 prev_trace_info.next.add(addr)
+                trace_info.prev.add(prev_trace_info.addr)
                 prev_trace_info = trace_info
+                '''
             #
         #
         #print(self.__addr2trace)
     #
 
-
-    #获取一条指令执行之后，可能执行的下一条指令地址，可能有多条
-    def get_next_trace_addr(self, addr):
-        if (addr in self.__addr2trace):
-            addr = self.__addr2trace[addr].next
-            return addr
+    def get_trace_index(self, addr):
+        out = []
+        l = len(self.__trace_list)
+        for i in range(0, l):
+            if (addr == self.__trace_list[i]):
+                out.append(i)
+            #
         #
-        return None
+        return out
     #
+
+    def get_trace_by_index(self, index):
+        l = len(self.__trace_list)
+        if (index >= l):
+            return None
+        return self.__trace_list[index]
+    #
+
+    def get_trace_next(self, addr):
+        next_addrs = set()
+        indexs = self.get_trace_index(addr)
+        for i in indexs:
+            addr = self.get_trace_by_index(i+1)
+            if (addr != None):
+                next_addrs.add(addr)
+        #
+        return next_addrs
+    #
+
 #

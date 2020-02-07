@@ -138,14 +138,13 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, md, ks)
             if (jmp_addr in addr2ofb):
                 #跳转到控制块的，说明要修正到真实块
                 #print ("logic block with b %r should fix 0x%08X"%(lb, code_last.address))
-                nexts = trace.get_next_trace_addr(code_last.address)
+                nexts = trace.get_trace_next(code_last.address)
                 if (nexts == None):
                     #没有后续原因是后续block没有跑过，暂时不处理
                     print("warning true block %r has no sub true block, maybe path not run in unicorn"%lb)
                 #
                 else:
                     n_next = len(nexts)
-
                     #暂时没见过超过两个的目的地
                     assert(n_next < 3)
                     nexts_list = list(nexts)
@@ -171,6 +170,64 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, md, ks)
                     elif (n_next == 2):
                         #TODO:两个目的地，需要根据是否跑过一些指令判断，修正跳转
                         print ("%r has two destination %r"%(lb, nexts))
+                        assert(n > 1)
+                        itt_code = None
+                        trace_start=-1
+                        itt_mne = ""
+                        #从最后找到第一个条件语句
+                        for id in range(n-2, -1, -1):
+                            code = codelist[id]
+                            mne = code.mnemonic
+                            if (mne.startswith("it")):
+                                #找到itt之后的语句，然后一步步trace下来
+                                trace_start = id+1
+                                itt_code = code
+                                break
+                            #
+                        #
+                        fix_to_addr1 = -1
+                        assert(trace_start >= 0)
+                        code_run_if = codelist[trace_start]
+                        #从itt下一条指令开始跟踪，根据跟踪到的情况确定跳转过去的条件
+                        id_if = trace.get_trace_index(code_run_if.address)
+                        trace_id = id_if[0]
+                        while True:
+                            trace_id = trace_id + 1
+                            addr = trace.get_trace_by_index(trace_id)
+                            print (addr,nexts)
+                            if (addr in nexts):
+                                fix_to_addr1 = addr
+                                break
+                            #
+                        #
+
+                        assert(fix_to_addr1 > 0)
+                        nexts_list.remove(fix_to_addr1)
+                        fix_to_addr2 = nexts_list[0]
+                        
+                        fixed_str1 = "b%s #0x%X"%(itt_code.op_str, fix_to_addr1)
+
+                        fixed_str2 = "b #0x%X"%(fix_to_addr2,)
+
+                        code_r1 = "%s %s"%(itt_code.mnemonic, itt_code.op_str)
+                        code_r2 = "%s %s"%(code_run_if.mnemonic, code_run_if.op_str)
+                        
+                        b1 = ks.asm(fixed_str1, itt_code.address)[0]
+                        b2 = ks.asm(fixed_str2, code_run_if.address)[0]
+
+                        print("[%r] two fix code from (%s) [%r] to (%s) [%r]"%(lb, code_r1, list(itt_code.bytes), fixed_str1, b1))
+                        print("[%r] two fix code from (%s) [%r] to (%s) [%r]"%(lb, code_r2, list(code_run_if.bytes), fixed_str2, b2))
+
+                        fo.seek(itt_code.address)
+                        fo.write(bytearray(b1))
+                        fo.write(bytearray(b2))
+
+                        nleft = lb.end - (itt_code.address+ len(b1) + len(b2))
+                        print ("n left %d"%nleft)
+                        for _ in range(0, nleft):
+                            b = bytearray([0])
+                            fo.write(b)
+                        #
                     #
                 #
             #
@@ -178,8 +235,24 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, md, ks)
         elif(lb.end in addr2ofb):
             #TODO:如果结尾就是控制块的开始，也需要patch
             print ("logic block normal %r should fix 0x%08X"%(lb, code_last.address))
-            nexts = trace.get_next_trace_addr(code_last.address)
-            print("nexts for 0x%08X [%s]"%(code_last.address, nexts))
+            ids = trace.get_trace_index(code_last.address)
+            next_id = ids[0] + 1
+            next_addr = trace.get_trace_by_index(next_id)
+            print("0x%08X next [0x%08X]"%(code_last.address, next_addr))
+            
+            fix_code = "b 0x%x"%(next_addr, )
+            b = ks.asm(fix_code, code_last.address)[0]
+
+            code_r = "%s %s"%(code_last.mnemonic, code_last.op_str)
+            print("[%r] normal fix code from (%s) [%r] to (%s) [%r]"%(lb, code_r, list(code_last.bytes), fix_code, b))
+            #直接patch结尾指令
+            fo.seek(code_last.address)
+            fo.write(bytearray(b))
+            nleft = lb.end - (code_last.address + len(b))
+            for _ in range(0, nleft):
+                b = bytearray([0])
+                fo.write(b)
+            #
         #
     #
 #
