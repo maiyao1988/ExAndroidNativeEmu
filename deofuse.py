@@ -115,14 +115,18 @@ def find_ofuse_control_block(f, blocks, base_addr, md):
 #
 
 def clear_control_block(fo, obfuses_blocks):
+    
     for ob in obfuses_blocks:
         sz = ob.end - ob.start
+        print ("clear %r"%(ob, ))
         fo.seek(ob.start, 0)
         for _ in range(0, sz):
             b = bytearray([0])
+            #print(len(b))
             fo.write(b)
         #
     #
+    
 #
 
 #将所有逻辑块最后的跳转，patch到另外一个有意义的逻辑块上
@@ -139,6 +143,7 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, md, ks)
 
         #TODO:识别所有类型的跳转,现在只支持bxx导致的跳转
         mne = code_last.mnemonic
+        no_run_blocks = []
         if (mne[0] == "b" and mne not in ("blx", "bl")):
             #逻辑块结尾是否还会出现bne这些条件判断？待观察
             assert(mne == "b" or mne == "b.w")
@@ -153,6 +158,7 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, md, ks)
                 if (nexts == None):
                     #没有后续原因是后续block没有跑过，暂时不处理
                     print("warning true block %r has no sub true block, maybe path not run in unicorn"%lb)
+                    no_run_blocks.append(lb)
                 #
                 else:
                     n_next = len(nexts)
@@ -244,7 +250,7 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, md, ks)
             #
         #
         elif(lb.end in addr2ofb):
-            #TODO:如果结尾就是控制块的开始，也需要patch
+            #如果结尾就是控制块的开始，也需要patch
             print ("logic block normal %r should fix 0x%08X"%(lb, code_last.address))
             ids = trace.get_trace_index(code_last.address)
             next_id = ids[0] + 1
@@ -267,6 +273,7 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, md, ks)
         #
     #
     clear_control_block(fo, obfuses_blocks)
+    #clear_control_block(fo, no_run_blocks)
 #
 
 def list_remove(srclist, listrmove):
@@ -317,6 +324,7 @@ if __name__ == "__main__":
         list_remove(logic_blocks, of_b)
         list_remove(logic_blocks, dead_cb)
         
+        #print(logic_blocks)
         #print (blocks)
 
         #print ("logic_block:%r"%logic_blocks)
