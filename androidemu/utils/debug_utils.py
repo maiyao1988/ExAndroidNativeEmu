@@ -86,10 +86,10 @@ def dump_code(emu, address, size, fd):
     #
     
     instruction = mu.mem_read(address, size)
-    codes = md.disasm(instruction, 0)
+    codes = md.disasm(instruction, address)
     m = 0
     for i in codes:
-        addr = i.address + address
+        addr = i.address
 
         name = "unknown"
         module = None
