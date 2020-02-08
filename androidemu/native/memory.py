@@ -60,6 +60,7 @@ class NativeMemory:
                 raise NotImplementedError()
 
             fd = self._file_system._file_descriptors[fd]
+            os.lseek(fd.descriptor, offset, 0)
             data = os.read(fd.descriptor, length)
             self._mu.mem_write(addr, data)
         #
