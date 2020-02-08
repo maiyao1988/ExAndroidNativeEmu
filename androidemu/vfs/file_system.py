@@ -33,10 +33,10 @@ class VirtualFileSystem:
 
         # TODO: Improve fd logic.
         self._file_descriptor_counter = 3
-        self._file_descriptors = dict()
-        self._file_descriptors[0] = VirtualFile('stdin', 0)
-        self._file_descriptors[1] = VirtualFile('stdout', 1)
-        self._file_descriptors[2] = VirtualFile('stderr', 2)
+        self._virtual_files = dict()
+        self._virtual_files[0] = VirtualFile('stdin', 0)
+        self._virtual_files[1] = VirtualFile('stdout', 1)
+        self._virtual_files[2] = VirtualFile('stderr', 2)
 
         syscall_handler.set_handler(0x3, "read", 3, self._handle_read)
         syscall_handler.set_handler(0x4, "write", 3, self._handle_write)
@@ -58,7 +58,7 @@ class VirtualFileSystem:
     def _store_fd(self, name, name_virt, file_descriptor):
         next_fd = self._file_descriptor_counter
         self._file_descriptor_counter += 1
-        self._file_descriptors[next_fd] = VirtualFile(name, file_descriptor, name_virt=name_virt)
+        self._virtual_files[next_fd] = VirtualFile(name, file_descriptor, name_virt=name_virt)
         return next_fd
 
     def _open_file(self, filename, mode):
@@ -108,11 +108,11 @@ class VirtualFileSystem:
         if fd <= 2:
             raise NotImplementedError("Unsupported read operation for file descriptor %d." % fd)
 
-        if fd not in self._file_descriptors:
+        if fd not in self._virtual_files:
             # TODO: Return valid error.
             raise NotImplementedError()
 
-        file = self._file_descriptors[fd]
+        file = self._virtual_files[fd]
 
         logger.info("Reading %d bytes from '%s'" % (count, file.name))
 
@@ -141,11 +141,11 @@ class VirtualFileSystem:
             return len(data)
         #
 
-        if fd not in self._file_descriptors:
+        if fd not in self._virtual_files:
             # TODO: Return valid error.
             raise NotImplementedError()
 
-        file = self._file_descriptors[fd]
+        file = self._virtual_files[fd]
         r = os.write(file.descriptor, data)
         return r
     #
@@ -170,10 +170,10 @@ class VirtualFileSystem:
 
         close() returns zero on success. On error, -1 is returned, and errno is set appropriately.
         """
-        if fd not in self._file_descriptors:
+        if fd not in self._virtual_files:
             return 0
 
-        file = self._file_descriptors[fd]
+        file = self._virtual_files[fd]
 
         if file.descriptor != 'urandom':
             logger.info("File closed '%s'" % file.name)
@@ -209,10 +209,10 @@ class VirtualFileSystem:
 
         fstat() is identical to stat(), except that the file to be stat-ed is specified by the file descriptor fd.
         """
-        if fd not in self._file_descriptors:
+        if fd not in self._virtual_files:
             return -1
 
-        file = self._file_descriptors[fd]
+        file = self._virtual_files[fd]
         logger.info("File stat64 '%s'" % file.name)
 
         stat = file_helpers.stat64(file.name_virt)
@@ -222,7 +222,7 @@ class VirtualFileSystem:
         return 0
 
     def __fcntl64(self, mu, fd, cmd, arg1, arg2, arg3, arg4):
-        if (fd in self._file_descriptors):
+        if (fd in self._virtual_files):
             if (F_GETFL == cmd):
                 return fcntl.fcntl(fd, cmd)
             elif(F_SETFL == cmd):

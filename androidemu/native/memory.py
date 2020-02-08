@@ -55,13 +55,13 @@ class NativeMemory:
             if fd <= 2:
                 raise NotImplementedError("Unsupported read operation for file descriptor %d." % fd)
             #
-            if fd not in self._file_system._file_descriptors:
+            if fd not in self._file_system._virtual_files:
                 # TODO: Return valid error.
                 raise NotImplementedError()
 
-            fd = self._file_system._file_descriptors[fd]
-            os.lseek(fd.descriptor, offset, 0)
-            data = os.read(fd.descriptor, length)
+            vf = self._file_system._virtual_files[fd]
+            os.lseek(vf.descriptor, offset, 0)
+            data = os.read(vf.descriptor, length)
             self._mu.mem_write(addr, data)
         #
         return addr
