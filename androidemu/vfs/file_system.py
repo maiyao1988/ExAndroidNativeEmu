@@ -30,8 +30,9 @@ class VirtualFileSystem:
     """
     :type syscall_handler SyscallHandlers
     """
-    def __init__(self, root_path, syscall_handler):
+    def __init__(self, root_path, syscall_handler, memory_map):
         self._root_path = root_path
+        self.__memory_map = memory_map
 
         # TODO: Improve fd logic.
         self._file_descriptor_counter = 3
@@ -70,16 +71,30 @@ class VirtualFileSystem:
         #ifndef O_CREAT
         #define O_CREAT 00000100
         # Special cases, such as /dev/urandom.
-        orig_filename = filename
 
         if filename == '/dev/urandom':
             logger.info("File opened '%s'" % filename)
             return self._store_fd('/dev/urandom', None, 'urandom')
+        #
 
         file_path = self.translate_path(filename)
+        if (filename.startswith("/proc/")):
+            #simulate proc file system
+            parent = os.path.dirname(file_path)
+            if (not os.path.exists(parent)):
+                os.makedirs(parent)
+            #
+            #TODO: move pid to config
+            map_paths = ("/proc/%d/maps"%0x1122, "/proc/self/maps")
+            if (filename in map_paths):
+                with open(file_path, "w") as f:
+                    self.__memory_map.dump_maps(f)
+                #
+            #
+        #
 
         if os.path.isfile(file_path):
-            logger.info("File opened '%s'" % orig_filename)
+            logger.info("File opened '%s'" %filename)
             flags = os.O_RDWR
             if hasattr(os, "O_BINARY"):
                 flags |= os.O_BINARY
@@ -89,9 +104,9 @@ class VirtualFileSystem:
             if (mode & 2000):
                 flags | os.O_APPEND
             #
-            return self._store_fd(orig_filename, file_path, os.open(file_path, flags=flags))
+            return self._store_fd(filename, file_path, os.open(file_path, flags=flags))
         else:
-            logger.warning("File does not exist '%s'" % orig_filename)
+            logger.warning("File does not exist '%s'" % filename)
             return -1
 
     def _handle_read(self, mu, fd, buf_addr, count):

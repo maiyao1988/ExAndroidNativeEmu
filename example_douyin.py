@@ -1,12 +1,14 @@
 import logging
 import posixpath
 import sys
+import os.path
 
 from unicorn import *
 from unicorn.arm_const import *
 
 from androidemu.emulator import Emulator
 import androidemu.utils.debug_utils
+from androidemu.vfs.file_system import VirtualFile
 from androidemu.java.helpers.native_method import native_method
 from androidemu.java.java_class_def import JavaClassDef
 from androidemu.java.java_method_def import java_method_def
@@ -150,11 +152,11 @@ try:
 
     # bypass douyin checks
     
-    with open("tests/bin/app_process32", 'rb') as ap:
-        data = ap.read()
-        len1 = len(data) + 1024 - (len(data) % 1024)
-        emulator.mu.mem_map(0xab006000, len1)
-        emulator.mu.mem_write(0xab006000, data)
+ 
+    path = "vfs/system/bin/app_process32"
+    sz = os.path.getsize(path)
+    vf = VirtualFile("/system/bin/app_process32", os.open(path, os.O_RDONLY), path)
+    emulator.memory.map(0xab006000, sz, UC_PROT_WRITE | UC_PROT_READ, vf, 0)
     
     x = XGorgen()
     data = 'acde74a94e6b493a3399fac83c7c08b35D58B21D9582AF77647FC9902E36AE70f9c001e9334e6e94916682224fbe4e5f00000000000000000000000000000000'

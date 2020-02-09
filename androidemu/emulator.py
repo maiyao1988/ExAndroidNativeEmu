@@ -97,7 +97,7 @@ class Emulator:
         self.syscall_hooks = SyscallHooks(self.mu, self.syscall_handler)
 
         # File System
-        self.vfs = VirtualFileSystem(vfs_root, self.syscall_handler)
+        self.vfs = VirtualFileSystem(vfs_root, self.syscall_handler, self.memory)
         # Hooker
         self.memory.map(config.HOOK_MEMORY_BASE, config.HOOK_MEMORY_SIZE, UC_PROT_READ | UC_PROT_WRITE | UC_PROT_EXEC)
         self.hooker = Hooker(self, config.HOOK_MEMORY_BASE, config.HOOK_MEMORY_SIZE)

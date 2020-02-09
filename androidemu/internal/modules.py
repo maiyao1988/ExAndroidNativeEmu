@@ -325,9 +325,11 @@ class Modules:
             }
             '''
             if do_init:
+                '''
                 for r in self.emu.mu.mem_regions():
                     print("region begin :0x%08X end:0x%08X, prot:%d"%(r[0], r[1], r[2]))
                 #
+                '''
                 module.call_init(self.emu)
             #
             logger.info("finish load lib %s"%filename)
