@@ -17,10 +17,12 @@ OVERRIDE_URANDOM_BYTE = b"\x00"
 
 class VirtualFile:
 
-    def __init__(self, name, file_descriptor, name_virt=None):
+    def __init__(self, name, file_descriptor, name_in_system=None):
         self.name = name
-        self.name_virt = name_virt
+        self.name_in_system = name_in_system
         self.descriptor = file_descriptor
+    #
+#
 
 
 class VirtualFileSystem:
@@ -52,13 +54,13 @@ class VirtualFileSystem:
         syscall_handler.set_handler(0x147, "fstatat64", 4, self._handle_fstatat64)
 
     def translate_path(self, filename):
-        return androidemu.utils.misc_utils.redirect_path(self._root_path, filename)
+        return androidemu.utils.misc_utils.vfs_path_to_system_path(self._root_path, filename)
     #
     
-    def _store_fd(self, name, name_virt, file_descriptor):
+    def _store_fd(self, name, name_in_system, file_descriptor):
         next_fd = self._file_descriptor_counter
         self._file_descriptor_counter += 1
-        self._virtual_files[next_fd] = VirtualFile(name, file_descriptor, name_virt=name_virt)
+        self._virtual_files[next_fd] = VirtualFile(name, file_descriptor, name_in_system=name_in_system)
         return next_fd
 
     def _open_file(self, filename, mode):
@@ -215,7 +217,7 @@ class VirtualFileSystem:
         file = self._virtual_files[fd]
         logger.info("File stat64 '%s'" % file.name)
 
-        stat = file_helpers.stat64(file.name_virt)
+        stat = file_helpers.stat64(file.name_in_system)
         # stat = os.fstat(file.descriptor)
         file_helpers.stat_to_memory(mu, buf_ptr, stat, WRITE_FSTAT_TIMES)
 

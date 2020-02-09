@@ -49,8 +49,7 @@ class NativeMemory:
         #define MAP_FIXED 0x10
         #define MAP_ANONYMOUS 0x20
         #define MAP_UNINITIALIZED 0x0
-        addr = self._memory.map(addr, length, prot)
-
+        res = None
         if fd != 0xffffffff: # 如果有fd
             if fd <= 2:
                 raise NotImplementedError("Unsupported read operation for file descriptor %d." % fd)
@@ -60,11 +59,12 @@ class NativeMemory:
                 raise NotImplementedError()
 
             vf = self._file_system._virtual_files[fd]
-            os.lseek(vf.descriptor, offset, 0)
-            data = os.read(vf.descriptor, length)
-            self._mu.mem_write(addr, data)
+            res = self._memory.map(addr, length, prot, vf, offset)
         #
-        return addr
+        else:
+            res = self._memory.map(addr, length, prot)
+        #
+        return res
     #
 
     def _handle_madvise(self, mu, start, len_in, behavior):

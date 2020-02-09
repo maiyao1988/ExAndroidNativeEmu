@@ -1,7 +1,7 @@
 import os.path
 import os
 
-def redirect_path(vfs_root, path):
+def vfs_path_to_system_path(vfs_root, path):
     if os.name == 'nt':
         path = path.replace(':', '_')
     #
@@ -12,4 +12,8 @@ def redirect_path(vfs_root, path):
         fullpath = "%s/system/lib/%s"%(vfs_root, path)
     #
     return fullpath
+#
+
+def system_path_to_vfs_path(vfs_root, path):
+    return os.path.relpath(path, vfs_root)
 #

@@ -58,7 +58,7 @@ class NativeHooks:
         logger.debug("Called dlopen(%s)" % path)
 
         #redirect path on matter what path in vm runing
-        fullpath = androidemu.utils.misc_utils.redirect_path(self.__vfs_root, path)
+        fullpath = androidemu.utils.misc_utils.vfs_path_to_system_path(self.__vfs_root, path)
         if (os.path.exists(fullpath)):
             mod = self._emu.load_library(fullpath)
             return mod.base

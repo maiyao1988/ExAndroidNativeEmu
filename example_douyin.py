@@ -124,7 +124,7 @@ emulator = Emulator(
     vfs_root=posixpath.join(posixpath.dirname(__file__), "vfs")
 )
 
-emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
+#emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
 # Register Java class.
 # emulator.java_classloader.add_class(MainActivity)
 emulator.java_classloader.add_class(XGorgen)

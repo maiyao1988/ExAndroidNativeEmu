@@ -1,5 +1,5 @@
-from collections import OrderedDict
 import traceback
+import os
 from unicorn import *
 from ..internal import align
 
@@ -18,13 +18,11 @@ class MemoryMap:
         self.__mu = mu
         self._alloc_min_addr = alloc_min_addr
         self._alloc_max_addr = alloc_max_addr
+        self.__file_map_addr = {}
 
-    def map(self, address, size, prot=UC_PROT_READ | UC_PROT_WRITE):
+    def __map(self, address, size, prot=UC_PROT_READ | UC_PROT_WRITE):
         if size <= 0:
             raise Exception('Heap map size was <= 0.')
-        print("map addr:0x%08X, end:0x%08X, sz:0x%08X"%(address, address+size, size))
-        #traceback.print_stack()
-        address, size = align(address, size, True)
         try:
             if (address == 0):
                 regions = []
@@ -89,8 +87,8 @@ class MemoryMap:
                             self.__mu.mem_protect(b_protect, 0x1000, prot)
                         #
                     #
-                    return address
                 #
+                return address
             #
         except unicorn.UcError as e:
             #impossible
@@ -99,6 +97,23 @@ class MemoryMap:
             #
             raise
         #
+    #
+
+    def map(self, address, size, prot=UC_PROT_READ | UC_PROT_WRITE, vf=None, offset=0):
+        print("map addr:0x%08X, end:0x%08X, sz:0x%08X off=0x%08X"%(address, address+size, size, offset))
+        #traceback.print_stack()
+        al_address, al_size = align(address, size, True)
+        res_addr = self.__map(al_address, al_size, prot)
+        if (res_addr != -1 and vf != None):
+            ori_off = os.lseek(vf.descriptor, 0, os.SEEK_CUR)
+            os.lseek(vf.descriptor, offset, 0)
+            data = os.read(vf.descriptor, size)
+            #print(res_addr)
+            self.__mu.mem_write(res_addr, data)
+            self.__file_map_addr[al_address]=(al_address+al_size, vf)
+            os.lseek(vf.descriptor, ori_off, 0)
+        #
+        return res_addr
     #
 
     def protect(self, addr, len_in, prot):
@@ -119,12 +134,21 @@ class MemoryMap:
 
     def unmap(self, addr, size):
         if not self.is_multiple(addr):
-            raise Exception('addr was not multiple of page size (%d, %d).' % (addr, PAGE_SIZE))
+            raise RuntimeError('addr was not multiple of page size (%d, %d).' % (addr, PAGE_SIZE))
 
         _, size = align(addr, size, True)
         try:
             print("unmap 0x%08X sz=0x0x%08X end=0x0x%08X"%(addr,size, addr+size))
+            if (addr in self.__file_map_addr):
+                file_map_attr = self.__file_map_addr[addr]
+                if (addr+size != file_map_attr[0]):
+                    raise RuntimeError("unmap error, range 0x%08X-0x%08X does not match file map range 0x%08X-0x%08X from file %s"
+                    %(addr, addr+size, addr, file_map_attr[0]))
+                #
+                self.__file_map_addr.pop(addr)
+            #
             self.__mu.mem_unmap(addr, size)
+        #
         except unicorn.UcError as e:
             #TODO:just for debug
 

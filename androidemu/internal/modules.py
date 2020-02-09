@@ -9,6 +9,7 @@ from androidemu.internal import get_segment_protection, arm,align
 from androidemu.internal.module import Module
 from androidemu.internal.symbol_resolved import SymbolResolved
 from androidemu.utils import memory_helpers,misc_utils
+from androidemu.vfs.file_system import VirtualFile
 from androidemu import config
 import os
 
@@ -102,15 +103,69 @@ class Modules:
                 if bound_high < high:
                     bound_high = high
 
+            '''
+            // Segment addresses in memory.
+            Elf32_Addr seg_start = phdr->p_vaddr + load_bias_;
+            Elf32_Addr seg_end   = seg_start + phdr->p_memsz;
+
+            Elf32_Addr seg_page_start = PAGE_START(seg_start);
+            Elf32_Addr seg_page_end   = PAGE_END(seg_end);
+
+            // File offsets.
+            Elf32_Addr file_start = phdr->p_offset;
+            Elf32_Addr file_end   = file_start + phdr->p_filesz;
+
+            Elf32_Addr seg_file_end   = seg_start + phdr->p_filesz;
+            Elf32_Addr file_page_start = PAGE_START(file_start);
+            Elf32_Addr file_length = file_end - file_page_start;
+
+            if (file_length != 0) {
+            void* seg_addr = mmap((void*)seg_page_start,
+                                    file_length,
+                                    PFLAGS_TO_PROT(phdr->p_flags),
+                                    MAP_FIXED|MAP_PRIVATE,
+                                    fd_,
+                                    file_page_start);
+            '''
             # Retrieve a base address for this module.
             load_base = self.mem_reserve(bound_high - bound_low)
 
+            vf = VirtualFile(misc_utils.system_path_to_vfs_path(self.__vfs_root, filename), os.open(filename, os.O_RDONLY), filename)
             for segment in load_segments:
                 prot = get_segment_protection(segment.header.p_flags)
                 prot = prot if prot is not 0 else UC_PROT_ALL
 
-                self.emu.memory.map(load_base + segment.header.p_vaddr, segment.header.p_memsz, prot)
-                self.emu.mu.mem_write(load_base + segment.header.p_vaddr, segment.data())
+                #self.emu.memory.map(load_base + segment.header.p_vaddr, segment.header.p_memsz, prot)
+                #self.emu.mu.mem_write(load_base + segment.header.p_vaddr, segment.data())
+                
+                seg_start = load_base + segment.header.p_vaddr
+                seg_page_start, seg_page_sz = align(seg_start, segment.header.p_memsz, True)
+                file_start = segment.header.p_offset
+                file_end = file_start + segment.header.p_filesz
+                file_page_start, file_page_sz = align(file_start, segment.header.p_filesz, True)
+                file_length = file_end - file_page_start
+                assert(file_length>0)
+                if (file_length > 0):
+                    self.emu.memory.map(seg_page_start, file_length, prot, vf, file_page_start)
+                #
+
+                seg_end   = seg_start + segment.header.p_memsz
+                seg_end_algn,_ = align(seg_end, 0, True)
+                seg_page_end = seg_end + 0x1000
+
+                seg_file_end = seg_start+segment.header.p_filesz
+
+                seg_file_end_algn,_ = align(seg_file_end, 0, True)
+                seg_file_end = seg_file_end_algn + 0x1000
+                '''
+                      void* zeromap = mmap((void*)seg_file_end,
+                           seg_page_end - seg_file_end,
+                           PFLAGS_TO_PROT(phdr->p_flags),
+                           MAP_FIXED|MAP_ANONYMOUS|MAP_PRIVATE,
+                           -1,
+                           0);
+                '''
+                self.emu.memory.map(seg_file_end, seg_page_end-seg_file_end, prot)
             #
 
             # Find init array.
@@ -145,7 +200,7 @@ class Modules:
                 so_needed.append(so_name)
             #
             for so_name in so_needed:
-                path = misc_utils.redirect_path(self.__vfs_root, so_name)
+                path = misc_utils.vfs_path_to_system_path(self.__vfs_root, so_name)
                 if (not os.path.exists(path)):
                     logger.warn("%s needed by %s do not exist in vfs %s"%(so_name, filename, self.__vfs_root))
                     continue
@@ -210,11 +265,14 @@ class Modules:
                     rel_addr = load_base + rel['r_offset']  # Location where relocation should happen
                     rel_info_type = rel['r_info_type']
 
+                    print(filename)
+                    print("%x"%rel_addr)
                     # Relocation table for ARM
                     if rel_info_type == arm.R_ARM_ABS32:
                         # Create the new value.
                         value = load_base + sym_value
                         # Write the new value
+                        #print(value)
                         self.emu.mu.mem_write(rel_addr, value.to_bytes(4, byteorder='little'))
 
                     elif rel_info_type == arm.R_ARM_GLOB_DAT or \
@@ -226,6 +284,7 @@ class Modules:
                             value = symbols_resolved[sym.name].address
 
                             # Write the new value
+                            #print(value)
                             self.emu.mu.mem_write(rel_addr, value.to_bytes(4, byteorder='little'))
                     elif rel_info_type == arm.R_ARM_RELATIVE or \
                             rel_info_type == arm.R_AARCH64_RELATIVE:
@@ -237,6 +296,7 @@ class Modules:
                             # Create the new value
                             value = load_base + value_orig
 
+                            #print(value)
                             # Write the new value
                             self.emu.mu.mem_write(rel_addr, value.to_bytes(4, byteorder='little'))
                         else:
@@ -266,6 +326,9 @@ class Modules:
             }
             '''
             if do_init:
+                for r in self.emu.mu.mem_regions():
+                    print("region begin :0x%08X end:0x%08X, prot:%d"%(r[0], r[1], r[2]))
+                #
                 module.call_init(self.emu)
             #
             logger.info("finish load lib %s"%filename)
