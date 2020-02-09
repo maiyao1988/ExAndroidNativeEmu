@@ -264,8 +264,8 @@ class Modules:
                     rel_addr = load_base + rel['r_offset']  # Location where relocation should happen
                     rel_info_type = rel['r_info_type']
 
-                    print(filename)
-                    print("%x"%rel_addr)
+                    #print(filename)
+                    #print("%x"%rel_addr)
                     # Relocation table for ARM
                     if rel_info_type == arm.R_ARM_ABS32:
                         # Create the new value.
