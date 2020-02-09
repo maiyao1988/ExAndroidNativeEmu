@@ -5,7 +5,7 @@ from elftools.elf.relocation import RelocationSection
 from elftools.elf.sections import SymbolTableSection
 from unicorn import UC_PROT_ALL
 
-from androidemu.internal import get_segment_protection, arm,align
+from androidemu.internal import get_segment_protection, arm,page_end, page_start
 from androidemu.internal.module import Module
 from androidemu.internal.symbol_resolved import SymbolResolved
 from androidemu.utils import memory_helpers,misc_utils
@@ -60,8 +60,8 @@ class Modules:
         #
     #
     
-    def mem_reserve(self, size):
-        (_, size_aligned) = align(0, size, True)
+    def mem_reserve(self, start, end):
+        size_aligned = page_end(end) - page_start(start)
         ret = self.counter_memory
         self.counter_memory += size_aligned
         return ret
@@ -128,7 +128,7 @@ class Modules:
                                     file_page_start);
             '''
             # Retrieve a base address for this module.
-            load_base = self.mem_reserve(bound_high - bound_low)
+            load_base = self.mem_reserve(bound_low, bound_high)
 
             vf = VirtualFile(misc_utils.system_path_to_vfs_path(self.__vfs_root, filename), os.open(filename, os.O_RDONLY), filename)
             for segment in load_segments:
@@ -139,10 +139,10 @@ class Modules:
                 #self.emu.mu.mem_write(load_base + segment.header.p_vaddr, segment.data())
                 
                 seg_start = load_base + segment.header.p_vaddr
-                seg_page_start, seg_page_sz = align(seg_start, segment.header.p_memsz, True)
+                seg_page_start = page_start(seg_start)
                 file_start = segment.header.p_offset
                 file_end = file_start + segment.header.p_filesz
-                file_page_start, file_page_sz = align(file_start, segment.header.p_filesz, True)
+                file_page_start = page_start(file_start)
                 file_length = file_end - file_page_start
                 assert(file_length>0)
                 if (file_length > 0):
@@ -150,13 +150,11 @@ class Modules:
                 #
 
                 seg_end   = seg_start + segment.header.p_memsz
-                seg_end_algn,_ = align(seg_end, 0, True)
-                seg_page_end = seg_end + 0x1000
+                seg_page_end = page_end(seg_end)
 
                 seg_file_end = seg_start+segment.header.p_filesz
 
-                seg_file_end_algn,_ = align(seg_file_end, 0, True)
-                seg_file_end = seg_file_end_algn + 0x1000
+                seg_file_end = page_end(seg_file_end)
                 '''
                       void* zeromap = mmap((void*)seg_file_end,
                            seg_page_end - seg_file_end,

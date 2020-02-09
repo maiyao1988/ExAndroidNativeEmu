@@ -1,7 +1,7 @@
 import traceback
 import os
 from unicorn import *
-from ..internal import align
+from ..internal import page_start, page_end
 
 PAGE_SIZE = 0x1000
 
@@ -100,9 +100,13 @@ class MemoryMap:
     #
 
     def map(self, address, size, prot=UC_PROT_READ | UC_PROT_WRITE, vf=None, offset=0):
+        if not self.is_multiple(address):
+            raise Exception('map addr was not multiple of page size (%d, %d).' % (address, PAGE_SIZE))
+        #
         print("map addr:0x%08X, end:0x%08X, sz:0x%08X off=0x%08X"%(address, address+size, size, offset))
         #traceback.print_stack()
-        al_address, al_size = align(address, size, True)
+        al_address = address
+        al_size = page_end(al_address+size) - al_address
         res_addr = self.__map(al_address, al_size, prot)
         if (res_addr != -1 and vf != None):
             ori_off = os.lseek(vf.descriptor, 0, os.SEEK_CUR)
@@ -136,7 +140,7 @@ class MemoryMap:
         if not self.is_multiple(addr):
             raise RuntimeError('addr was not multiple of page size (%d, %d).' % (addr, PAGE_SIZE))
 
-        _, size = align(addr, size, True)
+        size = page_end(addr+size) - addr
         try:
             print("unmap 0x%08X sz=0x0x%08X end=0x0x%08X"%(addr,size, addr+size))
             if (addr in self.__file_map_addr):
