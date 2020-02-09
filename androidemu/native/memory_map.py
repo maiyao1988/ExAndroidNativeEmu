@@ -1,13 +1,25 @@
 import traceback
 import os
 from unicorn import *
-from androidemu.utils.misc_utils import get_segment_protection,page_end, page_start
+from androidemu.utils.misc_utils import page_end, page_start
 
 PAGE_SIZE = 0x1000
 
 
 class MemoryMap:
 
+    def check_addr(self , addr, prot):
+        for r in self.__mu.mem_regions():
+            if (addr>=r[0] and addr < r[1] and prot & r[2]):
+                return True
+        #
+        return False
+    #
+
+    @staticmethod
+    def __is_multiple(addr):
+        return addr % PAGE_SIZE == 0
+    #
     @staticmethod
     def __is_overlap(addr1, end1, addr2, end2):
         r= (addr1 <= addr2 and end1 >= end2) or (addr2 <= addr1 and end2 >= end1) or (end1 > addr2 and addr1 < end2) or  (end2 > addr1 and addr2 < end1)
@@ -100,7 +112,7 @@ class MemoryMap:
     #
 
     def map(self, address, size, prot=UC_PROT_READ | UC_PROT_WRITE, vf=None, offset=0):
-        if not self.is_multiple(address):
+        if not self.__is_multiple(address):
             raise Exception('map addr was not multiple of page size (%d, %d).' % (address, PAGE_SIZE))
         #
         print("map addr:0x%08X, end:0x%08X, sz:0x%08X off=0x%08X"%(address, address+size, size, offset))
@@ -114,17 +126,17 @@ class MemoryMap:
             data = os.read(vf.descriptor, size)
             #print(res_addr)
             self.__mu.mem_write(res_addr, data)
-            self.__file_map_addr[al_address]=(al_address+al_size, vf)
+            self.__file_map_addr[al_address]=(al_address+al_size, offset, vf)
             os.lseek(vf.descriptor, ori_off, 0)
         #
         return res_addr
     #
 
     def protect(self, addr, len_in, prot):
-        if not self.is_multiple(addr):
+        if not self.__is_multiple(addr):
             raise Exception('addr was not multiple of page size (%d, %d).' % (addr, PAGE_SIZE))
 
-        if not self.is_multiple(len_in):
+        if not self.__is_multiple(len_in):
             raise Exception('len_in was not multiple of page size (%d, %d).' % (addr, PAGE_SIZE))
 
         try:
@@ -137,7 +149,7 @@ class MemoryMap:
         return 0
 
     def unmap(self, addr, size):
-        if not self.is_multiple(addr):
+        if not self.__is_multiple(addr):
             raise RuntimeError('addr was not multiple of page size (%d, %d).' % (addr, PAGE_SIZE))
 
         size = page_end(addr+size) - addr
@@ -163,16 +175,69 @@ class MemoryMap:
             return -1
         #
         return 0
-
-    def check_addr(self , addr, prot):
-        for r in self.__mu.mem_regions():
-            if (addr>=r[0] and addr < r[1] and prot & r[2]):
-                return True
-        #
-        return False
     #
 
-    @staticmethod
-    def is_multiple(addr):
-        return addr % PAGE_SIZE == 0
+    def __get_map_attr(self, start, end):
+        for addr in self.__file_map_addr:
+            v = self.__file_map_addr[addr]
+            mstart = addr
+            mend = v[0]
+            if (start >= mstart and end <= mend):
+                vf = v[2]
+                return v[1], vf.name
+            #
+        #
+        return 0, ""
+    #
+
+    def __get_attrs(self, region):           
+        r = "r" if region[2] & 0x1 else "-"
+        w = "w" if region[2] & 0x2 else "-"
+        x = "x" if region[2] & 0x4 else "-"
+        prot = "%s%s%sp"%(r,w,x)
+        off, name = self.__get_map_attr(region[0], region[1]+1)
+        return (region[0], region[1]+1, prot, off, name)
+    #
+
+    #dump maps like /system/self/maps
+    def dump_maps(self, stream):
+        regions = []
+        for region in self.__mu.mem_regions():
+            regions.append(region)
+        #
+
+        regions.sort()
+        
+        '''
+        for region in regions:
+            print("region begin :0x%08X end:0x%08X, prot:%d"%(region[0], region[1], region[2]))
+        #
+        '''
+        
+        n = len(regions)
+        if (n < 1):
+            return
+        output=[]
+        last_attr = self.__get_attrs(regions[0])
+        start = last_attr[0]
+        for i in range(1, n): 
+            region = regions[i]
+            attr = self.__get_attrs(region)
+            if (last_attr[1] == attr[0] and last_attr[2:] == attr[2:]):
+                pass
+            else:
+                output.append((start,)+last_attr[1:])
+                start = attr[0]
+            #
+            last_attr = attr
+        #
+        output.append((start,)+last_attr[1:])
+
+        for item in output:
+            line = "0x%08x-0x%08x %s %08x 00:00 0 \t\t %s\n"%(item[0], item[1], item[2], item[3], item[4])
+            stream.write(line)
+        #
+        
+    #
+
 

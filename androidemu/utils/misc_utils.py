@@ -15,7 +15,7 @@ def vfs_path_to_system_path(vfs_root, path):
 #
 
 def system_path_to_vfs_path(vfs_root, path):
-    return os.path.relpath(path, vfs_root)
+    return "/"+os.path.relpath(path, vfs_root)
 #
 
 PF_X = 0x1  # Executable
