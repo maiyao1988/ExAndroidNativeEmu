@@ -152,7 +152,6 @@ try:
 
     # bypass douyin checks
     
- 
     path = "vfs/system/bin/app_process32"
     sz = os.path.getsize(path)
     vf = VirtualFile("/system/bin/app_process32", os.open(path, os.O_RDONLY), path)

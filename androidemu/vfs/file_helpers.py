@@ -40,8 +40,10 @@ def stat64(path):
             os.makedirs(meta_path_dir)
 
         with open(meta_path, 'w') as f:
-            json.dump(self.__get_def_dic(), fp=f, indent=4)
-
+            json.dump(_get_def_dic(), fp=f, indent=4)
+        #
+    #
+    
     with open(meta_path, 'r') as f:
         return json.load(fp=f)
 

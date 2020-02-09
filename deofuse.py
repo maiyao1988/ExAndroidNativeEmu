@@ -20,6 +20,7 @@ def get_block_codes(f, block, md):
     codelist = []
     b=block
     size = b.end - b.start
+    assert size > 0, "block %r size <=0"%b
     f.seek(b.start, 0)
     code_bytes = f.read(size)
     codes = md.disasm(code_bytes, b.start)
@@ -180,7 +181,7 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, md, ks)
                         code_r = "%s %s"%(code_last.mnemonic, code_last.op_str)
                         r, count = ks.asm(code, code_last.address)
 
-                        assert(code_last.size >= len(r), "patch %s address :0x%08Xto %s error size not enouth"%(code_r, code_last.address, code))
+                        assert code_last.size >= len(r), "patch %s address :0x%08Xto %s error size not enouth"%(code_r, code_last.address, code)
                         print("[%r] fix code from (%s) [%r] to (%s) [%r]"%(lb, code_r, list(code_last.bytes), code, r))
 
                         fo.seek(code_last.address, 0)
@@ -234,8 +235,8 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, md, ks)
                         b1 = ks.asm(fixed_str1, itt_code.address)[0]
                         b2 = ks.asm(fixed_str2, code_run_if.address)[0]
 
-                        assert(itt_code.size >= len(b1), "patch %s address :0x%08Xto %s error size not enouth"%(code_r1, itt_code.address, fixed_str1))
-                        assert(code_run_if.size >= len(b2), "patch %s address :0x%08Xto %s error size not enouth"%(code_r2, code_run_if.address, fixed_str2))
+                        assert itt_code.size >= len(b1), "patch %s address :0x%08Xto %s error size not enouth"%(code_r1, itt_code.address, fixed_str1)
+                        assert code_run_if.size >= len(b2), "patch %s address :0x%08Xto %s error size not enouth"%(code_r2, code_run_if.address, fixed_str2)
 
                         print("[%r] two fix code from (%s) [%r] to (%s) [%r]"%(lb, code_r1, list(itt_code.bytes), fixed_str1, b1))
                         print("[%r] two fix code from (%s) [%r] to (%s) [%r]"%(lb, code_r2, list(code_run_if.bytes), fixed_str2, b2))
@@ -267,7 +268,7 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, md, ks)
 
             code_r = "%s %s"%(code_last.mnemonic, code_last.op_str)
             n_len = len(b)
-            assert(code_last.size >= n_len, "patch %s address :0x%08Xto %s error size not enouth"%(code_r, code_last.address, fix_code))
+            assert code_last.size >= n_len, "patch %s address :0x%08Xto %s error size not enouth"%(code_r, code_last.address, fix_code)
             print("[%r] normal fix code from (%s) [%r] to (%s) [%r]"%(lb, code_r, list(code_last.bytes), fix_code, b))
             #直接patch结尾指令
             fo.seek(code_last.address)
