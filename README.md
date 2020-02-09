@@ -23,7 +23,7 @@ Make sure you are using python 3.7.
 
 1. Clone the repository
 2. Run `pip install -r requirements.txt`
-3. Run `python example.py`
+3. Run `python example_jni.py`
 
 > If you have trouble getting the `keystone-engine` dependency on Windows (as I did):
 > 1. Clone their [repository](https://github.com/keystone-engine/keystone)
