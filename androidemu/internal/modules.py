@@ -5,7 +5,8 @@ from elftools.elf.relocation import RelocationSection
 from elftools.elf.sections import SymbolTableSection
 from unicorn import UC_PROT_ALL
 
-from androidemu.internal import get_segment_protection, arm,page_end, page_start
+from androidemu.internal import arm
+from androidemu.utils.misc_utils import get_segment_protection,page_end, page_start
 from androidemu.internal.module import Module
 from androidemu.internal.symbol_resolved import SymbolResolved
 from androidemu.utils import memory_helpers,misc_utils
