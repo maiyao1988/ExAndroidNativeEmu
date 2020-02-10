@@ -93,7 +93,12 @@ def find_ofuse_control_block(f, blocks, base_addr, md):
             if (code_last.mnemonic[0] == "b"):
                 #如果bxx跟着cmp，则疑似
                 for j in range(n-1):
+                    #很短的而且有比较的都疑似控制块
                     if (codelist[j].mnemonic == "cmp"):
+                        maybe_cb = True
+                        break
+                    #
+                    elif (codelist[j].mnemonic.startswith("it")):
                         maybe_cb = True
                         break
                     #
@@ -137,6 +142,7 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, md, ks)
     for ofb in obfuses_blocks:
         addr2ofb[ofb.start] = ofb
     #
+    print ("logic_blocks:%r"%logic_blocks)
     for lb in logic_blocks:
         codelist = get_block_codes(fin, lb, md)
         n = len(codelist)
@@ -145,6 +151,13 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, md, ks)
         #TODO:识别所有类型的跳转,现在只支持bxx导致的跳转
         mne = code_last.mnemonic
         no_run_blocks = []
+
+        indexes = trace.get_trace_index(lb.start)
+        if (len(indexes) < 1):
+            #如果入口没有执行过，说明这个块肯定没有执行过，跳过处理
+            print("warning true block %r has not run in unicorn"%lb)
+            no_run_blocks.append(lb)
+            continue
         if (mne[0] == "b" and mne not in ("blx", "bl")):
             #逻辑块结尾是否还会出现bne这些条件判断？待观察
             assert(mne == "b" or mne == "b.w")
@@ -156,101 +169,107 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, md, ks)
                 #跳转到控制块的，说明要修正到真实块
                 #print ("logic block with b %r should fix 0x%08X"%(lb, code_last.address))
                 nexts = trace.get_trace_next(code_last.address)
-                if (nexts == None):
-                    #没有后续原因是后续block没有跑过，暂时不处理
-                    print("warning true block %r has no sub true block, maybe path not run in unicorn"%lb)
-                    no_run_blocks.append(lb)
-                #
-                else:
-                    n_next = len(nexts)
-                    #暂时没见过超过两个的目的地
-                    assert(n_next < 3)
-                    nexts_list = list(nexts)
-                    if (n_next == 0):
-                        print("warning true block %r has no sub true block"%lb)
-                    elif (n_next == 1):
-                        #只有一个目的地
-                        op = mne
-                        #改跳转地址到下一个真实块
 
-                        code = "%s #0x%X"%(op, nexts_list[0])
+                n_next = len(nexts)
+                #暂时没见过超过两个的目的地
+                assert(n_next < 3)
+                nexts_list = list(nexts)
+                if (n_next == 0):
+                    print("warning true block %r has no sub true block"%lb)
+                elif (n_next == 1):
+                    #改跳转地址到下一个真实块
 
-                        #print("nexts for 0x%08X [%s]"%(code_last.address, nexts))
+                    code = "b #0x%X"%(nexts_list[0],)
 
-                        #print("cs code (%s) %r addr %x"%(code, list(code_last.bytes), code_last.address))
-                        code_r = "%s %s"%(code_last.mnemonic, code_last.op_str)
-                        r, count = ks.asm(code, code_last.address)
+                    #print("nexts for 0x%08X [%s]"%(code_last.address, nexts))
 
-                        assert code_last.size >= len(r), "patch %s address :0x%08Xto %s error size not enouth"%(code_r, code_last.address, code)
-                        print("[%r] fix code from (%s) [%r] to (%s) [%r]"%(lb, code_r, list(code_last.bytes), code, r))
+                    #print("cs code (%s) %r addr %x"%(code, list(code_last.bytes), code_last.address))
+                    code_r = "%s %s"%(code_last.mnemonic, code_last.op_str)
+                    r, count = ks.asm(code, code_last.address)
 
-                        fo.seek(code_last.address, 0)
-                        fo.write(bytearray(r))
+                    assert code_last.size >= len(r), "patch %s address :0x%08X sz:[%d] to %s sz:[%d] error size not enouth"\
+                    %(code_r, code_last.address, code_last.size, code, len(r))
+                    print("[%r] fix code from (%s) [%r] to (%s) [%r]"%(lb, code_r, list(code_last.bytes), code, r))
+
+                    fo.seek(code_last.address, 0)
+                    fo.write(bytearray(r))
+                    
+                    nleft = code_last.size - len(r)
+                    assert nleft>=0
+                    print ("n left %d"%nleft)
+                    for _ in range(0, nleft):
+                        b = bytearray([0])
+                        fo.write(b)
                     #
-                    elif (n_next == 2):
-                        #TODO:两个目的地，需要根据是否跑过一些指令判断，修正跳转
-                        print ("%r has two destination %r"%(lb, nexts))
-                        assert(n > 1)
-                        itt_code = None
-                        trace_start=-1
-                        itt_mne = ""
-                        #从最后找到第一个条件语句
-                        for id in range(n-2, -1, -1):
-                            code = codelist[id]
-                            mne = code.mnemonic
-                            if (mne.startswith("it")):
-                                #找到itt之后的语句，然后一步步trace下来
-                                trace_start = id+1
-                                itt_code = code
-                                break
-                            #
+                #
+                elif (n_next == 2):
+                    #TODO:两个目的地，需要根据是否跑过一些指令判断，修正跳转
+                    print ("%r has two destination %r"%(lb, nexts))
+                    assert(n > 1)
+                    itt_code = None
+                    trace_start=-1
+                    itt_mne = ""
+                    #从最后找到第一个条件语句
+                    for id in range(n-2, -1, -1):
+                        code = codelist[id]
+                        mne = code.mnemonic
+                        if (mne.startswith("it")):
+                            #找到itt之后的语句，然后一步步trace下来
+                            trace_start = id+1
+                            itt_code = code
+                            break
                         #
-                        fix_to_addr1 = -1
-                        assert(trace_start >= 0)
-                        code_run_if = codelist[trace_start]
-                        #从itt下一条指令开始跟踪，根据跟踪到的情况确定跳转过去的条件
-                        id_if = trace.get_trace_index(code_run_if.address)
-                        trace_id = id_if[0]
-                        while True:
-                            trace_id = trace_id + 1
-                            addr = trace.get_trace_by_index(trace_id)
-                            print (addr,nexts)
-                            if (addr in nexts):
-                                fix_to_addr1 = addr
-                                break
-                            #
+                    #
+                    fix_to_addr1 = -1
+                    assert(trace_start >= 0)
+                    code_run_if = codelist[trace_start]
+                    #从itt下一条指令开始跟踪，根据跟踪到的情况确定跳转过去的条件
+                    id_if = trace.get_trace_index(code_run_if.address)
+                    trace_id = id_if[0]
+                    while True:
+                        trace_id = trace_id + 1
+                        addr = trace.get_trace_by_index(trace_id)
+                        #print (addr,nexts)
+                        if (addr in nexts):
+                            fix_to_addr1 = addr
+                            break
                         #
+                    #
 
-                        assert(fix_to_addr1 > 0)
-                        nexts_list.remove(fix_to_addr1)
-                        fix_to_addr2 = nexts_list[0]
-                        
-                        fixed_str1 = "b%s #0x%X"%(itt_code.op_str, fix_to_addr1)
+                    assert(fix_to_addr1 > 0)
+                    nexts_list.remove(fix_to_addr1)
+                    fix_to_addr2 = nexts_list[0]
+                    
+                    fixed_str1 = "b%s #0x%X"%(itt_code.op_str, fix_to_addr1)
 
-                        fixed_str2 = "b #0x%X"%(fix_to_addr2,)
+                    fixed_str2 = "b #0x%X"%(fix_to_addr2,)
+                    
+                    b1 = ks.asm(fixed_str1, itt_code.address)[0]
+                    b2 = ks.asm(fixed_str2, itt_code.address+len(b1))[0]
 
-                        code_r1 = "%s %s"%(itt_code.mnemonic, itt_code.op_str)
-                        code_r2 = "%s %s"%(code_run_if.mnemonic, code_run_if.op_str)
-                        
-                        b1 = ks.asm(fixed_str1, itt_code.address)[0]
-                        b2 = ks.asm(fixed_str2, code_run_if.address)[0]
+                    print("patch from 0x%08X %s[%r] %s[%r]"%(itt_code.address, fixed_str1, b1, fixed_str2, b2))
 
-                        assert itt_code.size >= len(b1), "patch %s address :0x%08Xto %s error size not enouth"%(code_r1, itt_code.address, fixed_str1)
-                        assert code_run_if.size >= len(b2), "patch %s address :0x%08Xto %s error size not enouth"%(code_r2, code_run_if.address, fixed_str2)
+                    '''itt 指令指令一般都是这种情况
+                    itt ne
+                    movt xxxxx
+                    movw xxxxx
+                    直接替换成
+                    nop
+                    bne xxxx
+                    b xxx
+                    nop
+                    '''
 
-                        print("[%r] two fix code from (%s) [%r] to (%s) [%r]"%(lb, code_r1, list(itt_code.bytes), fixed_str1, b1))
-                        print("[%r] two fix code from (%s) [%r] to (%s) [%r]"%(lb, code_r2, list(code_run_if.bytes), fixed_str2, b2))
+                    fo.seek(itt_code.address)
+                    fo.write(bytearray(b1))
+                    fo.write(bytearray(b2))
 
-                        fo.seek(itt_code.address)
-                        fo.write(bytearray(b1))
-                        fo.write(bytearray(b2))
-
-                        nleft = lb.end - (itt_code.address+ len(b1) + len(b2))
-                        print ("n left %d"%nleft)
-                        for _ in range(0, nleft):
-                            b = bytearray([0])
-                            fo.write(b)
-                        #
+                    nleft = lb.end - (itt_code.address+ len(b1) + len(b2))
+                    assert nleft>=0
+                    print ("n left %d"%nleft)
+                    for _ in range(0, nleft):
+                        b = bytearray([0])
+                        fo.write(b)
                     #
                 #
             #
@@ -259,6 +278,7 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, md, ks)
             #如果结尾就是控制块的开始，也需要patch
             print ("logic block normal %r should fix 0x%08X"%(lb, code_last.address))
             ids = trace.get_trace_index(code_last.address)
+            assert len(ids)>0, "find block end in obfuse block but last code in block 0x%08X not find in trace"%code_last.address
             next_id = ids[0] + 1
             next_addr = trace.get_trace_by_index(next_id)
             print("0x%08X next [0x%08X]"%(code_last.address, next_addr))

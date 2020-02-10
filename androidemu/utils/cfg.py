@@ -1,6 +1,5 @@
 import os
 import capstone
-import keystone
 import sys
 
 
