@@ -1,7 +1,6 @@
 import sys
 import os.path
-import capstone
-import keystone
+from androidemu.utils.intruction_mgr import IntructionManger
 from androidemu.utils import cfg
 from androidemu.utils import tracer
 import shutil
@@ -16,28 +15,28 @@ def get_jmp_dest(i):
     return None
 #
 
-def get_block_codes(f, block, md):
+def get_block_codes(f, block, ins_mgr):
     codelist = []
     b=block
     size = b.end - b.start
     assert size > 0, "block %r size <=0"%b
     f.seek(b.start, 0)
     code_bytes = f.read(size)
-    codes = md.disasm(code_bytes, b.start)
+    codes = ins_mgr.disasm(code_bytes, b.start)
     for c in codes:
         codelist.append(c)
     #
     return codelist
 #
 
-def find_main_control_block(f, blocks, base_addr, md):
+def find_main_control_block(f, blocks, base_addr, ins_mgr):
     for b in blocks:
         #print(b)
         #print (b.parent)
         #查找主控制块
         #实测主控控制块的父亲节点不可能少于4个
         if (len(b.parent) > 4):
-            codelist = get_block_codes(f, b, md)
+            codelist = get_block_codes(f, b, ins_mgr)
             #一般主控制块的指令数量少于6个（不完全确定）,且多于一个指令
             n = len(codelist)
             if (n < 2):
@@ -55,10 +54,10 @@ def find_main_control_block(f, blocks, base_addr, md):
     #
 #
 
-def find_ofuse_control_block(f, blocks, base_addr, md):
+def find_ofuse_control_block(f, blocks, base_addr, ins_mgr):
     obfuses_cb = []
     dead_cb = []
-    main_cb = find_main_control_block(f, blocks, base_addr, md)
+    main_cb = find_main_control_block(f, blocks, base_addr, ins_mgr)
     assert(main_cb != None)
     obfuses_cb.append(main_cb)
     #print ("main_block:%r"%main_cb)
@@ -68,7 +67,7 @@ def find_ofuse_control_block(f, blocks, base_addr, md):
         if (b == main_cb):
             continue
         #
-        codelist = get_block_codes(f, b, md)
+        codelist = get_block_codes(f, b, ins_mgr)
         
         n = len(codelist)
 
@@ -137,14 +136,14 @@ def clear_control_block(fo, obfuses_blocks):
 
 #将所有逻辑块最后的跳转，patch到另外一个有意义的逻辑块上
 #而不是去到控制块上再分发。简化逻辑，需要依赖unicorn做虚拟执行找到下一个真实逻辑块
-def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, md, ks):
+def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, ins_mgr):
     addr2ofb = {}
     for ofb in obfuses_blocks:
         addr2ofb[ofb.start] = ofb
     #
-    print ("logic_blocks:%r"%logic_blocks)
+    #print ("logic_blocks:%r"%logic_blocks)
     for lb in logic_blocks:
-        codelist = get_block_codes(fin, lb, md)
+        codelist = get_block_codes(fin, lb, ins_mgr)
         n = len(codelist)
         code_last = codelist[n-1]
 
@@ -185,7 +184,7 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, md, ks)
 
                     #print("cs code (%s) %r addr %x"%(code, list(code_last.bytes), code_last.address))
                     code_r = "%s %s"%(code_last.mnemonic, code_last.op_str)
-                    r, count = ks.asm(code, code_last.address)
+                    r, count = ins_mgr.asm(code, code_last.address)
 
                     assert code_last.size >= len(r), "patch %s address :0x%08X sz:[%d] to %s sz:[%d] error size not enouth"\
                     %(code_r, code_last.address, code_last.size, code, len(r))
@@ -244,8 +243,8 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, md, ks)
 
                     fixed_str2 = "b #0x%X"%(fix_to_addr2,)
                     
-                    b1 = ks.asm(fixed_str1, itt_code.address)[0]
-                    b2 = ks.asm(fixed_str2, itt_code.address+len(b1))[0]
+                    b1 = ins_mgr.asm(fixed_str1, itt_code.address)[0]
+                    b2 = ins_mgr.asm(fixed_str2, itt_code.address+len(b1))[0]
 
                     print("patch from 0x%08X %s[%r] %s[%r]"%(itt_code.address, fixed_str1, b1, fixed_str2, b2))
 
@@ -284,7 +283,7 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, md, ks)
             print("0x%08X next [0x%08X]"%(code_last.address, next_addr))
             
             fix_code = "b 0x%x"%(next_addr, )
-            b = ks.asm(fix_code, code_last.address)[0]
+            b = ins_mgr.asm(fix_code, code_last.address)[0]
 
             code_r = "%s %s"%(code_last.mnemonic, code_last.op_str)
             n_len = len(b)
@@ -331,18 +330,9 @@ if __name__ == "__main__":
     with open(path, "rb") as f:
         blocks = cfg.create_cfg(f, base_addr, end_addr - base_addr, is_thumb)
         #print (blocks)
-        md = None
-        ks = None
-        if (is_thumb):
-            md = capstone.Cs(capstone.CS_ARCH_ARM, capstone.CS_MODE_THUMB)
-            ks = keystone.Ks(keystone.KS_ARCH_ARM, keystone.KS_MODE_THUMB)
-        else:
-            md = g_md_arm = capstone.Cs(capstone.CS_ARCH_ARM, capstone.CS_MODE_ARM)
-            ks = keystone.Ks(keystone.KS_ARCH_ARM, keystone.KS_MODE_ARM) 
-        #
+        ins_mgr = IntructionManger(is_thumb)
 
-        md.detail = True
-        of_b, dead_cb = find_ofuse_control_block(f, blocks, base_addr, md)
+        of_b, dead_cb = find_ofuse_control_block(f, blocks, base_addr, ins_mgr)
 
         #print("cbs:%r"%of_b)
         #print ("dead_cb:%r"%dead_cb)
@@ -359,7 +349,7 @@ if __name__ == "__main__":
 
         t = tracer.Tracer(trace_path, lib_name, base_addr, end_addr, logic_blocks)
         with open(out_path, "rb+") as fo:
-            codelist = patch_logical_blocks(f, fo, logic_blocks, of_b , t, md, ks)
+            codelist = patch_logical_blocks(f, fo, logic_blocks, of_b , t, ins_mgr)
         #
     #
 #
