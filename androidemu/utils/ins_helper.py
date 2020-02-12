@@ -23,3 +23,28 @@ def clean_bytes(f, addr_from, addr_to):
         f.write(b)
     #
 #
+
+
+def get_jmp_dest(i):
+    if (i.mnemonic[0] == 'b'):
+        if (i.op_str[0] == '#'):
+            jmp_addr = int(i.op_str[1:], 16)
+            return jmp_addr
+        #
+    #
+    return None
+#
+
+def get_block_codes(f, block, ins_mgr):
+    codelist = []
+    b=block
+    size = b.end - b.start
+    assert size > 0, "block %r size <=0"%b
+    f.seek(b.start, 0)
+    code_bytes = f.read(size)
+    codes = ins_mgr.disasm(code_bytes, b.start)
+    for c in codes:
+        codelist.append(c)
+    #
+    return codelist
+#
