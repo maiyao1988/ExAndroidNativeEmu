@@ -1,6 +1,7 @@
 import sys
 import os.path
 from androidemu.utils.intruction_mgr import IntructionManger
+from androidemu.utils.ins_helper import *
 from androidemu.utils import cfg
 from androidemu.utils import tracer
 import shutil
@@ -120,18 +121,9 @@ def find_ofuse_control_block(f, blocks, base_addr, ins_mgr):
 #
 
 def clear_control_block(fo, obfuses_blocks):
-    
     for ob in obfuses_blocks:
-        sz = ob.end - ob.start
-        print ("clear %r"%(ob, ))
-        fo.seek(ob.start, 0)
-        for _ in range(0, sz):
-            b = bytearray([0])
-            #print(len(b))
-            fo.write(b)
-        #
+        clean_bytes(fo, ob.start, ob.end)
     #
-    
 #
 
 #将所有逻辑块最后的跳转，patch到另外一个有意义的逻辑块上
@@ -178,28 +170,14 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, ins_mgr
                 elif (n_next == 1):
                     #改跳转地址到下一个真实块
 
-                    code = "b #0x%X"%(nexts_list[0],)
-
-                    #print("nexts for 0x%08X [%s]"%(code_last.address, nexts))
-
-                    #print("cs code (%s) %r addr %x"%(code, list(code_last.bytes), code_last.address))
                     code_r = "%s %s"%(code_last.mnemonic, code_last.op_str)
-                    r, count = ins_mgr.asm(code, code_last.address)
 
-                    assert code_last.size >= len(r), "patch %s address :0x%08X sz:[%d] to %s sz:[%d] error size not enouth"\
-                    %(code_r, code_last.address, code_last.size, code, len(r))
-                    print("[%r] fix code from (%s) [%r] to (%s) [%r]"%(lb, code_r, list(code_last.bytes), code, r))
+                    fix_code = "b #0x%X"%(nexts_list[0],)
 
-                    fo.seek(code_last.address, 0)
-                    fo.write(bytearray(r))
-                    
-                    nleft = code_last.size - len(r)
-                    assert nleft>=0
-                    print ("n left %d"%nleft)
-                    for _ in range(0, nleft):
-                        b = bytearray([0])
-                        fo.write(b)
-                    #
+                    addr_next_insn = write_codes(fo, code_last.address, [fix_code], ins_mgr)
+                    assert addr_next_insn <= lb.end, "patch %s address :0x%08X to %s error size not enouth"%(code_r, code_last.address, fix_code)
+
+                    clean_bytes(fo, addr_next_insn, lb.end)
                 #
                 elif (n_next == 2):
                     #TODO:两个目的地，需要根据是否跑过一些指令判断，修正跳转
@@ -240,14 +218,8 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, ins_mgr
                     fix_to_addr2 = nexts_list[0]
                     
                     fixed_str1 = "b%s #0x%X"%(itt_code.op_str, fix_to_addr1)
-
                     fixed_str2 = "b #0x%X"%(fix_to_addr2,)
                     
-                    b1 = ins_mgr.asm(fixed_str1, itt_code.address)[0]
-                    b2 = ins_mgr.asm(fixed_str2, itt_code.address+len(b1))[0]
-
-                    print("patch from 0x%08X %s[%r] %s[%r]"%(itt_code.address, fixed_str1, b1, fixed_str2, b2))
-
                     '''itt 指令指令一般都是这种情况
                     itt ne
                     movt xxxxx
@@ -258,18 +230,8 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, ins_mgr
                     b xxx
                     nop
                     '''
-
-                    fo.seek(itt_code.address)
-                    fo.write(bytearray(b1))
-                    fo.write(bytearray(b2))
-
-                    nleft = lb.end - (itt_code.address+ len(b1) + len(b2))
-                    assert nleft>=0
-                    print ("n left %d"%nleft)
-                    for _ in range(0, nleft):
-                        b = bytearray([0])
-                        fo.write(b)
-                    #
+                    addr_next_insn = write_codes(fo, itt_code.address, [fixed_str1, fixed_str2], ins_mgr)
+                    clean_bytes(fo, addr_next_insn, lb.end)
                 #
             #
         #
@@ -282,21 +244,14 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, ins_mgr
             next_addr = trace.get_trace_by_index(next_id)
             print("0x%08X next [0x%08X]"%(code_last.address, next_addr))
             
-            fix_code = "b 0x%x"%(next_addr, )
-            b = ins_mgr.asm(fix_code, code_last.address)[0]
-
             code_r = "%s %s"%(code_last.mnemonic, code_last.op_str)
-            n_len = len(b)
-            assert code_last.size >= n_len, "patch %s address :0x%08Xto %s error size not enouth"%(code_r, code_last.address, fix_code)
-            print("[%r] normal fix code from (%s) [%r] to (%s) [%r]"%(lb, code_r, list(code_last.bytes), fix_code, b))
-            #直接patch结尾指令
-            fo.seek(code_last.address)
-            fo.write(bytearray(b))
-            nleft = lb.end - (code_last.address + n_len)
-            for _ in range(0, nleft):
-                b = bytearray([0])
-                fo.write(b)
-            #
+
+            fix_code = "b 0x%x"%(next_addr, )
+
+            addr_next_insn = write_codes(fo, code_last.address, [fix_code], ins_mgr)
+            assert addr_next_insn <= lb.end, "patch %s address :0x%08X to %s error size not enouth"%(code_r, code_last.address, fix_code)
+
+            clean_bytes(fo, addr_next_insn, lb.end)
         #
     #
     clear_control_block(fo, obfuses_blocks)
