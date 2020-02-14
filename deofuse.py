@@ -236,19 +236,29 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, ins_mgr
             #
         #
         elif(lb.end in addr2ofb):
+            print ("logic block normal %r"%(lb, ))
             #如果结尾就是控制块的开始，也需要patch
-            print ("logic block normal %r should fix 0x%08X"%(lb, code_last.address))
-            ids = trace.get_trace_index(code_last.address)
-            assert len(ids)>0, "find block end in obfuse block but last code in block 0x%08X not find in trace"%code_last.address
+            code_to_patch = None
+            for index in range(n-1, -1, -1):
+                code_to_patch = codelist[index]
+                ids = trace.get_trace_index(code_to_patch.address)
+                #找到该块最后一个有执行的指令，patch。
+                if len(ids)<=0:
+                    print("warning find block end in obfuse block code in block 0x%08X not find in trace"%code_to_patch.address)
+                else:
+                    break
+            #
+            #patch最后一条执行的指令
+            assert(len(ids)>0)
             next_id = ids[0] + 1
             next_addr = trace.get_trace_by_index(next_id)
-            print("0x%08X next [0x%08X]"%(code_last.address, next_addr))
+            print("address 0x%08X is the last run code in block %r next [0x%08X]"%(code_to_patch.address, lb, next_addr))
             
-            code_r = "%s %s"%(code_last.mnemonic, code_last.op_str)
+            code_r = "%s %s"%(code_to_patch.mnemonic, code_to_patch.op_str)
 
             fix_code = "b 0x%x"%(next_addr, )
 
-            addr_next_insn = write_codes(fo, code_last.address, [fix_code], ins_mgr)
+            addr_next_insn = write_codes(fo, code_to_patch.address, [fix_code], ins_mgr)
             assert addr_next_insn <= lb.end, "patch %s address :0x%08X to %s error size not enouth"%(code_r, code_last.address, fix_code)
 
             clean_bytes(fo, addr_next_insn, lb.end)
