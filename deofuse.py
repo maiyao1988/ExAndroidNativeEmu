@@ -44,12 +44,12 @@ def find_main_control_block(f, blocks, base_addr, ins_mgr):
                 continue
             #
             # 这个数量可能需要调整，
-            if (n < 6):
-                code_last = codelist[n-1]
-                code_cmp = codelist[n-2]
-                if (code_last.mnemonic[0] == "b" and code_cmp.mnemonic=="cmp"):
-                    return b
-                #
+            #if (n < 6):
+            code_last = codelist[n-1]
+            code_cmp = codelist[n-2]
+            if (code_last.mnemonic[0] == "b" and code_cmp.mnemonic=="cmp"):
+                return b
+            #
             #
         #
     #
@@ -61,7 +61,7 @@ def find_ofuse_control_block(f, blocks, base_addr, ins_mgr):
     main_cb = find_main_control_block(f, blocks, base_addr, ins_mgr)
     assert(main_cb != None)
     obfuses_cb.append(main_cb)
-    #print ("main_block:%r"%main_cb)
+    print ("main_block:%r"%main_cb)
 
     for b in blocks:
         #print(b)
@@ -85,35 +85,38 @@ def find_ofuse_control_block(f, blocks, base_addr, ins_mgr):
             #
             continue
         #
-        if (n < 6):
-            code_last = codelist[n-1]
-            code_cmp = codelist[n-2]
-            
-            maybe_cb = False
-            if (code_last.mnemonic[0] == "b"):
-                #如果bxx跟着cmp，则疑似
-                for j in range(n-1):
-                    #很短的而且有比较的都疑似控制块
-                    if (codelist[j].mnemonic == "cmp"):
-                        maybe_cb = True
-                        break
-                    #
-                    elif (codelist[j].mnemonic.startswith("it")):
-                        maybe_cb = True
-                        break
-                    #
+        #if (n < 6):
+        code_last = codelist[n-1]
+        code_cmp = codelist[n-2]
+        
+        maybe_cb = False
+        if (code_last.mnemonic[0] == "b"):
+            #如果bxx跟着cmp，则疑似
+            for j in range(n-1):
+                #很短的而且有比较的都疑似控制块
+                if (codelist[j].mnemonic == "cmp"):
+                    maybe_cb = True
+                    break
+                #
+                elif (codelist[j].mnemonic.startswith("it")):
+                    maybe_cb = True
+                    break
                 #
             #
-            if (maybe_cb):
-                #再搜索一次，如果没有出现内存操作，则确认是
-                for j in range(n-1):
-                    mne = codelist[j].mnemonic
-                    if (not mne.startswith("ldr") and not mne.startswith("str")):
-                        obfuses_cb.append(b)
-                        break
-                    #
+        #
+        is_cb = maybe_cb
+        if (maybe_cb):
+            #再搜索一次，如果没有出现内存操作，则确认是
+            for j in range(n-1):
+                mne = codelist[j].mnemonic
+                if (mne.startswith("ldr") or mne.startswith("str")):
+                    is_cb = False
+                    break
                 #
             #
+        #
+        if (is_cb):
+            obfuses_cb.append(b)
         #
 
     #
@@ -233,7 +236,7 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, ins_mgr
             continue
         if (mne[0] == "b" and mne not in ("blx", "bl")):
             #逻辑块结尾是否还会出现bne这些条件判断？待观察
-            assert(mne == "b" or mne == "b.w")
+            #assert mne == "b" or mne == "b.w", "block %r last code is not in b or b.w"%lb
             #主动跳转，结尾为跳转指令
             #print(lb)
             jmp_addr = get_jmp_dest(code_last)
