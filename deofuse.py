@@ -248,6 +248,7 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, ins_mgr
             print ("logic block normal %r"%(lb, ))
             #如果结尾就是控制块的开始，也需要patch
             code_last_run = None
+            ids = []
             for index in range(n-1, -1, -1):
                 code_last_run = codelist[index]
                 ids = trace.get_trace_index(code_last_run.address)
