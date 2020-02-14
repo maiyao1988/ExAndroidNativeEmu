@@ -55,6 +55,15 @@ def find_main_control_block(f, blocks, base_addr, ins_mgr):
     #
 #
 
+def _start_withs(str, sets):
+    for s in sets:
+        if (str.startswith(s)):
+            return True
+        #
+    #
+    return False
+#
+
 def find_ofuse_control_block(f, blocks, base_addr, ins_mgr):
     obfuses_cb = []
     dead_cb = []
@@ -105,11 +114,12 @@ def find_ofuse_control_block(f, blocks, base_addr, ins_mgr):
             #
         #
         is_cb = maybe_cb
+        mem_cmds = set(["str", "ldr", "push", "pop"])
         if (maybe_cb):
             #再搜索一次，如果没有出现内存操作，则确认是
             for j in range(n-1):
                 mne = codelist[j].mnemonic
-                if (mne.startswith("ldr") or mne.startswith("str")):
+                if (_start_withs(mne, mem_cmds)):
                     is_cb = False
                     break
                 #
