@@ -146,10 +146,10 @@ def patch_common(fout, lb, code_last_run, codelist, trace, ins_mgr):
 
         fix_code = "b #0x%X"%(nexts_list[0],)
 
-        addr_next_insn = write_codes(fo, code_last_run.address, [fix_code], ins_mgr)
+        addr_next_insn = write_codes(fout, code_last_run.address, [fix_code], ins_mgr)
         assert addr_next_insn <= lb.end, "patch %s address :0x%08X to %s error size not enouth"%(code_r, code_last_run.address, fix_code)
 
-        clean_bytes(fo, addr_next_insn, lb.end)
+        clean_bytes(fout, addr_next_insn, lb.end)
     #
     elif (n_next == 2):
         #TODO:两个目的地，需要根据是否跑过一些指令判断，修正跳转
@@ -202,8 +202,8 @@ def patch_common(fout, lb, code_last_run, codelist, trace, ins_mgr):
         b xxx
         nop
         '''
-        addr_next_insn = write_codes(fo, itt_code.address, [fixed_str1, fixed_str2], ins_mgr)
-        clean_bytes(fo, addr_next_insn, lb.end)
+        addr_next_insn = write_codes(fout, itt_code.address, [fixed_str1, fixed_str2], ins_mgr)
+        clean_bytes(fout, addr_next_insn, lb.end)
     #
 
 #
@@ -263,8 +263,8 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, ins_mgr
             patch_common(fout, lb, code_last_run, codelist, trace, ins_mgr)
         #
     #
-    clear_control_block(fo, obfuses_blocks)
-    #clear_control_block(fo, no_run_blocks)
+    clear_control_block(fout, obfuses_blocks)
+    #clear_control_block(fout, no_run_blocks)
 #
 
 def list_remove(srclist, listrmove):
