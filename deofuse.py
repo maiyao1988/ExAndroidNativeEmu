@@ -126,6 +126,88 @@ def clear_control_block(fo, obfuses_blocks):
     #
 #
 
+def patch_common(fout, lb, code_last_run, codelist, trace, ins_mgr):
+    n = len(codelist)  
+    #TODO:识别所有类型的跳转,现在只支持bxx导致的跳转
+    mne = code_last_run.mnemonic
+
+    nexts = trace.get_trace_next(code_last_run.address)
+
+    n_next = len(nexts)
+    #暂时没见过超过两个的目的地
+    assert(n_next < 3)
+    nexts_list = list(nexts)
+    if (n_next == 0):
+        print("warning true block %r has no sub true block"%lb)
+    elif (n_next == 1):
+        #改跳转地址到下一个真实块
+
+        code_r = "%s %s"%(code_last_run.mnemonic, code_last_run.op_str)
+
+        fix_code = "b #0x%X"%(nexts_list[0],)
+
+        addr_next_insn = write_codes(fo, code_last_run.address, [fix_code], ins_mgr)
+        assert addr_next_insn <= lb.end, "patch %s address :0x%08X to %s error size not enouth"%(code_r, code_last_run.address, fix_code)
+
+        clean_bytes(fo, addr_next_insn, lb.end)
+    #
+    elif (n_next == 2):
+        #TODO:两个目的地，需要根据是否跑过一些指令判断，修正跳转
+        print ("%r has two destination %r"%(lb, nexts))
+        assert(n > 1)
+        itt_code = None
+        trace_start=-1
+        itt_mne = ""
+        #从最后找到第一个条件语句
+        for id in range(n-1, -1, -1):
+            code = codelist[id]
+            mne = code.mnemonic
+            if (mne.startswith("it")):
+                #找到itt之后的语句，然后一步步trace下来
+                trace_start = id+1
+                itt_code = code
+                break
+            #
+        #
+        fix_to_addr1 = -1
+        assert(trace_start >= 0)
+        code_run_if = codelist[trace_start]
+        #从itt下一条指令开始跟踪，根据跟踪到的情况确定跳转过去的条件
+        id_if = trace.get_trace_index(code_run_if.address)
+        trace_id = id_if[0]
+        while True:
+            trace_id = trace_id + 1
+            addr = trace.get_trace_by_index(trace_id)
+            #print (addr,nexts)
+            if (addr in nexts):
+                fix_to_addr1 = addr
+                break
+            #
+        #
+
+        assert(fix_to_addr1 > 0)
+        nexts_list.remove(fix_to_addr1)
+        fix_to_addr2 = nexts_list[0]
+        
+        fixed_str1 = "b%s #0x%X"%(itt_code.op_str, fix_to_addr1)
+        fixed_str2 = "b #0x%X"%(fix_to_addr2,)
+        
+        '''itt 指令指令一般都是这种情况
+        itt ne
+        movt xxxxx
+        movw xxxxx
+        直接替换成
+        nop
+        bne xxxx
+        b xxx
+        nop
+        '''
+        addr_next_insn = write_codes(fo, itt_code.address, [fixed_str1, fixed_str2], ins_mgr)
+        clean_bytes(fo, addr_next_insn, lb.end)
+    #
+
+#
+
 #将所有逻辑块最后的跳转，patch到另外一个有意义的逻辑块上
 #而不是去到控制块上再分发。简化逻辑，需要依赖unicorn做虚拟执行找到下一个真实逻辑块
 def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, ins_mgr):
@@ -159,109 +241,25 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, ins_mgr
             if (jmp_addr in addr2ofb):
                 #跳转到控制块的，说明要修正到真实块
                 #print ("logic block with b %r should fix 0x%08X"%(lb, code_last.address))
-                nexts = trace.get_trace_next(code_last.address)
-
-                n_next = len(nexts)
-                #暂时没见过超过两个的目的地
-                assert(n_next < 3)
-                nexts_list = list(nexts)
-                if (n_next == 0):
-                    print("warning true block %r has no sub true block"%lb)
-                elif (n_next == 1):
-                    #改跳转地址到下一个真实块
-
-                    code_r = "%s %s"%(code_last.mnemonic, code_last.op_str)
-
-                    fix_code = "b #0x%X"%(nexts_list[0],)
-
-                    addr_next_insn = write_codes(fo, code_last.address, [fix_code], ins_mgr)
-                    assert addr_next_insn <= lb.end, "patch %s address :0x%08X to %s error size not enouth"%(code_r, code_last.address, fix_code)
-
-                    clean_bytes(fo, addr_next_insn, lb.end)
-                #
-                elif (n_next == 2):
-                    #TODO:两个目的地，需要根据是否跑过一些指令判断，修正跳转
-                    print ("%r has two destination %r"%(lb, nexts))
-                    assert(n > 1)
-                    itt_code = None
-                    trace_start=-1
-                    itt_mne = ""
-                    #从最后找到第一个条件语句
-                    for id in range(n-2, -1, -1):
-                        code = codelist[id]
-                        mne = code.mnemonic
-                        if (mne.startswith("it")):
-                            #找到itt之后的语句，然后一步步trace下来
-                            trace_start = id+1
-                            itt_code = code
-                            break
-                        #
-                    #
-                    fix_to_addr1 = -1
-                    assert(trace_start >= 0)
-                    code_run_if = codelist[trace_start]
-                    #从itt下一条指令开始跟踪，根据跟踪到的情况确定跳转过去的条件
-                    id_if = trace.get_trace_index(code_run_if.address)
-                    trace_id = id_if[0]
-                    while True:
-                        trace_id = trace_id + 1
-                        addr = trace.get_trace_by_index(trace_id)
-                        #print (addr,nexts)
-                        if (addr in nexts):
-                            fix_to_addr1 = addr
-                            break
-                        #
-                    #
-
-                    assert(fix_to_addr1 > 0)
-                    nexts_list.remove(fix_to_addr1)
-                    fix_to_addr2 = nexts_list[0]
-                    
-                    fixed_str1 = "b%s #0x%X"%(itt_code.op_str, fix_to_addr1)
-                    fixed_str2 = "b #0x%X"%(fix_to_addr2,)
-                    
-                    '''itt 指令指令一般都是这种情况
-                    itt ne
-                    movt xxxxx
-                    movw xxxxx
-                    直接替换成
-                    nop
-                    bne xxxx
-                    b xxx
-                    nop
-                    '''
-                    addr_next_insn = write_codes(fo, itt_code.address, [fixed_str1, fixed_str2], ins_mgr)
-                    clean_bytes(fo, addr_next_insn, lb.end)
-                #
+                patch_common(fout, lb, code_last, codelist, trace, ins_mgr)
             #
         #
         elif(lb.end in addr2ofb):
             print ("logic block normal %r"%(lb, ))
             #如果结尾就是控制块的开始，也需要patch
-            code_to_patch = None
+            code_last_run = None
             for index in range(n-1, -1, -1):
-                code_to_patch = codelist[index]
-                ids = trace.get_trace_index(code_to_patch.address)
+                code_last_run = codelist[index]
+                ids = trace.get_trace_index(code_last_run.address)
                 #找到该块最后一个有执行的指令，patch。
                 if len(ids)<=0:
-                    print("warning find block end in obfuse block code in block 0x%08X not find in trace"%code_to_patch.address)
+                    print("warning find block end in obfuse block code in block 0x%08X not find in trace"%code_last_run.address)
                 else:
                     break
             #
             #patch最后一条执行的指令
             assert(len(ids)>0)
-            next_id = ids[0] + 1
-            next_addr = trace.get_trace_by_index(next_id)
-            print("address 0x%08X is the last run code in block %r next [0x%08X]"%(code_to_patch.address, lb, next_addr))
-            
-            code_r = "%s %s"%(code_to_patch.mnemonic, code_to_patch.op_str)
-
-            fix_code = "b 0x%x"%(next_addr, )
-
-            addr_next_insn = write_codes(fo, code_to_patch.address, [fix_code], ins_mgr)
-            assert addr_next_insn <= lb.end, "patch %s address :0x%08X to %s error size not enouth"%(code_r, code_last.address, fix_code)
-
-            clean_bytes(fo, addr_next_insn, lb.end)
+            patch_common(fout, lb, code_last_run, codelist, trace, ins_mgr)
         #
     #
     clear_control_block(fo, obfuses_blocks)
