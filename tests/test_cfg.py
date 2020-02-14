@@ -4,9 +4,8 @@ import sys
 import unittest
 
 from unicorn import *
-from androidemu.utils import debug_utils
-from androidemu.utils import cfg
-from androidemu.utils.cfg import CodeBlock
+from deofuse import cfg
+from deofuse.cfg import CodeBlock
 
 class TestCfg(unittest.TestCase):
 

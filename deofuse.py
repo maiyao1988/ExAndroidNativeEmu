@@ -1,9 +1,9 @@
 import sys
 import os.path
-from androidemu.utils.intruction_mgr import IntructionManger
-from androidemu.utils.ins_helper import *
-from androidemu.utils import cfg
-from androidemu.utils import tracer
+from deofuse.intruction_mgr import IntructionManger
+from deofuse.ins_helper import *
+from deofuse import cfg
+from deofuse import tracer
 import shutil
 
 def get_jmp_dest(i):
