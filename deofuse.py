@@ -236,13 +236,13 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, ins_mgr
             print("warning true block %r has not run in unicorn"%lb)
             no_run_blocks.append(lb)
             continue
-        if (mne[0] == "b" and mne not in ("blx", "bl")):
+        if (is_jmp_insn(code_last)):
             #逻辑块结尾是否还会出现bne这些条件判断？待观察
             #assert mne == "b" or mne == "b.w", "block %r last code is not in b or b.w"%lb
             #主动跳转，结尾为跳转指令
             #print(lb)
             jmp_addr = get_jmp_dest(code_last)
-            assert(jmp_addr != None)
+            assert jmp_addr != None, "can not get dest for ins [%s %s] addr:0x%08X"%(code_last.mnemonic, code_last.op_str, code_last.address)
             if (jmp_addr in addr2ofb):
                 #跳转到控制块的，说明要修正到真实块
                 #print ("logic block with b %r should fix 0x%08X"%(lb, code_last.address))

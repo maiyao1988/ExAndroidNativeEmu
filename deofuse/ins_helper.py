@@ -15,7 +15,12 @@ def is_jmp_condition_str(ins_str):
     return ins_str_sa[0] in _b_cond_ins
 #
 
-def codi_oposite(cond):
+def is_jmp_insn(ins):
+    mne = ins.mnemonic
+    return mne[0] == "b" and mne not in ("blx", "bl", "bic", "bics")
+#
+
+def condi_oposite(cond):
     return _cond_oposite_map(cond)
 #
 
