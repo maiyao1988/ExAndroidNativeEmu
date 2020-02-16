@@ -24,15 +24,24 @@ def condi_oposite(cond):
     return _cond_oposite_map(cond)
 #
 
-def write_codes(f, address, insns, ins_mgr):
+def write_codes(f, address, max_size, insns, ins_mgr):
     f.seek(address, 0)
     next_addr = address
+    byte_list = []
+    size_left = max_size
     for code_str in insns:
-        b1 = ins_mgr.asm(code_str, next_addr)[0]
-        print("patch 0x%08X to %s[%r]"%(next_addr, code_str, [hex(x) for x in b1]))
-        f.write(bytearray(b1))
-        next_addr = next_addr + len(b1)
+        b = ins_mgr.asm(code_str, next_addr)[0]
+        byte_list.extend(b)
+        print("patch 0x%08X to %s[%r]"%(next_addr, code_str, [hex(x) for x in b]))
+        next_addr = next_addr + len(b)
+        size_left = size_left - len(b)
+        if (size_left < 0):
+            #空间不足，报错
+            print("not enough size")
+            return -1
+        #
     #
+    f.write(bytearray(byte_list))
     return next_addr
 #
 
