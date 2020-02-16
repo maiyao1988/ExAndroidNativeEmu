@@ -1,12 +1,7 @@
 import os
 import capstone
 import sys
-
-
-g_md_thumb = capstone.Cs(capstone.CS_ARCH_ARM, capstone.CS_MODE_THUMB)
-g_md_thumb.detail = True
-g_md_arm = capstone.Cs(capstone.CS_ARCH_ARM, capstone.CS_MODE_ARM)
-g_md_arm.detail = True
+from deofuse.intruction_mgr import IntructionManger
 
 class CodeBlock:
 
@@ -60,18 +55,12 @@ def is_jmp(i):
 #create cfg like ida
 def create_cfg(f, base_addr, size, thumb):
     #thumb is same as IDA Atl+G
-    md = None
-    if (thumb):
-        md = g_md_thumb
-    #
-    else:
-        md = g_md_arm
-    #
+    ins_mgr = IntructionManger(thumb)
     block_starts_map = {}
     blocks = []
     f.seek(base_addr, 0)
     code_bytes = f.read(size)
-    codes = md.disasm(code_bytes, base_addr)
+    codes = ins_mgr.disasm(code_bytes, base_addr)
     m = 0
     
     cb = CodeBlock()

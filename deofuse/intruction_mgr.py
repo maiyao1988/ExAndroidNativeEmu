@@ -10,7 +10,7 @@ class IntructionManger:
             self.__cs = capstone.Cs(capstone.CS_ARCH_ARM, capstone.CS_MODE_THUMB)
             self.__ks = keystone.Ks(keystone.KS_ARCH_ARM, keystone.KS_MODE_THUMB)
         else:
-            self._cs = capstone.Cs(capstone.CS_ARCH_ARM, capstone.CS_MODE_ARM)
+            self.__cs = capstone.Cs(capstone.CS_ARCH_ARM, capstone.CS_MODE_ARM)
             self.__ks = keystone.Ks(keystone.KS_ARCH_ARM, keystone.KS_MODE_ARM)
         #
     #
