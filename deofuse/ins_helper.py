@@ -1,6 +1,5 @@
 import os
 
-
 def write_codes(f, address, insns, ins_mgr):
     f.seek(address, 0)
     next_addr = address
