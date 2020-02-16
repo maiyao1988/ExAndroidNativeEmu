@@ -6,16 +6,6 @@ from deofuse import cfg
 from deofuse import tracer
 import shutil
 
-def get_jmp_dest(i):
-    if (i.mnemonic[0] == 'b'):
-        if (i.op_str[0] == '#'):
-            jmp_addr = int(i.op_str[1:], 16)
-            return jmp_addr
-        #
-    #
-    return None
-#
-
 def get_block_codes(f, block, ins_mgr):
     codelist = []
     b=block
@@ -166,6 +156,8 @@ def patch_common(fout, lb, code_last_run, codelist, trace, ins_mgr):
     #
     elif (n_next == 2):
         #TODO:两个目的地，需要根据是否跑过一些指令判断，修正跳转
+        assert not is_jmp_condition(code_last_run), "two destination cause by conditional jump addr [0x%08X] %s %s not support right now"\
+        %(code_last_run.address, code_last_run.mnemonic, code_last_run.op_str)
         print ("%r has two destination %r"%(lb, nexts))
         assert(n > 1)
         itt_code = None
