@@ -132,18 +132,37 @@ def clear_control_block(fo, obfuses_blocks):
 #address空間不足，找一個空閒的塊patch，並用有限的空間跳轉過去
 def patch_size_not_enouth(fout, address, max_size, ins_list, ins_mgr, addr2block_can_use):
     block_start_to_use = -1
+    n =0
     for start_addr in addr2block_can_use:
         block = addr2block_can_use[start_addr]
         block_sz = block.end - block.start
         fix_jmp = "b #0x%X"%(block.start,)
-        if (write_codes(fout, address, max_size, [fix_jmp], ins_mgr) > 0 and \
+        n=write_codes(fout, address, max_size, [fix_jmp], ins_mgr)
+        if (n > 0 and \
             write_codes(fout, block.start, block_sz, ins_list, ins_mgr) >0):
             block_start_to_use = start_addr
             break
         #
     #
     assert(block_start_to_use > 0)
+    print("0x%08X has patch to b 0x%08X"%(address, block_start_to_use))
     addr2block_can_use.pop(block_start_to_use)
+    return n
+#
+
+def safe_patch(fout, address, max_size, ins_list, ins_mgr, addr2block_can_use):
+
+    addr_next_insn = write_codes(fout, address, max_size, ins_list, ins_mgr)
+    #assert addr_next_insn <= lb.end, "patch %s address :0x%08X to %s error size not enouth"%(code_r, code_last_run.address, fix_code) 
+    if(addr_next_insn<=0):
+        #空間不足，想辦法patch到控制塊中
+        print("patch address :0x%08X to %r error size not enouth try jump to control block"%(address, ins_list))
+        addr_next_insn = patch_size_not_enouth(fout, address, max_size, ins_list, ins_mgr, addr2block_can_use)
+    #
+    else:
+        print("patch 0x%08X to [%r] ok"%(address, ins_list))
+    #
+    return addr_next_insn
 #
 
 def patch_common(fout, lb, code_last_run, codelist, trace, ins_mgr, addr2block_can_use):
@@ -166,15 +185,9 @@ def patch_common(fout, lb, code_last_run, codelist, trace, ins_mgr, addr2block_c
 
         fix_code = "b #0x%X"%(nexts_list[0],)
 
-        addr_next_insn = write_codes(fout, code_last_run.address, code_last_run.size, [fix_code], ins_mgr)
-        #assert addr_next_insn <= lb.end, "patch %s address :0x%08X to %s error size not enouth"%(code_r, code_last_run.address, fix_code) 
-        if(addr_next_insn>0):
-            clean_bytes(fout, addr_next_insn, lb.end)
-        #
-        else:
-            #空間不足，想辦法patch到控制塊中
-            patch_size_not_enouth(fout, code_last_run.address, code_last_run.size, [fix_code], ins_mgr, addr2block_can_use)
-        #
+        addr_next_insn = safe_patch(fout, code_last_run.address, code_last_run.size, [fix_code], ins_mgr, addr2block_can_use)
+
+        clean_bytes(fout, addr_next_insn, lb.end)
     #
     elif (n_next == 2):
         #TODO:两个目的地，需要根据是否跑过一些指令判断，修正跳转
@@ -229,7 +242,7 @@ def patch_common(fout, lb, code_last_run, codelist, trace, ins_mgr, addr2block_c
             b xxx
             nop
             '''
-            addr_next_insn = write_codes(fout, itt_code.address, lb.end-itt_code.address, [fixed_str1, fixed_str2], ins_mgr)
+            addr_next_insn = safe_patch(fout, itt_code.address, lb.end-itt_code.address, [fixed_str1, fixed_str2], ins_mgr, addr2block_can_use)
             clean_bytes(fout, addr_next_insn, lb.end)
         else:
             #assert(trace_start >= 0)
@@ -238,8 +251,8 @@ def patch_common(fout, lb, code_last_run, codelist, trace, ins_mgr, addr2block_c
             #这里是bug，有两个跳转但不知道怎么确定哪个跳是条件满足的跳转，先随便patch一个。。。
 
             fix_code = "b #0x%X"%(nexts_list[0],)
-            addr_next_insn = write_codes(fout, code_last_run.address, code_last_run.size, [fix_code], ins_mgr)
-            assert addr_next_insn <= lb.end, "patch %s address :0x%08X to %s error size not enouth"%(code_r, code_last_run.address, fix_code)
+
+            addr_next_insn = safe_patch(fout, code_last_run.address, code_last_run.size, [fix_code], ins_mgr, addr2block_can_use)
 
             clean_bytes(fout, addr_next_insn, lb.end)
     #

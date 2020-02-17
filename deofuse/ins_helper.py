@@ -32,14 +32,14 @@ def write_codes(f, address, max_size, insns, ins_mgr):
     for code_str in insns:
         b = ins_mgr.asm(code_str, next_addr)[0]
         byte_list.extend(b)
-        print("patch 0x%08X to %s[%r]"%(next_addr, code_str, [hex(x) for x in b]))
         next_addr = next_addr + len(b)
         size_left = size_left - len(b)
         if (size_left < 0):
             #空间不足，报错
-            print("not enough size")
+            #print("not enough size")
             return -1
         #
+        #print("patch 0x%08X to %s[%r]"%(next_addr, code_str, [hex(x) for x in b]))
     #
     f.write(bytearray(byte_list))
     return next_addr
