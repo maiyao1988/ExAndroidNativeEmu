@@ -145,7 +145,7 @@ def patch_size_not_enouth(fout, address, max_size, ins_list, ins_mgr, addr2block
         #
     #
     assert(block_start_to_use > 0)
-    print("0x%08X has patch to b 0x%08X"%(address, block_start_to_use))
+    print("0x%08X has patch to jump to control block [b 0x%08X]"%(address, block_start_to_use))
     addr2block_can_use.pop(block_start_to_use)
     return n
 #
