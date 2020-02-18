@@ -2,6 +2,7 @@ import os
 import capstone
 import sys
 from deofuse.intruction_mgr import IntructionManger
+from deofuse.ins_helper import *
 
 class CodeBlock:
 
@@ -43,13 +44,21 @@ def is_jmp_no_ret(i):
 #
 
 #判断是否无条件跳转
-def is_jmp(i):
+def is_jmp(i, base_addr, size):
     mne = i.mnemonic
     if (is_jmp_no_ret(i)):
         return True
-    if mne[0] == "b" and mne not in ("bl", "blx", "bic"):
+    if mne[0] == "b" and mne not in ("bl", "blx", "bic", "bics"):
         return True
     #
+    if (mne in ("bl", "blx")):
+        dest = get_jmp_dest(i)
+        #这是一种反对抗行为，有些混淆会用bl作为跳转，如果bl跳转目标为本函数范围，依然认为是个普通跳转，而不是一个函数调用
+        if (dest != None and dest >= base_addr and dest < base_addr+size):
+            return True
+        #
+    #
+    return False
 #
 
 #create cfg like ida
@@ -86,7 +95,7 @@ def create_cfg(f, base_addr, size, thumb):
 
         line = "[%16s]0x%08X:\t%s\t%s"%(instruction_str, addr, i.mnemonic.upper(), i.op_str.upper())
         #print (line)
-        if (is_jmp(i)):
+        if (is_jmp(i, base_addr, size)):
             if (mne[0] == "b"):
                 #print("in")
                 op = i.op_str.strip()
