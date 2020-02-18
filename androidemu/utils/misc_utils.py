@@ -55,6 +55,7 @@ def get_segment_protection(prot_in):
 def my_open(fd, flag):
     global g_isWin
     if(g_isWin):
-        return os.open(fd, flag|os.O_BINARY)
+        flag = flag | os.O_BINARY
     #
+    return os.open(fd, flag|os.O_BINARY)
 #
