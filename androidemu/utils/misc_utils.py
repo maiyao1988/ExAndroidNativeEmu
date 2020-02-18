@@ -57,5 +57,5 @@ def my_open(fd, flag):
     if(g_isWin):
         flag = flag | os.O_BINARY
     #
-    return os.open(fd, flag|os.O_BINARY)
+    return os.open(fd, flag)
 #
