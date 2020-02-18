@@ -6,13 +6,21 @@ _b_cond_ins = ["b"+cond for cond in _cond_oposite_map]
 
 def is_jmp_condition(ins):
     global _b_cond_ins
-    return ins.mnemonic in _b_cond_ins
+    if (ins.mnemonic in _b_cond_ins):
+        return True
+    if (ins.mnemonic in ("cbz", "cbnz")):
+        return True
+    #
 #
 
 def is_jmp_condition_str(ins_str):
     global _b_cond_ins
     ins_str_sa = ins_str.lower().split()
-    return ins_str_sa[0] in _b_cond_ins
+    if (ins_str_sa[0] in _b_cond_ins):
+        return True
+    if (ins_str_sa[0] in ("cbz", "cbnz")):
+        return True
+    #
 #
 
 def is_jmp_insn(ins):
