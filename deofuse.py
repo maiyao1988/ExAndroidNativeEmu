@@ -165,6 +165,27 @@ def safe_patch(fout, address, max_size, ins_list, ins_mgr, addr2block_can_use):
     return addr_next_insn
 #
 
+def clear_itt_if_in_itt(fout, codelist, code_last_run):
+    myindex = codelist.index(code_last_run)
+    max_back_find = 4
+    l = len(codelist)
+    if (l < max_back_find):
+        max_back_find = l
+    #
+    for id in range(myindex, myindex-max_back_find-1, -1):
+        c = codelist[id]
+        it_count = count_it(c)
+        if (it_count>0):
+            distance = myindex - id
+            #如果本指令落在itt范围内，则直接清理这个itt,包括itt覆盖的指令
+            if (it_count >= distance):
+                clean_bytes(fout, c.address, code_last_run.address)
+            #
+            break
+        #
+    #
+#
+
 def patch_common(fout, lb, code_last_run, codelist, trace, ins_mgr, addr2block_can_use):
     n = len(codelist)  
     #TODO:识别所有类型的跳转,现在只支持bxx导致的跳转
@@ -185,6 +206,7 @@ def patch_common(fout, lb, code_last_run, codelist, trace, ins_mgr, addr2block_c
 
         fix_code = "b #0x%X"%(nexts_list[0],)
 
+        clear_itt_if_in_itt(fout, codelist, code_last_run)
         addr_next_insn = safe_patch(fout, code_last_run.address, code_last_run.size, [fix_code], ins_mgr, addr2block_can_use)
 
         clean_bytes(fout, addr_next_insn, lb.end)
@@ -250,6 +272,7 @@ def patch_common(fout, lb, code_last_run, codelist, trace, ins_mgr, addr2block_c
                 %(lb, nexts_list[0], nexts_list[1]))
             #这里是bug，有两个跳转但不知道怎么确定哪个跳是条件满足的跳转，先随便patch一个。。。
 
+            clear_itt_if_in_itt(fout, codelist, code_last_run)
             fix_code = "b #0x%X"%(nexts_list[0],)
 
             addr_next_insn = safe_patch(fout, code_last_run.address, code_last_run.size, [fix_code], ins_mgr, addr2block_can_use)

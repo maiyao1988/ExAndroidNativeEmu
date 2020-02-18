@@ -32,6 +32,15 @@ def condi_oposite(cond):
     return _cond_oposite_map(cond)
 #
 
+#计算it指令覆盖范围，ittt为3,itt为2,it为1
+def count_it(ins):
+    mne = ins.mnemonic
+    if (mne.startswith("it")):
+        return len(mne)-1
+    #
+    return 0
+#
+
 def write_codes(f, address, max_size, insns, ins_mgr):
     f.seek(address, 0)
     next_addr = address
