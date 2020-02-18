@@ -17,7 +17,7 @@ def is_jmp_condition_str(ins_str):
 
 def is_jmp_insn(ins):
     mne = ins.mnemonic
-    return mne[0] == "b" and mne not in ("blx", "bl", "bic", "bics")
+    return mne[0] == "b" and mne not in ("blx", "bl", "bic", "bics") or mne in ("cbz", "cbnz")
 #
 
 def condi_oposite(cond):
