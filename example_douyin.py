@@ -9,6 +9,7 @@ from unicorn.arm_const import *
 from androidemu.emulator import Emulator
 import androidemu.utils.debug_utils
 from androidemu.vfs.file_system import VirtualFile
+from androidemu.utils import misc_utils
 from androidemu.java.helpers.native_method import native_method
 from androidemu.java.java_class_def import JavaClassDef
 from androidemu.java.java_method_def import java_method_def
@@ -154,7 +155,7 @@ try:
     
     path = "vfs/system/bin/app_process32"
     sz = os.path.getsize(path)
-    vf = VirtualFile("/system/bin/app_process32", os.open(path, os.O_RDONLY), path)
+    vf = VirtualFile("/system/bin/app_process32", misc_utils.my_open(path, os.O_RDONLY), path)
     emulator.memory.map(0xab006000, sz, UC_PROT_WRITE | UC_PROT_READ, vf, 0)
     
     x = XGorgen()

@@ -1,5 +1,9 @@
 import os.path
 import os
+import platform
+
+import platform
+g_isWin = platform.system() == "Windows"
 
 def vfs_path_to_system_path(vfs_root, path):
     if os.name == 'nt':
@@ -46,4 +50,11 @@ def get_segment_protection(prot_in):
         prot |= 4
 
     return prot
+#
+
+def my_open(fd, flag):
+    global g_isWin
+    if(g_isWin):
+        return os.open(fd, flag|os.O_BINARY)
+    #
 #

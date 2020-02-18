@@ -8,7 +8,11 @@ from androidemu.cpu.syscall_handlers import SyscallHandlers
 from androidemu.utils import memory_helpers
 from androidemu.vfs import file_helpers
 import androidemu.utils.misc_utils
-import fcntl
+import platform
+g_isWin = platform.system() == "Windows"
+if not g_isWin:
+    import fcntl
+#
 logger = logging.getLogger(__name__)
 
 OVERRIDE_URANDOM = False
@@ -104,7 +108,7 @@ class VirtualFileSystem:
             if (mode & 2000):
                 flags | os.O_APPEND
             #
-            return self._store_fd(filename, file_path, os.open(file_path, flags=flags))
+            return self._store_fd(filename, file_path, androidemu.utils.misc_utils.my_open(file_path, flags))
         else:
             logger.warning("File does not exist '%s'" % filename)
             return -1
@@ -239,6 +243,10 @@ class VirtualFileSystem:
         return 0
 
     def __fcntl64(self, mu, fd, cmd, arg1, arg2, arg3, arg4):
+        #fcntl is not support on windows
+        global g_isWin
+        if (g_isWin):
+            return 0
         if (fd in self._virtual_files):
             if (F_GETFL == cmd):
                 return fcntl.fcntl(fd, cmd)

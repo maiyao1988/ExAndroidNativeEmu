@@ -131,7 +131,7 @@ class Modules:
             # Retrieve a base address for this module.
             load_base = self.mem_reserve(bound_low, bound_high)
 
-            vf = VirtualFile(misc_utils.system_path_to_vfs_path(self.__vfs_root, filename), os.open(filename, os.O_RDONLY), filename)
+            vf = VirtualFile(misc_utils.system_path_to_vfs_path(self.__vfs_root, filename), misc_utils.my_open(filename, os.O_RDONLY), filename)
             for segment in load_segments:
                 prot = get_segment_protection(segment.header.p_flags)
                 prot = prot if prot is not 0 else UC_PROT_ALL
@@ -196,6 +196,7 @@ class Modules:
             for str_off in dt_needed:
                 str_addr = dynstr_addr + str_off
                 so_name = memory_helpers.read_utf8(self.emu.mu, str_addr)
+                print ("str_addr:0x%08X"%str_addr)
                 so_needed.append(so_name)
             #
             for so_name in so_needed:

@@ -110,11 +110,32 @@ class MemoryMap:
             raise
         #
     #
+    
+    def __read_fully(self, fd, size):
+        b_read = os.read(fd, size)
+        #print (b_read)
+        sz_read = len(b_read)
+        if (sz_read <= 0):
+            return b_read
+        #
+        sz_left = size - sz_read
+        while (sz_left > 0):
+            this_read = os.read(fd, sz_left)
+            len_this_read = len(this_read)
+            print (len_this_read)
+            if (len_this_read <= 0):
+                break
+            b_read = b_read + this_read
+            sz_left = sz_left - len_this_read
+        #
+        return b_read
+    #
 
     def map(self, address, size, prot=UC_PROT_READ | UC_PROT_WRITE, vf=None, offset=0):
         if not self.__is_multiple(address):
             raise Exception('map addr was not multiple of page size (%d, %d).' % (address, PAGE_SIZE))
         #
+
         print("map addr:0x%08X, end:0x%08X, sz:0x%08X off=0x%08X"%(address, address+size, size, offset))
         #traceback.print_stack()
         al_address = address
@@ -122,12 +143,14 @@ class MemoryMap:
         res_addr = self.__map(al_address, al_size, prot)
         if (res_addr != -1 and vf != None):
             ori_off = os.lseek(vf.descriptor, 0, os.SEEK_CUR)
-            os.lseek(vf.descriptor, offset, 0)
-            data = os.read(vf.descriptor, size)
-            #print(res_addr)
+            os.lseek(vf.descriptor, offset, os.SEEK_SET)
+            #data = os.read(vf.descriptor, size)
+            data = self.__read_fully(vf.descriptor, size)
+            print("read for offset %d sz %d data sz:%d"%(offset, size, len(data)))
+            #print("data:%r"%data)
             self.__mu.mem_write(res_addr, data)
             self.__file_map_addr[al_address]=(al_address+al_size, offset, vf)
-            os.lseek(vf.descriptor, ori_off, 0)
+            os.lseek(vf.descriptor, ori_off, os.SEEK_SET)
         #
         return res_addr
     #
