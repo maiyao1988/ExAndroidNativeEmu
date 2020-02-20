@@ -4,6 +4,21 @@ _cond_oposite_map = {"eq":"ne", "cs":"cc", "mi":"pl", "vs":"vc", "hi":"ls", "ge"
 
 _b_cond_ins = ["b"+cond for cond in _cond_oposite_map]
 
+_reg_try = {"r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9"}
+
+def get_free_regs(codelist):
+    global _reg_try
+    reg_used = set()
+    for ins in codelist:
+        op_str = ins.op_str
+        for reg in _reg_try:
+            if (op_str.find(reg)>0):
+                reg_used.add(reg)
+            #
+        #
+    #
+    return _reg_try - reg_used
+#
 def is_jmp_condition(ins):
     global _b_cond_ins
     if (ins.mnemonic in _b_cond_ins):

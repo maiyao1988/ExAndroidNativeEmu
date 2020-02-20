@@ -186,7 +186,72 @@ def clear_itt_if_in_itt(fout, codelist, code_last_run):
     #
 #
 
-def patch_common(fout, lb, code_last_run, codelist, trace, ins_mgr, addr2block_can_use):
+def fix_two_jmp_cause_by_two_true_parent(fin, fout, nexts_list, lb, trace, ins_mgr, addr2block_can_use):
+    assert len(nexts_list) == 2, "fix_two_jmp_cause_by_two_true_parent"
+    parent = list(lb.parent)
+    assert len(parent) == 2
+    p1b = parent[0]
+
+    p1codelist = get_block_codes(fin, p1b, ins_mgr)
+    p1last_code = p1codelist[len(p1codelist) - 1]
+    indexs = trace.get_trace_index(p1last_code.address)
+    index_need = -1
+    for index in indexs:
+        address = trace.get_trace_by_index(index+1)
+        if (address == lb.start):
+            #选取父亲经过自己这个block的路径，开始trace
+            index_need = index
+            break
+        #
+    #
+    assert(index_need > 0)
+    trace_start_index = index_need + 1
+
+    address = trace.get_trace_by_index(trace_start_index)
+    while address >= lb.start and address < lb.end:
+        address = trace.get_trace_by_index(trace_start_index)
+        trace_start_index = trace_start_index + 1
+    #
+    #该地址为，这个parent块会跑到的地址
+    
+    print("fix_two_jmp_cause_by_two_true_parent block %r will jump to 0x%08X when pass block %r"%(lb, address, p1b))
+
+    free_reg1 = get_free_regs(p1codelist)
+    p2b = parent[1]
+    p2codelist = get_block_codes(fin, p2b, ins_mgr)
+    free_reg2 = get_free_regs(p2codelist)
+
+    codelist = get_block_codes(fin, lb, ins_mgr)
+    free_reg3 = get_free_regs(codelist)
+
+    free_reg = free_reg1 & free_reg2 & free_reg3
+
+    assert len(free_reg)>0, "no free reg can used!!!"
+
+    reg = next(iter(free_reg))
+    print("reg %s is choosed"%reg)
+
+    fix_code1 = ["mov %s, #1"%reg, "b #0x%x"%lb.start]
+    clear_itt_if_in_itt(fout, p1codelist, p1last_code)
+    addr_next_insn = safe_patch(fout, p1last_code.address, p1last_code.size, fix_code1, ins_mgr, addr2block_can_use)
+    clean_bytes(fout, addr_next_insn, p1b.end)
+
+    p2last_code = p2codelist[len(p2codelist) - 1]
+    fix_code2 = ["mov %s, #0"%reg, "b #0x%x"%lb.start]
+    clear_itt_if_in_itt(fout, p2codelist, p2last_code)
+    addr_next_insn = safe_patch(fout, p2last_code.address, p2last_code.size, fix_code2, ins_mgr, addr2block_can_use)
+    clean_bytes(fout, addr_next_insn, p2b.end)
+
+    nexts_list.remove(address)
+    another_branch_traget = nexts_list[0]
+    fix_code3 = ["cmp %s, #1"%reg, "beq #0x%x"%address, "b #0x%x"%another_branch_traget]
+    last_code = codelist[len(codelist) - 1]
+    clear_itt_if_in_itt(fout, codelist, last_code)
+    addr_next_insn = safe_patch(fout, last_code.address, last_code.size, fix_code3, ins_mgr, addr2block_can_use)
+    clean_bytes(fout, addr_next_insn, lb.end)
+#
+
+def patch_common(fin, fout, lb, code_last_run, codelist, trace, ins_mgr, addr2block_can_use):
     n = len(codelist)  
     #TODO:识别所有类型的跳转,现在只支持bxx导致的跳转
     mne = code_last_run.mnemonic
@@ -268,16 +333,11 @@ def patch_common(fout, lb, code_last_run, codelist, trace, ins_mgr, addr2block_c
             clean_bytes(fout, addr_next_insn, lb.end)
         else:
             #assert(trace_start >= 0)
-            print("bug here!!! [%r] has two destination can not distinguish how to fix right now, force patch the last code to [0x%08X] destination [0x%08X] is missed!!!!!!"\
+            print("warning here!!! [%r] has two destination can not distinguish [0x%08X] [0x%08X] cause by two true parent"\
                 %(lb, nexts_list[0], nexts_list[1]))
             #这里是bug，有两个跳转但不知道怎么确定哪个跳是条件满足的跳转，先随便patch一个。。。
-
-            clear_itt_if_in_itt(fout, codelist, code_last_run)
-            fix_code = "b #0x%X"%(nexts_list[0],)
-
-            addr_next_insn = safe_patch(fout, code_last_run.address, code_last_run.size, [fix_code], ins_mgr, addr2block_can_use)
-
-            clean_bytes(fout, addr_next_insn, lb.end)
+            fix_two_jmp_cause_by_two_true_parent(fin, fout, nexts_list, lb, trace, ins_mgr, addr2block_can_use)
+        #
     #
 
 #
@@ -318,7 +378,7 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, ins_mgr
             if (jmp_addr in addr2ofb):
                 #跳转到控制块的，说明要修正到真实块
                 #print ("logic block with b %r should fix 0x%08X"%(lb, code_last.address))
-                patch_common(fout, lb, code_last, codelist, trace, ins_mgr, addr2ofb_can_use)
+                patch_common(fin, fout, lb, code_last, codelist, trace, ins_mgr, addr2ofb_can_use)
             #
         #
         elif(lb.end in addr2ofb):
@@ -337,7 +397,7 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, ins_mgr
             #
             #patch最后一条执行的指令
             assert(len(ids)>0)
-            patch_common(fout, lb, code_last_run, codelist, trace, ins_mgr, addr2ofb_can_use)
+            patch_common(fin, fout, lb, code_last_run, codelist, trace, ins_mgr, addr2ofb_can_use)
         #
     #
     #clear_control_block(fout, no_run_blocks)

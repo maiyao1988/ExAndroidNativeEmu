@@ -2,17 +2,27 @@ import os
 import sys
 from deofuse.ins_helper import *
 
+def get_ins_bytes_by_line(line):
+    p = line.find(")")
+    subline = line[p:]
+    p1 = subline.find("[")
+    p2 = subline.find("]")
+    bytes_str = subline[p1+1:p2]
+    return bytearray([int(x, 16) for x in bytes_str.split()])
+#
+
+def addr_in_blocks(addr, blocks):
+    for b in blocks:
+        if (b.start <= addr and b.end > addr):
+            return True
+        #
+    #
+    return False
+#
+
 #标识指令运行的运行信息
 class Tracer:
 
-    def __addr_in_blocks(self, addr, blocks):
-        for b in blocks:
-            if (b.start <= addr and b.end > addr):
-                return True
-            #
-        #
-        return False
-    #
 
     def __init__(self, trace_path, lib_name, start_addr, end_addr, blocks_to_trace):
         self.__lib_name = lib_name
@@ -21,6 +31,7 @@ class Tracer:
 
         self.__trace_list = []
         self.__condition_trace_map = {}
+        self.__ins_count = {}
 
         detect_for_condition_come_true = False
         trace_for_condion_addr = 0
@@ -49,11 +60,18 @@ class Tracer:
                     continue
                 #
                 #print("%x %r"%(addr, blocks_to_trace))
-                if (not self.__addr_in_blocks(addr, blocks_to_trace)):
+                if (not addr_in_blocks(addr, blocks_to_trace)):
                     continue
                 #
 
                 self.__trace_list.append(addr)
+                if (addr in self.__ins_count):
+                    count = self.__ins_count[addr]
+                    self.__ins_count[addr] = count + 1
+                #
+                else:
+                    self.__ins_count[addr] = 1
+                #
 
                 if (trace_for_true_jmp):
                     m = None
@@ -79,12 +97,8 @@ class Tracer:
                     detect_for_condition_come_true = True
                     trace_for_true_jmp = True
                     trace_for_condion_addr = addr
-                    p = line.find(")")
-                    subline = line[p:]
-                    p1 = subline.find("[")
-                    p2 = subline.find("]")
-                    bytes_str = subline[p1+1:p2]
-                    trace_for_condion_next_prefer_addr = addr + len(bytes_str.split())
+                    
+                    trace_for_condion_next_prefer_addr = addr + len(get_ins_bytes_by_line(line))
                 #
             #
             #print (self.__condition_trace_map)
@@ -118,8 +132,16 @@ class Tracer:
             addr = self.get_trace_by_index(i+1)
             if (addr != None):
                 next_addrs.add(addr)
+            #
         #
         return next_addrs
     #
 
+    def get_ins_run_count(self, addr):
+        if (addr in self.__ins_count):
+            return self.__ins_count
+        else:
+            return 0
+        #
+    #
 #
