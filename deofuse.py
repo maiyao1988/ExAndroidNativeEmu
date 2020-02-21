@@ -6,20 +6,6 @@ from deofuse import cfg
 from deofuse import tracer
 import shutil
 
-def get_block_codes(f, block, ins_mgr):
-    codelist = []
-    b=block
-    size = b.end - b.start
-    assert size > 0, "block %r size <=0"%b
-    f.seek(b.start, 0)
-    code_bytes = f.read(size)
-    codes = ins_mgr.disasm(code_bytes, b.start)
-    for c in codes:
-        codelist.append(c)
-    #
-    return codelist
-#
-
 def find_main_control_block(f, blocks, base_addr, ins_mgr):
     for b in blocks:
         #print(b)
@@ -368,7 +354,7 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, ins_mgr
             print("warning true block %r has not run"%lb)
             no_run_blocks.append(lb)
             continue
-        if (is_jmp_insn(code_last)):
+        if (is_jmp(code_last)):
             #逻辑块结尾是否还会出现bne这些条件判断？待观察
             #assert mne == "b" or mne == "b.w", "block %r last code is not in b or b.w"%lb
             #主动跳转，结尾为跳转指令
