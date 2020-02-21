@@ -123,7 +123,8 @@ class IntructionManger:
             nlen = len(tmp_code_list)
             last_code = tmp_code_list[nlen-1]
             code_end_addr = last_code.address + last_code.size
-            if (end_addr == code_end_addr):
+            if (end_addr <= code_end_addr):
+                assert end_addr == code_end_addr
                 break
             #
             dests = self.__get_all_jump_dest(tmp_code_list, start_addr, my_code_bytes)
