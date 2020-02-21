@@ -156,7 +156,7 @@ def safe_patch(fout, address, max_size, ins_list, ins_mgr, addr2block_can_use):
     #assert addr_next_insn <= lb.end, "patch %s address :0x%08X to %s error size not enouth"%(code_r, code_last_run.address, fix_code) 
     if(addr_next_insn<=0):
         #空間不足，想辦法patch到控制塊中
-        print("patch address :0x%08X to %r error size not enouth try jump to control block"%(address, ins_list))
+        print("patch address :0x%08X to %r size not enouth try jump to control block"%(address, ins_list))
         addr_next_insn = patch_size_not_enouth(fout, address, max_size, ins_list, ins_mgr, addr2block_can_use)
     #
     else:

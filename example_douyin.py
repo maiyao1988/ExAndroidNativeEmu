@@ -139,6 +139,7 @@ emulator.java_classloader.add_class(java_lang_StackTraceElement)
 
 # Load all libraries.
 lib_module = emulator.load_library("tests/bin/libcms.so")
+#lib_module = emulator.load_library("./cms.so")
 
 # Show loaded modules.
 logger.info("Loaded modules:")

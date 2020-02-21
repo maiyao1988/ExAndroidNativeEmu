@@ -196,7 +196,6 @@ class Modules:
             for str_off in dt_needed:
                 str_addr = dynstr_addr + str_off
                 so_name = memory_helpers.read_utf8(self.emu.mu, str_addr)
-                print ("str_addr:0x%08X"%str_addr)
                 so_needed.append(so_name)
             #
             for so_name in so_needed:

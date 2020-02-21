@@ -84,10 +84,18 @@ def create_cfg(f, base_addr, size, thumb):
     block_back_jump = set()
     cb_now = None
     #print (hex(base_addr))
+    codeslist = []
     for i in codes:
+        codeslist.append(i)
+    #
+    listlen = len(codeslist)
+    skip_to_addr = -1
+    for index in range(0, listlen):
+        i = codeslist[index]
         addr = i.address
-        
-        instruction_str = ''.join('{:02X} '.format(x) for x in i.bytes)
+        if (skip_to_addr > addr):
+            continue
+        #
         if (addr in block_starts_map):
             if (cb_now != None):
                 cb_now.end = addr
@@ -98,38 +106,70 @@ def create_cfg(f, base_addr, size, thumb):
         mne = i.mnemonic
         addr_next = addr + i.size
 
-        line = "[%16s]0x%08X:\t%s\t%s"%(instruction_str, addr, i.mnemonic.upper(), i.op_str.upper())
+        #instruction_str = ''.join('{:02X} '.format(x) for x in i.bytes)
+        #line = "[%16s]0x%08X:\t%s\t%s"%(instruction_str, addr, i.mnemonic.upper(), i.op_str.upper())
         #print (line)
         if (is_jmp(i, base_addr, size)):
-            if (mne[0] == "b"):
-                #print("in")
-                op = i.op_str.strip()
-                #跳转指令，需要
-                if (op[0] == "#"):
-                    cb_now.end = addr
-                    child_start = int(op[1:], 16)
-                    #print ("target_block 0x%08X"%child_start)
+            #print("in")
+            jmp_dest = get_jmp_dest(i)
+            #跳转指令，需要
+            if (jmp_dest != None):
+                cb_now.end = addr
+                child_start = jmp_dest
+                #print ("target_block 0x%08X"%child_start)
+                target_block = None
+                if (child_start not in block_starts_map):
+                    #print ("hhh %08X"%child_start)
+                    target_block = CodeBlock()
+                    target_block.start = child_start
+                    block_starts_map[child_start] = target_block
+                    blocks.append(target_block)
+                    if (child_start < addr):
+                        #print ("back jump 0x%08X to 0x%08X"%(addr, child_start))
+                        block_back_jump.add(target_block)
+                    #
+                #
+                else:
+                    target_block = block_starts_map[child_start]
+                #
+
+                #print ("cb_now %r child %r"%(cb_now, target_block))
+                cb_now.childs.add(target_block)
+                #print(cb_now.childs)
+                target_block.parent.add(cb_now)
+            #
+            elif (mne in ("tbb", "tbh", "tbb.w", "tbh.w")):
+                assert index-2 > 0, "tbb/tbh list range not found..."
+                code_cmp = codeslist[index-2]
+                assert code_cmp.mnemonic == "cmp", "tbb/tbh list range not found..."
+                op_str = code_cmp.op_str
+                imm_id=op_str.find("#")
+                ntable = int(op_str[imm_id+1:], 16)
+                itemsz = 2 #tbh
+                if (mne.startswith("tbb")):
+                    itemsz = 1
+                #
+                assert mne.find("pc")>-1, "table jump not by pc is not support now"
+                for jmp_id in range(0, ntable):
+                    f.seek(addr_next + jmp_id * itemsz, 0)
+                    jmp_off = f.read(itemsz)
+                    dest = addr + 4 + jmp_off
+                    #tbb/tbh only support forward jump
                     target_block = None
-                    if (child_start not in block_starts_map):
-                        #print ("hhh %08X"%child_start)
-                        target_block = CodeBlock()
-                        target_block.start = child_start
+                    if (dest not in block_starts_map):
+                        target_block = CodeBlock(dest, 0)                        
                         block_starts_map[child_start] = target_block
                         blocks.append(target_block)
-                        if (child_start < addr):
-                            #print ("back jump 0x%08X to 0x%08X"%(addr, child_start))
-                            block_back_jump.add(target_block)
-                        #
                     #
                     else:
-                        target_block = block_starts_map[child_start]
+                        target_block = block_starts_map[dest]
                     #
-
                     #print ("cb_now %r child %r"%(cb_now, target_block))
                     cb_now.childs.add(target_block)
                     #print(cb_now.childs)
                     target_block.parent.add(cb_now)
                 #
+                skip_to_addr = addr_next + ntable * itemsz
             #
             #print (mne + " " + i.op_str)
             if (addr_next < base_addr + size):
@@ -189,6 +229,6 @@ if (__name__ == "__main__"):
     with  open(path, "rb") as f:
         c = create_cfg(f, base_addr, end_addr - base_addr, 1)
         print(c)
-        print (c[12].parent)
+        #print (c[12].parent)
     #
 #

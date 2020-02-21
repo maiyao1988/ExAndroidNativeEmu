@@ -96,6 +96,14 @@ def get_jmp_dest(i):
             return jmp_addr
         #
     #
+    elif (i.mnemonic in ("cbz", "cbnz")):
+        op_str = i.op_str
+        sa = op_str.split(",")
+        dest_str = sa[1].strip()
+        assert dest_str[0] == '#'
+        jmp_addr = int(dest_str[1:], 16)
+        return jmp_addr
+    #
     return None
 #
 
