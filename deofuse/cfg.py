@@ -48,6 +48,9 @@ def is_jmp_no_ret(i, base_addr, size):
             return True
         #
     #
+    if (mne in ("tbb", "tbb.w", "tbh", "tbh.w")):
+        return True
+    #
     return False
 #
 
@@ -62,6 +65,7 @@ def is_jmp(i, base_addr, size):
     if mne in ("cbz", "cbnz"):
         return True
     #
+
 
     return False
 #
@@ -97,7 +101,7 @@ def create_cfg(f, base_addr, size, thumb):
             continue
         #
         if (addr in block_starts_map):
-            if (cb_now != None):
+            if (cb_now != None and cb_now.end == 0):
                 cb_now.end = addr
             #
             cb_now = block_starts_map[addr]
@@ -112,9 +116,9 @@ def create_cfg(f, base_addr, size, thumb):
         if (is_jmp(i, base_addr, size)):
             #print("in")
             jmp_dest = get_jmp_dest(i)
-            #跳转指令，需要
+            #跳转指令，需要获取跳转目标，以跳转目标为start新建block
             if (jmp_dest != None):
-                cb_now.end = addr
+                cb_now.end = addr_next
                 child_start = jmp_dest
                 #print ("target_block 0x%08X"%child_start)
                 target_block = None
@@ -144,21 +148,23 @@ def create_cfg(f, base_addr, size, thumb):
                 assert code_cmp.mnemonic == "cmp", "tbb/tbh list range not found..."
                 op_str = code_cmp.op_str
                 imm_id=op_str.find("#")
-                ntable = int(op_str[imm_id+1:], 16)
+                ntable = int(op_str[imm_id+1:], 16)+1
                 itemsz = 2 #tbh
                 if (mne.startswith("tbb")):
                     itemsz = 1
                 #
-                assert mne.find("pc")>-1, "table jump not by pc is not support now"
+                cb_now.end = addr_next
+                assert i.op_str.find("pc")>-1, "table jump not by pc is not support now"
                 for jmp_id in range(0, ntable):
                     f.seek(addr_next + jmp_id * itemsz, 0)
-                    jmp_off = f.read(itemsz)
-                    dest = addr + 4 + jmp_off
+                    jmp_off_b = f.read(itemsz)
+                    jmp_off = int.from_bytes(jmp_off_b, byteorder='little')
+                    dest = addr + 4 + jmp_off*2
                     #tbb/tbh only support forward jump
                     target_block = None
                     if (dest not in block_starts_map):
                         target_block = CodeBlock(dest, 0)                        
-                        block_starts_map[child_start] = target_block
+                        block_starts_map[dest] = target_block
                         blocks.append(target_block)
                     #
                     else:
@@ -170,6 +176,7 @@ def create_cfg(f, base_addr, size, thumb):
                     target_block.parent.add(cb_now)
                 #
                 skip_to_addr = addr_next + ntable * itemsz
+                addr_next = skip_to_addr
             #
             #print (mne + " " + i.op_str)
             if (addr_next < base_addr + size):
