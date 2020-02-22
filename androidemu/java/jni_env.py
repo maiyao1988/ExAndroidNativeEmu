@@ -573,8 +573,15 @@ class JNIEnv:
         raise NotImplementedError()
 
     @native_method
-    def get_object_class(self, mu, env):
-        raise NotImplementedError()
+    def get_object_class(self, mu, env, obj_idx):
+        obj = self.get_reference(obj_idx)
+        if (obj == None):
+            # TODO: Proper Java error?
+            raise RuntimeError('get_object_class can not get class for object id %d for JNIEnv.' %obj_idx)
+        #
+        clazz  = obj.value.__class__
+        return self.add_global_reference(jclass(clazz))
+    #
 
     @native_method
     def is_instance_of(self, mu, env, obj_idx, class_idx):
