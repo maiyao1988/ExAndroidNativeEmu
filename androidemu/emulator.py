@@ -22,7 +22,6 @@ from androidemu.java.java_vm import JavaVM
 from androidemu.native.hooks import NativeHooks
 from androidemu.native.memory import NativeMemory
 from androidemu.native.memory_map import MemoryMap
-from androidemu.tracer import Tracer
 from androidemu.vfs.file_system import VirtualFileSystem
 
 from androidemu.java.java_class_def import JavaClassDef
@@ -135,8 +134,6 @@ class Emulator:
         self.native_memory = NativeMemory(self.mu, self.memory, self.syscall_handler, self.vfs)
         self.native_hooks = NativeHooks(self, self.native_memory, self.modules, self.hooker, self.__vfs_root)
 
-        # Tracer
-        self.tracer = Tracer(self.mu, self.modules)
         self.__add_classes()
     #
 
