@@ -6,31 +6,6 @@ from deofuse import cfg
 from deofuse import tracer
 import shutil
 
-def find_main_control_block(f, blocks, base_addr, ins_mgr):
-    for b in blocks:
-        #print(b)
-        #print (b.parent)
-        #查找主控制块
-        #实测主控控制块的父亲节点不可能少于4个
-        if (len(b.parent) > 4):
-            codelist = get_block_codes(f, b, ins_mgr)
-            #一般主控制块的指令数量少于6个（不完全确定）,且多于一个指令
-            n = len(codelist)
-            if (n < 2):
-                continue
-            #
-            # 这个数量可能需要调整，
-            #if (n < 6):
-            code_last = codelist[n-1]
-            code_cmp = codelist[n-2]
-            if (code_last.mnemonic[0] == "b" and code_cmp.mnemonic=="cmp"):
-                return b
-            #
-            #
-        #
-    #
-#
-
 def _start_withs(str, sets):
     for s in sets:
         if (str.startswith(s)):
@@ -43,16 +18,10 @@ def _start_withs(str, sets):
 def find_ofuse_control_block(f, blocks, base_addr, ins_mgr):
     obfuses_cb = []
     dead_cb = []
-    main_cb = find_main_control_block(f, blocks, base_addr, ins_mgr)
-    assert(main_cb != None)
-    obfuses_cb.append(main_cb)
-    print ("main_block:%r"%main_cb)
 
     for b in blocks:
         #print(b)
-        if (b == main_cb):
-            continue
-        #
+
         codelist = get_block_codes(f, b, ins_mgr)
         
         n = len(codelist)
