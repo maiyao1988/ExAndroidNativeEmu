@@ -46,11 +46,14 @@ class NativeHooks:
         logger.debug("Called __system_property_get(%s, 0x%x)" % (name, buf_ptr))
 
         if name in self._emu.system_properties:
-            memory_helpers.write_utf8(uc, buf_ptr, self._emu.system_properties[name])
+            p = self._emu.system_properties[name]
+            nread = len(p)
+            memory_helpers.write_utf8(uc, buf_ptr, p)
+            return nread
         else:
-            raise ValueError('%s was not found in system_properties dictionary.' % name)
-
-        return None
+            print ('%s was not found in system_properties dictionary.' % name)
+        #
+        return 0
 
     @native_method
     def dlopen(self, uc, path):

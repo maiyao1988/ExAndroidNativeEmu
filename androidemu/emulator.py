@@ -22,6 +22,10 @@ from androidemu.native.memory_map import MemoryMap
 from androidemu.tracer import Tracer
 from androidemu.vfs.file_system import VirtualFileSystem
 
+from androidemu.java.classes.constructor import *
+from androidemu.java.classes.executable import *
+from androidemu.java.classes.method import *
+
 logger = logging.getLogger(__name__)
 
 
@@ -61,6 +65,11 @@ class Emulator:
         #
     #
 
+    def __add_classes(self):
+        self.java_classloader.add_class(Constructor)
+        self.java_classloader.add_class(Executable)
+        self.java_classloader.add_class(Method)
+    #
     """
     :type mu Uc
     :type modules Modules
@@ -82,7 +91,7 @@ class Emulator:
         self.mu.mem_map(0x0, 0x00001000, UC_PROT_READ | UC_PROT_WRITE)
         
         # Android
-        self.system_properties = {"libc.debug.malloc.options": ""}
+        self.system_properties = {"libc.debug.malloc.options": "", "ro.build.version.sdk":"19", "persist.sys.dalvik.vm.lib":"libdvm.so", "ro.product.cpu.abi":"armeabi-v7a"}
         self.memory = MemoryMap(self.mu, config.MAP_ALLOC_BASE, config.MAP_ALLOC_BASE+config.MAP_ALLOC_SIZE)
 
         # Stack.
