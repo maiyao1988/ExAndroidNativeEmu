@@ -354,7 +354,7 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, ins_mgr
             print("warning true block %r has not run"%lb)
             no_run_blocks.append(lb)
             continue
-        if (is_jmp(code_last)):
+        if (is_jmp_imm(code_last)):
             #逻辑块结尾是否还会出现bne这些条件判断？待观察
             #assert mne == "b" or mne == "b.w", "block %r last code is not in b or b.w"%lb
             #主动跳转，结尾为跳转指令

@@ -38,6 +38,12 @@ def is_jmp_condition_str(ins_str):
     #
 #
 
+#目的地址是立即数的跳转
+def is_jmp_imm(ins):
+    mne = ins.mnemonic
+    return mne[0] == "b" and mne not in ("blx", "bl", "bic", "bics") or mne in ("cbz", "cbnz")
+#
+
 #判断是否无条件跳转,这种跳转只会产生一个分支
 def is_jmp_no_ret(i, base_addr=-1, size=-1):
     mne = i.mnemonic
