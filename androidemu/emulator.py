@@ -72,9 +72,8 @@ class Emulator:
             full_name = "%s.%s"%(dirname.replace("/", "."), package_name)
             m = importlib.import_module(full_name)
             #print(dir(m))
-            clsList = [clzname for clzname in dir(m) if inspect.isclass(getattr(m, clzname)) and clzname[0] != "_"]
-            for clsname in clsList:
-                clz = getattr(m, clsname)
+            clsList = inspect.getmembers(m, inspect.isclass)
+            for _, clz in clsList:
                 if (type(clz) == JavaClassDef):
                     preload_classes.add(clz)
                 #
