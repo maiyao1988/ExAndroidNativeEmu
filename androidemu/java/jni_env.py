@@ -52,7 +52,7 @@ class JNIEnv:
             25: self.new_local_ref,
             26: self.ensure_local_capacity,
             27: self.alloc_object,
-            28: self.new_object_v,
+            28: self.new_object,
             29: self.new_object_v,
             30: self.new_object_a,
             31: self.get_object_class,
@@ -537,6 +537,11 @@ class JNIEnv:
 
     @native_method
     def alloc_object(self, mu, env):
+        raise NotImplementedError()
+    #
+
+    @native_method
+    def new_object(self, mu, env, clazz_idx, method_id):
         raise NotImplementedError()
     #
 

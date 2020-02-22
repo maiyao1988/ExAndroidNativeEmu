@@ -20,6 +20,8 @@ class JavaClassLoader:
 
         self.class_by_id[clazz.jvm_id] = clazz
         self.class_by_name[clazz.jvm_name] = clazz
+        clazz.class_loader = self
+    #
 
     def find_class_by_id(self, jvm_id):
         if jvm_id not in self.class_by_id:
