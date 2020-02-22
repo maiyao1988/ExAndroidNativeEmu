@@ -1,11 +1,14 @@
 import logging
 import os
 import time
+import importlib
+import inspect
+import pkgutil
+
 from random import randint
 
 from unicorn import *
 from unicorn.arm_const import *
-
 from androidemu import config
 from androidemu.config import HOOK_MEMORY_BASE, HOOK_MEMORY_SIZE
 from androidemu.cpu.interrupt_handler import InterruptHandler
@@ -22,10 +25,7 @@ from androidemu.native.memory_map import MemoryMap
 from androidemu.tracer import Tracer
 from androidemu.vfs.file_system import VirtualFileSystem
 
-from androidemu.java.classes.constructor import *
-from androidemu.java.classes.executable import *
-from androidemu.java.classes.method import *
-
+from androidemu.java.java_class_def import JavaClassDef
 logger = logging.getLogger(__name__)
 
 
@@ -66,9 +66,24 @@ class Emulator:
     #
 
     def __add_classes(self):
-        self.java_classloader.add_class(Constructor)
-        self.java_classloader.add_class(Executable)
-        self.java_classloader.add_class(Method)
+        dirname = "androidemu/java/classes"
+        preload_classes = set()
+        for importer, package_name, c in pkgutil.iter_modules([dirname]):
+            full_name = "%s.%s"%(dirname.replace("/", "."), package_name)
+            m = importlib.import_module(full_name)
+            #print(dir(m))
+            clsList = [clzname for clzname in dir(m) if inspect.isclass(getattr(m, clzname)) and clzname[0] != "_"]
+            for clsname in clsList:
+                clz = getattr(m, clsname)
+                if (type(clz) == JavaClassDef):
+                    preload_classes.add(clz)
+                #
+            #
+        #
+        for clz in preload_classes:
+            self.java_classloader.add_class(clz)
+        #
+        
     #
     """
     :type mu Uc
@@ -123,7 +138,7 @@ class Emulator:
 
         # Tracer
         self.tracer = Tracer(self.mu, self.modules)
-
+        self.__add_classes()
     #
 
     def load_library(self, filename, do_init=True):
