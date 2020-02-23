@@ -641,9 +641,9 @@ class JNIEnv:
     @native_method
     def call_object_method(self, mu, env):
         raise NotImplementedError()
+    #
 
-    @native_method
-    def call_object_method_v(self, mu, env, obj_idx, method_id, args):
+    def __call_xxx_method_v(self, mu, env, obj_idx, method_id, args):
         obj = self.get_reference(obj_idx)
 
         if not isinstance(obj, jobject):
@@ -654,7 +654,7 @@ class JNIEnv:
             # TODO: Proper Java error?
             raise RuntimeError("Could not find method %d in object %s by id." % (method_id, pyobj.jvm_name))
 
-        logger.debug("JNIEnv->CallObjectMethodV(%s, %s <%s>, 0x%x) was called" % (
+        logger.debug("JNIEnv->CallXXXMethodV(%s, %s <%s>, 0x%x) was called" % (
             pyobj.jvm_name,
             method.name,
             method.signature, args))
@@ -663,6 +663,12 @@ class JNIEnv:
         constructor_args = self.read_args_v(mu, args, method.args_list)
 
         return method.func(pyobj, self._emu, *constructor_args)
+    #
+
+    @native_method
+    def call_object_method_v(self, mu, env, obj_idx, method_id, args):
+        return self.__call_xxx_method_v(mu, env, obj_idx, method_id, args)
+    #
 
     @native_method
     def call_object_method_a(self, mu, env):
@@ -674,28 +680,8 @@ class JNIEnv:
 
     @native_method
     def call_boolean_method_v(self, mu, env, obj_idx, method_id, args):
-        obj = self.get_reference(obj_idx)
-
-        if not isinstance(obj, jobject):
-            raise ValueError('Expected a jobject.')
-
-        pyobj = JNIEnv.jobject_to_pyobject(obj)
-        method = pyobj.__class__.find_method_by_id(method_id)
-
-        if method is None:
-            # TODO: Proper Java error?
-            raise RuntimeError("Could not find method %d in object %s by id." % (method_id, pyobj.jvm_name))
-
-        logger.debug("JNIEnv->CallBooleanMethodV(%s, %s <%s>, 0x%x) was called" % (
-            pyobj.jvm_name,
-            method.name,
-            method.signature, args))
-
-        # Parse arguments.
-        constructor_args = self.read_args_v(mu, args, method.args_list)
-        result = method.func(pyobj, self._emu, *constructor_args)
-
-        return result
+        return self.__call_xxx_method_v(mu, env, obj_idx, method_id, args)
+    #
 
     @native_method
     def call_boolean_method_a(self, mu, env):
@@ -706,8 +692,9 @@ class JNIEnv:
         raise NotImplementedError()
 
     @native_method
-    def call_byte_method_v(self, mu, env):
-        raise NotImplementedError()
+    def call_byte_method_v(self, mu, env, obj_idx, method_id, args):
+        return self.__call_xxx_method_v(mu, env, obj_idx, method_id, args)
+    #
 
     @native_method
     def call_byte_method_a(self, mu, env):
@@ -718,8 +705,9 @@ class JNIEnv:
         raise NotImplementedError()
 
     @native_method
-    def call_char_method_v(self, mu, env):
-        raise NotImplementedError()
+    def call_char_method_v(self, mu, env, obj_idx, method_id, args):
+        return self.__call_xxx_method_v(mu, env, obj_idx, method_id, args)
+    #
 
     @native_method
     def call_char_method_a(self, mu, env):
@@ -730,8 +718,9 @@ class JNIEnv:
         raise NotImplementedError()
 
     @native_method
-    def call_short_method_v(self, mu, env):
-        raise NotImplementedError()
+    def call_short_method_v(self, mu, env, obj_idx, method_id, args):
+        return self.__call_xxx_method_v(mu, env, obj_idx, method_id, args)
+    #
 
     @native_method
     def call_short_method_a(self, mu, env):
@@ -743,28 +732,8 @@ class JNIEnv:
 
     @native_method
     def call_int_method_v(self, mu, env,  obj_idx, method_id, args):
-        obj = self.get_reference(obj_idx)
-
-        if not isinstance(obj, jobject):
-            raise ValueError('Expected a jobject.')
-
-        pyobj = JNIEnv.jobject_to_pyobject(obj)
-        method = pyobj.__class__.find_method_by_id(method_id)
-
-        if method is None:
-            # TODO: Proper Java error?
-            raise RuntimeError("Could not find method %d in object %s by id." % (method_id, pyobj.jvm_name))
-
-        logger.debug("JNIEnv->CallIntMethodV(%s, %s <%s>, 0x%x) was called" % (
-            pyobj.jvm_name,
-            method.name,
-            method.signature, args))
-
-        # Parse arguments.
-        constructor_args = self.read_args_v(mu, args, method.args_list)
-        result = method.func(pyobj, self._emu, *constructor_args)
-
-        return result
+        return self.__call_xxx_method_v(mu, env, obj_idx, method_id, args)
+    #
 
     @native_method
     def call_int_method_a(self, mu, env):
@@ -776,27 +745,8 @@ class JNIEnv:
 
     @native_method
     def call_long_method_v(self, mu, env, obj_idx, method_id, args):
-        obj = self.get_reference(obj_idx)
-
-        if not isinstance(obj, jobject):
-            raise ValueError('Expected a jobject.')
-
-        pyobj = JNIEnv.jobject_to_pyobject(obj)
-        method = pyobj.__class__.find_method_by_id(method_id)
-
-        if method is None:
-            # TODO: Proper Java error?
-            raise RuntimeError("Could not find method %d in object %s by id." % (method_id, pyobj.jvm_name))
-
-        logger.debug("JNIEnv->CallLongMethodV(%s, %s <%s>, 0x%x) was called" % (
-            pyobj.jvm_name,
-            method.name,
-            method.signature, args))
-
-        # Parse arguments.
-        constructor_args = self.read_args_v(mu, args, method.args_list)
-
-        return method.func(pyobj, self._emu, *constructor_args)
+        return self.__call_xxx_method_v(mu, env, obj_idx, method_id, args)
+    #
 
     @native_method
     def call_long_method_a(self, mu, env):
@@ -807,8 +757,9 @@ class JNIEnv:
         raise NotImplementedError()
 
     @native_method
-    def call_float_method_v(self, mu, env):
-        raise NotImplementedError()
+    def call_float_method_v(self, mu, env, obj_idx, method_id, args):
+        return self.__call_xxx_method_v(mu, env, obj_idx, method_id, args)
+    #
 
     @native_method
     def call_float_method_a(self, mu, env):
@@ -819,8 +770,9 @@ class JNIEnv:
         raise NotImplementedError()
 
     @native_method
-    def call_double_method_v(self, mu, env):
-        raise NotImplementedError()
+    def call_double_method_v(self, mu, env, obj_idx, method_id, args):
+        return self.__call_xxx_method_v(mu, env, obj_idx, method_id, args)
+    #
 
     @native_method
     def call_double_method_a(self, mu, env):
@@ -832,26 +784,8 @@ class JNIEnv:
 
     @native_method
     def call_void_method_v(self, mu, env, obj_idx, method_id, args):
-        obj = self.get_reference(obj_idx)
-
-        if not isinstance(obj, jobject):
-            raise ValueError('Expected a jobject.')
-
-        pyobj = JNIEnv.jobject_to_pyobject(obj)
-        method = pyobj.__class__.find_method_by_id(method_id)
-
-        if method is None:
-            # TODO: Proper Java error?
-            raise RuntimeError("Could not find method %d in object %s by id." % (method_id, pyobj.jvm_name))
-
-        logger.debug("JNIEnv->CallVoidMethodV(%s, %s <%s>, 0x%x) was called" % (
-            pyobj.jvm_name,
-            method.name,
-            method.signature, args))
-
-        method.func(pyobj, self._emu)
-
-        return None
+        return self.__call_xxx_method_v(mu, env, obj_idx, method_id, args)
+    #
 
     @native_method
     def call_void_method_a(self, mu, env):
@@ -1214,8 +1148,7 @@ class JNIEnv:
     def call_static_int_method(self, mu, env):
         raise NotImplementedError()
 
-    @native_method
-    def call_static_int_method_v(self, mu, env, clazz_idx, method_id, args):
+    def __call_static_xxx_method_v(self, mu, env, clazz_idx, method_id, args):
         clazz = self.get_reference(clazz_idx)
 
         if not isinstance(clazz, jclass):
@@ -1227,7 +1160,7 @@ class JNIEnv:
             # TODO: Proper Java error?
             raise RuntimeError("Could not find method %d in class %s by id." % (method_id, clazz.value.jvm_name))
 
-        logger.debug("JNIEnv->CallStaticIntMethodV(%s, %s <%s>, 0x%x) was called" % (
+        logger.debug("JNIEnv->CallStaticXXXMethodV(%s, %s <%s>, 0x%x) was called" % (
             clazz.value.jvm_name,
             method.name,
             method.signature, args))
@@ -1236,6 +1169,12 @@ class JNIEnv:
         constructor_args = self.read_args_v(mu, args, method.args_list)
 
         return method.func(self._emu, *constructor_args)
+    #
+
+    @native_method
+    def call_static_int_method_v(self, mu, env, clazz_idx, method_id, args):
+        return self.__call_static_xxx_method_v(mu, env, clazz_idx, method_id, args)
+    #
 
     @native_method
     def call_static_int_method_a(self, mu, env):
@@ -1246,8 +1185,9 @@ class JNIEnv:
         raise NotImplementedError()
 
     @native_method
-    def call_static_long_method_v(self, mu, env):
-        raise NotImplementedError()
+    def call_static_long_method_v(self, mu, env, clazz_idx, method_id, args):
+        return self.__call_static_xxx_method_v(mu, env, clazz_idx, method_id, args)
+    #
 
     @native_method
     def call_static_long_method_a(self, mu, env):
@@ -1258,8 +1198,9 @@ class JNIEnv:
         raise NotImplementedError()
 
     @native_method
-    def call_static_float_method_v(self, mu, env):
-        raise NotImplementedError()
+    def call_static_float_method_v(self, mu, env, clazz_idx, method_id, args):
+        return self.__call_static_xxx_method_v(mu, env, clazz_idx, method_id, args)
+    #
 
     @native_method
     def call_static_float_method_a(self, mu, env):
@@ -1270,8 +1211,9 @@ class JNIEnv:
         raise NotImplementedError()
 
     @native_method
-    def call_static_double_method_v(self, mu, env):
-        raise NotImplementedError()
+    def call_static_double_method_v(self, mu, env, clazz_idx, method_id, args):
+        return self.__call_static_xxx_method_v(mu, env, clazz_idx, method_id, args)
+    #
 
     @native_method
     def call_static_double_method_a(self, mu, env):
@@ -1282,8 +1224,9 @@ class JNIEnv:
         raise NotImplementedError()
 
     @native_method
-    def call_static_void_method_v(self, mu, env):
-        raise NotImplementedError()
+    def call_static_void_method_v(self, mu, env, clazz_idx, method_id, args):
+        return self.__call_static_xxx_method_v(mu, env, clazz_idx, method_id, args)
+    #
 
     @native_method
     def call_static_void_method_a(self, mu, env):

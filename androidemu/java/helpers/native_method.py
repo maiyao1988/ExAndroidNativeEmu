@@ -113,7 +113,7 @@ def native_method(func):
 
         if result is not None:
             native_write_arg_register(emu, UC_ARM_REG_R0, result)
-        else:
-            mu.reg_write(UC_ARM_REG_R0, JNI_ERR)
+        #
+    #
 
     return native_method_wrapper

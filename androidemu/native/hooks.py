@@ -32,12 +32,10 @@ class NativeHooks:
         modules.add_symbol_hook('dladdr', hooker.write_function(self.dladdr) + 1)
         modules.add_symbol_hook('dlsym', hooker.write_function(self.dlsym) + 1)
         modules.add_symbol_hook('dl_unwind_find_exidx', hooker.write_function(self.dl_unwind_find_exidx) + 1)
-        modules.add_symbol_hook('pthread_create', hooker.write_function(self.nop('pthread_create')) + 1)
-        modules.add_symbol_hook('pthread_join', hooker.write_function(self.nop('pthread_join')) + 1)
+        modules.add_symbol_hook('pthread_create', hooker.write_function(self.pthread_create) + 1)
+        modules.add_symbol_hook('pthread_join', hooker.write_function(self.pthread_join) + 1)
 
         modules.add_symbol_hook('abort', hooker.write_function(self.abort) + 1)
-        #modules.add_symbol_hook('vfprintf', hooker.write_function(self.nop('vfprintf')) + 1)
-        #modules.add_symbol_hook('fprintf', hooker.write_function(self.nop('fprintf')) + 1)
         modules.add_symbol_hook('dlerror', hooker.write_function(self.nop('dlerror')) + 1)
 
     @native_method
@@ -128,8 +126,20 @@ class NativeHooks:
         return 0
     #
 
+    @native_method
+    def pthread_create(self, uc, pthread_t, attr, start_routine, arg):
+        logging.warning("pthread_create called start_routine [0x%08X]"%(start_routine,))
+        return 0
+    #
+
+    @native_method
+    def pthread_join(self, uc, pthread_t, retval):
+        return 0
+    #
+
     def nop(self, name):
         @native_method
         def nop_inside(emu):
             raise NotImplementedError('Symbol hook not implemented %s' % name)
         return nop_inside
+    #

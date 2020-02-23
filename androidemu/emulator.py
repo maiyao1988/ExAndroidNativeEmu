@@ -81,6 +81,9 @@ class Emulator:
         for clz in preload_classes:
             self.java_classloader.add_class(clz)
         #
+
+        #also add classloader as java class
+        self.java_classloader.add_class(JavaClassLoader)
         
     #
     """
