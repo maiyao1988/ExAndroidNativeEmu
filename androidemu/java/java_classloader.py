@@ -1,7 +1,7 @@
 from androidemu.java.java_class_def import JavaClassDef
+from androidemu.java.classes.clazz import Class
 
-
-class JavaClassLoader:
+class JavaClassLoader(metaclass=JavaClassDef, jvm_name='java/lang/ClassLoader'):
 
     """
     :type class_by_id dict[int, JavaClassDef]
@@ -14,13 +14,16 @@ class JavaClassLoader:
     def add_class(self, clazz):
         if not isinstance(clazz, JavaClassDef):
             raise ValueError('Expected a JavaClassDef.')
-
+        #
         if clazz.jvm_name in self.class_by_name:
             raise KeyError('The class \'%s\' is already registered.' % clazz.jvm_name)
-
+        #
+        if (clazz == Class):
+            clazz.class_loader = self
+        #
+        clazz.class_object = Class(clazz.jvm_name)
         self.class_by_id[clazz.jvm_id] = clazz
         self.class_by_name[clazz.jvm_name] = clazz
-        clazz.class_loader = self
     #
 
     def find_class_by_id(self, jvm_id):

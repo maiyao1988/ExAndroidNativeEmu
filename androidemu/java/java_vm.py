@@ -3,7 +3,6 @@ import traceback
 
 from androidemu.hooker import Hooker
 from androidemu.java.helpers.native_method import native_method
-from androidemu.java.java_classloader import JavaClassLoader
 from androidemu.java.jni_const import *
 from androidemu.java.jni_env import JNIEnv
 

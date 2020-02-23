@@ -5,7 +5,6 @@ from androidemu.java.classes.constructor import Constructor
 from androidemu.java.classes.method import Method
 from androidemu.java.constant_values import MODIFIER_STATIC
 from androidemu.java.helpers.native_method import native_method
-from androidemu.java.java_classloader import JavaClassLoader
 from androidemu.java.jni_const import *
 from androidemu.java.jni_ref import *
 from androidemu.java.reference_table import ReferenceTable
@@ -638,9 +637,11 @@ class JNIEnv:
             raise ValueError('Expected a jobject.')
         
         if (isinstance (obj, jclass)):
+            method = obj.value.class_object.__class__.find_method_by_id(method_id)
+        #
+        else:
             method = obj.value.__class__.find_method_by_id(method_id)
         #
-        method = obj.value.__class__.find_method_by_id(method_id)
         if method is None:
             # TODO: Proper Java error?
             raise RuntimeError("Could not find method %d in object %s by id." % (method_id, obj.value.jvm_name))
