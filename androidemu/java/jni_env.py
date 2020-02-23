@@ -636,12 +636,10 @@ class JNIEnv:
 
         if not isinstance(obj, jobject):
             raise ValueError('Expected a jobject.')
-        '''
+        
         if (isinstance (obj, jclass)):
-            method =  obj.value.find_method_by_id(method_id)
+            method = obj.value.__class__.find_method_by_id(method_id)
         #
-        else:
-        '''
         method = obj.value.__class__.find_method_by_id(method_id)
         if method is None:
             # TODO: Proper Java error?

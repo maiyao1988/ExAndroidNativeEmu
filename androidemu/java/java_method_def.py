@@ -1,7 +1,8 @@
+from androidemu.java.jvm_id_conter import *
 class JavaMethodDef:
 
     def __init__(self, func_name, func, name, signature, native, args_list=None, modifier=None, ignore=None):
-        self.jvm_id = None  # Assigned by JavaClassDef.
+        self.jvm_id = next_method_id()
         self.func_name = func_name
         self.func = func
         self.name = name

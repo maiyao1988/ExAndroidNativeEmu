@@ -1,7 +1,9 @@
+from androidemu.java.jvm_id_conter import *
+
 class JavaFieldDef:
 
     def __init__(self, name, signature, is_static, static_value=None, ignore=False):
-        self.jvm_id = None  # Assigned by JavaClassDef.
+        self.jvm_id = next_field_id()
         self.name = name
         self.signature = signature
         self.is_static = is_static
