@@ -54,8 +54,10 @@ class Modules:
     #
 
     def find_module_by_name(self, filename):
+        absp1 = os.path.abspath(filename)
         for m in self.modules:
-            if (m.filename == filename):
+            absm = os.path.abspath(m.filename)
+            if (absp1 == absm):
                 return m
             #
         #

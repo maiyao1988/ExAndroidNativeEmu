@@ -39,11 +39,14 @@ class SyscallHooks:
         self._mu = mu
  
         self._syscall_handler = syscall_handler
+        self._syscall_handler.set_handler(0x2, "fork", 0, self._fork)
         self._syscall_handler.set_handler(0x14, "getpid", 0, self._getpid)
+        self._syscall_handler.set_handler(0x2A, "pipe", 1, self._pipe)
         self._syscall_handler.set_handler(0x43, "sigaction", 3, self._handle_sigaction)
         self._syscall_handler.set_handler(0x4E, "gettimeofday", 2, self._handle_gettimeofday)
         self._syscall_handler.set_handler(0xAC, "prctl", 5, self._handle_prctl)
         self._syscall_handler.set_handler(0xAF, "sigprocmask", 3, self._handle_sigprocmask)
+        self._syscall_handler.set_handler(0xC7, "getuid32", 0, self._get_uid)
         self._syscall_handler.set_handler(0xE0, "gettid", 0, self._gettid)
         self._syscall_handler.set_handler(0xF0, "futex", 6, self._handle_futex)
         self._syscall_handler.set_handler(0x10c, "tgkill", 3, self._handle_tgkill)
@@ -61,8 +64,19 @@ class SyscallHooks:
         self._socket_id = 0x100000
         self._sockets = dict()
 
+    def _fork(self, mu):
+        logging.warning("skip syscall fork")
+        return 0
+    #
+
     def _getpid(self, mu):
         return 0x1122
+    #
+
+    def _pipe(self, mu, files):
+        logging.warning("skip syscall pipe files [0x%08X]"%files)
+        return 0
+    #
         
     def _handle_sigaction(self, mu, sig, act, oact):
         return 0
@@ -118,12 +132,20 @@ class SyscallHooks:
         if option == PR_SET_VMA:
             # arg5 contains ptr to a name.
             return 0
+        elif option == PR_SET_DUMPABLE:
+            return 0
         else:
             raise NotImplementedError("Unsupported prctl option %d (0x%x)" % (option, option))
+        #
     #
 
     def _handle_sigprocmask(self, mu, how, set, oset):
         return 0
+    #
+
+    def _get_uid(self, mu):
+        #return a android valid app uid, which is >10000
+        return 10023
     #
 
     def _handle_futex(self, mu, uaddr, op, val, timeout, uaddr2, val3):

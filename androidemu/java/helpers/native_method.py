@@ -109,6 +109,7 @@ def native_method(func):
         if len(argv) == 1:
             result = func(mu, *native_args)
         else:
+            le = len(native_args)
             result = func(argv[0], mu, *native_args)
 
         if result is not None:

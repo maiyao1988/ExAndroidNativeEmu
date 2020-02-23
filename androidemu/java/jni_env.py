@@ -302,12 +302,14 @@ class JNIEnv:
 
     def get_global_reference(self, idx):
         return self._globals.get(idx)
+    #
 
     def delete_global_reference(self, obj):
         if not isinstance(obj, jobject):
             raise ValueError('Expected a jobject.')
 
         return self._globals.remove(obj)
+    #
 
     def read_args_v(self, mu, args_ptr, args_list):
         if args_list is None:
@@ -316,21 +318,39 @@ class JNIEnv:
         result = []
 
         for arg_name in args_list:
+            ref = int.from_bytes(mu.mem_read(args_ptr, 4), byteorder='little')
             if arg_name == 'jint':
-                ref = int.from_bytes(mu.mem_read(args_ptr, 4), byteorder='little')
                 result.append(ref)
-                args_ptr = args_ptr + 4
             elif arg_name == 'jstring':
-                ref = int.from_bytes(mu.mem_read(args_ptr, 4), byteorder='little')
                 result.append(self.get_reference(ref))
-                args_ptr = args_ptr + 4
             elif arg_name == 'jobject':
-                ref = int.from_bytes(mu.mem_read(args_ptr, 4), byteorder='little')
                 result.append(self.get_reference(ref))
-                args_ptr = args_ptr + 4
             else:
                 raise NotImplementedError('Unknown arg name %s' % arg_name)
+            args_ptr = args_ptr + 4
+        #
+        return result
+    #
 
+    #args is a tuple
+    def read_args(self, mu, args, args_list):
+        if args_list is None:
+            return []
+
+        result = []
+        i = 0
+        for arg_name in args_list:
+            ref = args[i]
+            if arg_name == 'jint':
+                result.append(ref)
+            elif arg_name == 'jstring':
+                result.append(self.get_reference(ref))
+            elif arg_name == 'jobject':
+                result.append(self.get_reference(ref))
+            else:
+                raise NotImplementedError('Unknown arg name %s' % arg_name)
+            i = i+1
+        #
         return result
     #
 
@@ -551,7 +571,8 @@ class JNIEnv:
     #
 
     @native_method
-    def new_object(self, mu, env, clazz_idx, method_id):
+    def new_object(self, mu, env, clazz_idx, method_id, *args):
+        le = len(args)
         raise NotImplementedError()
     #
 

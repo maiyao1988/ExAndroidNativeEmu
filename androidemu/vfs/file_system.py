@@ -51,6 +51,7 @@ class VirtualFileSystem:
         syscall_handler.set_handler(0x6, "close", 1, self._handle_close)
         syscall_handler.set_handler(0x0A, "unlink", 1, self._handle_unlink)
         syscall_handler.set_handler(0x21, "access", 2, self._handle_access)
+        syscall_handler.set_handler(0x27, "mkdir", 2, self.__mkdir)
         syscall_handler.set_handler(0x37, "fcntl", 6, self.__fcntl64)
         syscall_handler.set_handler(0x92, "writev", 3, self._handle_writev)
         syscall_handler.set_handler(0xC5, "fstat64", 2, self._handle_fstat64)
@@ -199,22 +200,39 @@ class VirtualFileSystem:
 
         if file.descriptor != 'urandom':
             logger.info("File closed '%s'" % file.name)
-            os.close(file.descriptor)
+            try:
+                os.close(file.descriptor)
+            except OSError as e:
+                logger.warning("File closed '%s' error %r skip" %(file.name, e))
+                return 1
+            #
         else:
             logger.info("File closed '%s'" % '/dev/urandom')
-
+        #
         return 0
     
     def _handle_unlink(self, mu, path_ptr):
         path = memory_helpers.read_utf8(mu, path_ptr)
         vfs_path = self.translate_path(path)
         logger.info("unlink call path [%s]"%path)
+        return 0
     #
 
     def _handle_access(self, mu, filename_ptr, flags):
         filename = memory_helpers.read_utf8(mu, filename_ptr)
         logger.warning("Path '%s'" % filename)
         return 0
+    #
+    def __mkdir(self, mu, path_ptr, mode):
+        path = memory_helpers.read_utf8(mu, path_ptr)
+        vfs_path = self.translate_path(path)
+
+        logger.info("mkdir call path [%s]"%path)
+        if (not os.path.exists(vfs_path)):
+            os.makedirs(vfs_path)
+        #
+        return 0
+    #
 
     def _handle_writev(self, mu, fd, vec, vlen):
         if fd == 2:
