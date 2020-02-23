@@ -332,6 +332,17 @@ class JNIEnv:
                 raise NotImplementedError('Unknown arg name %s' % arg_name)
 
         return result
+    #
+
+    @staticmethod
+    def jobject_to_pyobject(obj):
+        if(isinstance(obj, jclass)):
+            return obj.value.class_object
+        if(isinstance(obj, jobject)):
+            return obj.value
+        #
+        
+    #
 
     @native_method
     def get_version(self, mu, env):
@@ -581,7 +592,8 @@ class JNIEnv:
             # TODO: Proper Java error?
             raise RuntimeError('get_object_class can not get class for object id %d for JNIEnv.' %obj_idx)
         #
-        clazz  = obj.value.__class__
+        pyobj = JNIEnv.jobject_to_pyobject(obj)
+        clazz  = pyobj.__class__
         return self.add_global_reference(jclass(clazz))
     #
 
@@ -601,7 +613,8 @@ class JNIEnv:
 
         # TODO: Casting check (?)
 
-        return JNI_TRUE if obj.value.jvm_id == clazz.value.jvm_id else JNI_FALSE
+        pyobj = JNIEnv.jobject_to_pyobject(obj)
+        return JNI_TRUE if pyobj.jvm_id == clazz.value.jvm_id else JNI_FALSE
 
     @native_method
     def get_method_id(self, mu, env, clazz_idx, name_ptr, sig_ptr):
@@ -635,26 +648,21 @@ class JNIEnv:
 
         if not isinstance(obj, jobject):
             raise ValueError('Expected a jobject.')
-        
-        if (isinstance (obj, jclass)):
-            method = obj.value.class_object.__class__.find_method_by_id(method_id)
-        #
-        else:
-            method = obj.value.__class__.find_method_by_id(method_id)
-        #
+        pyobj = JNIEnv.jobject_to_pyobject(obj)
+        method = pyobj.__class__.find_method_by_id(method_id)
         if method is None:
             # TODO: Proper Java error?
-            raise RuntimeError("Could not find method %d in object %s by id." % (method_id, obj.value.jvm_name))
+            raise RuntimeError("Could not find method %d in object %s by id." % (method_id, pyobj.jvm_name))
 
         logger.debug("JNIEnv->CallObjectMethodV(%s, %s <%s>, 0x%x) was called" % (
-            obj.value.jvm_name,
+            pyobj.jvm_name,
             method.name,
             method.signature, args))
 
         # Parse arguments.
         constructor_args = self.read_args_v(mu, args, method.args_list)
 
-        return method.func(obj.value, self._emu, *constructor_args)
+        return method.func(pyobj, self._emu, *constructor_args)
 
     @native_method
     def call_object_method_a(self, mu, env):
@@ -671,20 +679,21 @@ class JNIEnv:
         if not isinstance(obj, jobject):
             raise ValueError('Expected a jobject.')
 
-        method = obj.value.__class__.find_method_by_id(method_id)
+        pyobj = JNIEnv.jobject_to_pyobject(obj)
+        method = pyobj.__class__.find_method_by_id(method_id)
 
         if method is None:
             # TODO: Proper Java error?
-            raise RuntimeError("Could not find method %d in object %s by id." % (method_id, obj.value.jvm_name))
+            raise RuntimeError("Could not find method %d in object %s by id." % (method_id, pyobj.jvm_name))
 
         logger.debug("JNIEnv->CallBooleanMethodV(%s, %s <%s>, 0x%x) was called" % (
-            obj.value.jvm_name,
+            pyobj.jvm_name,
             method.name,
             method.signature, args))
 
         # Parse arguments.
         constructor_args = self.read_args_v(mu, args, method.args_list)
-        result = method.func(obj.value, self._emu, *constructor_args)
+        result = method.func(pyobj, self._emu, *constructor_args)
 
         return result
 
@@ -739,20 +748,21 @@ class JNIEnv:
         if not isinstance(obj, jobject):
             raise ValueError('Expected a jobject.')
 
-        method = obj.value.__class__.find_method_by_id(method_id)
+        pyobj = JNIEnv.jobject_to_pyobject(obj)
+        method = pyobj.__class__.find_method_by_id(method_id)
 
         if method is None:
             # TODO: Proper Java error?
-            raise RuntimeError("Could not find method %d in object %s by id." % (method_id, obj.value.jvm_name))
+            raise RuntimeError("Could not find method %d in object %s by id." % (method_id, pyobj.jvm_name))
 
         logger.debug("JNIEnv->CallIntMethodV(%s, %s <%s>, 0x%x) was called" % (
-            obj.value.jvm_name,
+            pyobj.jvm_name,
             method.name,
             method.signature, args))
 
         # Parse arguments.
         constructor_args = self.read_args_v(mu, args, method.args_list)
-        result = method.func(obj.value, self._emu, *constructor_args)
+        result = method.func(pyobj, self._emu, *constructor_args)
 
         return result
 
@@ -771,21 +781,22 @@ class JNIEnv:
         if not isinstance(obj, jobject):
             raise ValueError('Expected a jobject.')
 
-        method = obj.value.__class__.find_method_by_id(method_id)
+        pyobj = JNIEnv.jobject_to_pyobject(obj)
+        method = pyobj.__class__.find_method_by_id(method_id)
 
         if method is None:
             # TODO: Proper Java error?
-            raise RuntimeError("Could not find method %d in object %s by id." % (method_id, obj.value.jvm_name))
+            raise RuntimeError("Could not find method %d in object %s by id." % (method_id, pyobj.jvm_name))
 
         logger.debug("JNIEnv->CallLongMethodV(%s, %s <%s>, 0x%x) was called" % (
-            obj.value.jvm_name,
+            pyobj.jvm_name,
             method.name,
             method.signature, args))
 
         # Parse arguments.
         constructor_args = self.read_args_v(mu, args, method.args_list)
 
-        return method.func(obj.value, self._emu, *constructor_args)
+        return method.func(pyobj, self._emu, *constructor_args)
 
     @native_method
     def call_long_method_a(self, mu, env):
@@ -826,18 +837,19 @@ class JNIEnv:
         if not isinstance(obj, jobject):
             raise ValueError('Expected a jobject.')
 
-        method = obj.value.__class__.find_method_by_id(method_id)
+        pyobj = JNIEnv.jobject_to_pyobject(obj)
+        method = pyobj.__class__.find_method_by_id(method_id)
 
         if method is None:
             # TODO: Proper Java error?
-            raise RuntimeError("Could not find method %d in object %s by id." % (method_id, obj.value.jvm_name))
+            raise RuntimeError("Could not find method %d in object %s by id." % (method_id, pyobj.jvm_name))
 
         logger.debug("JNIEnv->CallVoidMethodV(%s, %s <%s>, 0x%x) was called" % (
-            obj.value.jvm_name,
+            pyobj.jvm_name,
             method.name,
             method.signature, args))
 
-        method.func(obj.value, self._emu)
+        method.func(pyobj, self._emu)
 
         return None
 
@@ -996,17 +1008,18 @@ class JNIEnv:
         if not isinstance(obj, jobject):
             raise ValueError('Expected a jobject.')
 
-        field = obj.value.__class__.find_field_by_id(field_id)
+        pyobj = JNIEnv.jobject_to_pyobject(obj)
+        field = pyobj.__class__.find_field_by_id(field_id)
 
         if field is None:
             # TODO: Proper Java error?
-            raise RuntimeError("Could not find field %d in object %s by id." % (field_id, obj.value.jvm_name))
+            raise RuntimeError("Could not find field %d in object %s by id." % (field_id, pyobj.jvm_name))
 
-        logger.debug("JNIEnv->GetObjectField(%s, %s <%s>) was called" % (obj.value.jvm_name,
+        logger.debug("JNIEnv->GetObjectField(%s, %s <%s>) was called" % (pyobj.jvm_name,
                                                                          field.name,
                                                                          field.signature))
 
-        return getattr(obj.value, field.name)
+        return getattr(pyobj, field.name)
 
     @native_method
     def get_boolean_field(self, mu, env):
@@ -1031,17 +1044,18 @@ class JNIEnv:
         if not isinstance(obj, jobject):
             raise ValueError('Expected a jobject.')
 
-        field = obj.value.__class__.find_field_by_id(field_id)
+        pyobj = JNIEnv.jobject_to_pyobject(obj)
+        field = pyobj.__class__.find_field_by_id(field_id)
 
         if field is None:
             # TODO: Proper Java error?
-            raise RuntimeError("Could not find field %d in object %s by id." % (field_id, obj.value.jvm_name))
+            raise RuntimeError("Could not find field %d in object %s by id." % (field_id, pyobj.jvm_name))
 
-        logger.debug("JNIEnv->GetIntField(%s, %s <%s>) was called" % (obj.value.jvm_name,
+        logger.debug("JNIEnv->GetIntField(%s, %s <%s>) was called" % (pyobj.jvm_name,
                                                                       field.name,
                                                                       field.signature))
 
-        return getattr(obj.value, field.name)
+        return getattr(pyobj, field.name)
 
     @native_method
     def get_long_field(self, mu, env):
@@ -1438,7 +1452,8 @@ class JNIEnv:
         if not isinstance(obj, jarray):
             raise ValueError('Expected a jarray.')
 
-        return len(obj.value)
+        pyobj = JNIEnv.jobject_to_pyobject(obj)
+        return len(pyobj)
 
     @native_method
     def new_object_array(self, mu, env):
@@ -1453,7 +1468,8 @@ class JNIEnv:
         if not isinstance(obj, jarray):
             raise ValueError('Expected a jarray.')
 
-        return obj.value[item_idx]
+        pyobj = JNIEnv.jobject_to_pyobject(obj)
+        return pyobj[item_idx]
 
     @native_method
     def set_object_array_element(self, mu, env):
@@ -1570,7 +1586,8 @@ class JNIEnv:
         if not isinstance(obj, jbyteArray):
             raise ValueError('Expected a jbyteArray.')
 
-        mu.mem_write(buf_ptr, bytes(obj.value[start:start + len_in]))
+        pyobj = JNIEnv.jobject_to_pyobject(obj)
+        mu.mem_write(buf_ptr, bytes(pyobj[start:start + len_in]))
 
         return None
 
