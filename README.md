@@ -10,6 +10,7 @@ This a personal improved version of [AndroidNativeEmu](https://github.com/AeonLu
  - Support ELF DT_INIT call
  - Auto Load dependency so.
  - support generate /proc/\[pid\]/maps
+ - fix R_ARM_ABS32 relocation bug.
  
 ## TODO
  - Simulate linker TLS initialization.
