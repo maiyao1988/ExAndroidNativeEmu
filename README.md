@@ -9,7 +9,7 @@ This a personal improved version of [AndroidNativeEmu](https://github.com/AeonLu
  - Stop all runing when getting exception  instead of just skiping one emulator runing for easily bug detecting...
  - Support ELF DT_INIT call
  - Auto Load dependency so.
- - support generate /proc/\[pid\]/maps
+ - auto generate /proc/\[pid\]/maps according to current memory map
  - fix R_ARM_ABS32 relocation bug.
  
 ## TODO
