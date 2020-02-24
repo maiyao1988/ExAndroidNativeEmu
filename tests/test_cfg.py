@@ -72,7 +72,7 @@ class TestCfg(unittest.TestCase):
          CodeBlock(0x0001B4A0, 0x0001B4A4), CodeBlock(0x0001B4A4, 0x0001B4A8), CodeBlock(0x0001B4A8, 0x0001B4B8), 
          CodeBlock(0x0001B4B8, 0x0001B4BA), CodeBlock(0x0001B4BA, 0x0001B4BE), CodeBlock(0x0001B4BE, 0x0001B4C4), 
          CodeBlock(0x0001B4C4, 0x0001B4D4), CodeBlock(0x0001B4D4, 0x0001B4D6), CodeBlock(0x0001B4D6, 0x0001B4E4), 
-         CodeBlock(0x0001B4E4, 0x00000000), CodeBlock(0x0001B4FC, 0x0001B500), CodeBlock(0x0001B500, 0x0001B502), 
+         CodeBlock(0x0001B4FC, 0x0001B500), CodeBlock(0x0001B500, 0x0001B502), 
          CodeBlock(0x0001B502, 0x0001B506), CodeBlock(0x0001B506, 0x0001B514), CodeBlock(0x0001B514, 0x0001B54C), 
          CodeBlock(0x0001B54C, 0x0001B638), CodeBlock(0x0001B638, 0x0001B64A), CodeBlock(0x0001B64A, 0x0001B65C), 
          CodeBlock(0x0001B65C, 0x0001B66C), CodeBlock(0x0001B66C, 0x0001B7E4), CodeBlock(0x0001B7E4, 0x0001B93E), 

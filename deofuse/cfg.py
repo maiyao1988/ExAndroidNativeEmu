@@ -61,7 +61,8 @@ def create_cfg(f, base_addr, size, thumb):
         #
 
         mne = i.mnemonic
-        addr_next = addr + i.size
+        addr_this_ins_end = addr + i.size
+        addr_next_ins = codeslist[index+1].address if index < listlen-1 else addr_this_ins_end
 
         #instruction_str = ''.join('{:02X} '.format(x) for x in i.bytes)
         #line = "[%16s]0x%08X:\t%s\t%s"%(instruction_str, addr, i.mnemonic.upper(), i.op_str.upper())
@@ -71,7 +72,7 @@ def create_cfg(f, base_addr, size, thumb):
             jmp_dest = get_jmp_dest(i)
             #跳转指令，需要获取跳转目标，以跳转目标为start新建block
             if (jmp_dest != None):
-                cb_now.end = addr_next
+                cb_now.end = addr_this_ins_end
                 child_start = jmp_dest
                 #print ("target_block 0x%08X"%child_start)
                 target_block = None
@@ -106,10 +107,10 @@ def create_cfg(f, base_addr, size, thumb):
                 if (mne.startswith("tbb")):
                     itemsz = 1
                 #
-                cb_now.end = addr_next
+                cb_now.end = addr_this_ins_end
                 assert i.op_str.find("pc")>-1, "table jump not by pc is not support now"
                 for jmp_id in range(0, ntable):
-                    f.seek(addr_next + jmp_id * itemsz, 0)
+                    f.seek(addr_this_ins_end + jmp_id * itemsz, 0)
                     jmp_off_b = f.read(itemsz)
                     jmp_off = int.from_bytes(jmp_off_b, byteorder='little')
                     dest = addr + 4 + jmp_off*2
@@ -128,26 +129,26 @@ def create_cfg(f, base_addr, size, thumb):
                     #print(cb_now.childs)
                     target_block.parent.add(cb_now)
                 #
-                skip_to_addr = addr_next + ntable * itemsz
-                addr_next = skip_to_addr
+                skip_to_addr = addr_this_ins_end + ntable * itemsz
+                addr_next_ins = skip_to_addr
             #
             #print (mne + " " + i.op_str)
-            if (addr_next < base_addr + size):
-                if (addr_next not in block_starts_map):
+            if (addr_next_ins < base_addr + size):
+                if (addr_next_ins not in block_starts_map):
                     next_block = CodeBlock()
-                    next_block.start = addr_next
+                    next_block.start = addr_next_ins
                     block_starts_map[next_block.start] = next_block
                     blocks.append(next_block)
                 #
             #
         #
         #print (hex(addr_next))
-        if (addr_next in block_starts_map):
+        if (addr_next_ins in block_starts_map):
             #print ("cb_now %r child %r"%(cb_now, next_block))
             #pop xxx, pc mov pc, xxx and so on
-            #如果是有返回的跳转，条件跳转，则会产生两个分支
+            #if it is a condition jump , there will be two branch 
             if not is_jmp_no_ret(i, base_addr, size):
-                next_block = block_starts_map[addr_next]
+                next_block = block_starts_map[addr_next_ins]
                 next_block.parent.add(cb_now)
                 cb_now.childs.add(next_block)
             #

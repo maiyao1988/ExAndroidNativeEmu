@@ -44,15 +44,13 @@ def find_ofuse_control_block(f, blocks, base_addr, ins_mgr):
         code_cmp = codelist[n-2]
         
         maybe_cb = False
+        #if this block has cmp, it, tbb/tbw, maybe is a control block
+        suspect_ins = ("cmp", "it", "itt", "ittt", "itttt", "tbb", "tbb.h", "tbh", "tbh.w")
         if (code_last.mnemonic[0] == "b"):
-            #如果bxx跟着cmp，则疑似
             for j in range(n-1):
-                #很短的而且有比较的都疑似控制块
-                if (codelist[j].mnemonic == "cmp"):
-                    maybe_cb = True
-                    break
-                #
-                elif (codelist[j].mnemonic.startswith("it")):
+                mne = codelist[j].mnemonic
+                
+                if (mne in suspect_ins):
                     maybe_cb = True
                     break
                 #
@@ -61,7 +59,7 @@ def find_ofuse_control_block(f, blocks, base_addr, ins_mgr):
         is_cb = maybe_cb
         mem_cmds = set(["str", "ldr", "push", "pop"])
         if (maybe_cb):
-            #再搜索一次，如果没有出现内存操作，则确认是
+            #if not memory operation , treat as control block
             for j in range(n-1):
                 mne = codelist[j].mnemonic
                 if (_start_withs(mne, mem_cmds)):
