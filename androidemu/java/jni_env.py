@@ -1090,85 +1090,6 @@ class JNIEnv:
     def call_static_object_method(self, mu, env):
         raise NotImplementedError()
 
-    @native_method
-    def call_static_object_method_v(self, mu, env, clazz_idx, method_id, args):
-        clazz = self.get_reference(clazz_idx)
-
-        if not isinstance(clazz, jclass):
-            raise ValueError('Expected a jclass.')
-
-        method = clazz.value.find_method_by_id(method_id)
-
-        if method is None:
-            # TODO: Proper Java error?
-            raise RuntimeError("Could not find method %d in class %s by id." % (method_id, clazz.value.jvm_name))
-
-        logger.debug("JNIEnv->CallStaticObjectMethodV(%s, %s <%s>, 0x%x) was called" % (
-            clazz.value.jvm_name,
-            method.name,
-            method.signature, args))
-
-        # Parse arguments.
-        constructor_args = self.read_args_v(mu, args, method.args_list)
-
-        return method.func(self._emu, *constructor_args)
-
-    @native_method
-    def call_static_object_method_a(self, mu, env):
-        raise NotImplementedError()
-
-    @native_method
-    def call_static_boolean_method(self, mu, env):
-        raise NotImplementedError()
-
-    @native_method
-    def call_static_boolean_method_v(self, mu, env):
-        raise NotImplementedError()
-
-    @native_method
-    def call_static_boolean_method_a(self, mu, env):
-        raise NotImplementedError()
-
-    @native_method
-    def call_static_byte_method(self, mu, env):
-        raise NotImplementedError()
-
-    @native_method
-    def call_static_byte_method_v(self, mu, env):
-        raise NotImplementedError()
-
-    @native_method
-    def call_static_byte_method_a(self, mu, env):
-        raise NotImplementedError()
-
-    @native_method
-    def call_static_char_method(self, mu, env):
-        raise NotImplementedError()
-
-    @native_method
-    def call_static_char_method_v(self, mu, env):
-        raise NotImplementedError()
-
-    @native_method
-    def call_static_char_method_a(self, mu, env):
-        raise NotImplementedError()
-
-    @native_method
-    def call_static_short_method(self, mu, env):
-        raise NotImplementedError()
-
-    @native_method
-    def call_static_short_method_v(self, mu, env):
-        raise NotImplementedError()
-
-    @native_method
-    def call_static_short_method_a(self, mu, env):
-        raise NotImplementedError()
-
-    @native_method
-    def call_static_int_method(self, mu, env):
-        raise NotImplementedError()
-
     def __call_static_xxx_method_v(self, mu, env, clazz_idx, method_id, args):
         clazz = self.get_reference(clazz_idx)
 
@@ -1191,6 +1112,74 @@ class JNIEnv:
 
         return method.func(self._emu, *constructor_args)
     #
+
+    @native_method
+    def call_static_object_method_v(self, mu, env, clazz_idx, method_id, args):
+        return self.__call_static_xxx_method_v(mu, env, clazz_idx, method_id, args)
+    #
+
+    @native_method
+    def call_static_object_method_a(self, mu, env):
+        raise NotImplementedError()
+
+    @native_method
+    def call_static_boolean_method(self, mu, env):
+        raise NotImplementedError()
+
+    @native_method
+    def call_static_boolean_method_v(self, mu, env, clazz_idx, method_id, args):
+        return self.__call_static_xxx_method_v(mu, env, clazz_idx, method_id, args)
+    #
+
+    @native_method
+    def call_static_boolean_method_a(self, mu, env):
+        raise NotImplementedError()
+
+    @native_method
+    def call_static_byte_method(self, mu, env):
+        raise NotImplementedError()
+
+    @native_method
+    def call_static_byte_method_v(self, mu, env, clazz_idx, method_id, args):
+        return self.__call_static_xxx_method_v(mu, env, clazz_idx, method_id, args)
+    #
+
+    @native_method
+    def call_static_byte_method_a(self, mu, env):
+        raise NotImplementedError()
+
+    @native_method
+    def call_static_char_method(self, mu, env):
+        raise NotImplementedError()
+
+    @native_method
+    def call_static_char_method_v(self, mu, env, clazz_idx, method_id, args):
+        return self.__call_static_xxx_method_v(mu, env, clazz_idx, method_id, args)
+    #
+
+    @native_method
+    def call_static_char_method_a(self, mu, env):
+        raise NotImplementedError()
+
+    @native_method
+    def call_static_short_method(self, mu, env, clazz_idx, method_id, args):
+        return self.__call_static_xxx_method_v(mu, env, clazz_idx, method_id, args)
+    #
+        
+
+    @native_method
+    def call_static_short_method_v(self, mu, env, clazz_idx, method_id, args):
+        return self.__call_static_xxx_method_v(mu, env, clazz_idx, method_id, args)
+    #
+
+    @native_method
+    def call_static_short_method_a(self, mu, env):
+        raise NotImplementedError()
+
+    @native_method
+    def call_static_int_method(self, mu, env):
+        raise NotImplementedError()
+
 
     @native_method
     def call_static_int_method_v(self, mu, env, clazz_idx, method_id, args):
