@@ -57,7 +57,7 @@ def find_ofuse_control_block(f, blocks, base_addr, ins_mgr):
             #
         #
         is_cb = maybe_cb
-        mem_cmds = set(["str", "ldr", "push", "pop"])
+        mem_cmds = set(["str", "ldr", "push", "pop", "bl", "blx"])
         if (maybe_cb):
             #if not memory operation , treat as control block
             for j in range(n-1):
@@ -386,7 +386,7 @@ if __name__ == "__main__":
 
         of_b, dead_cb = find_ofuse_control_block(f, blocks, base_addr, ins_mgr)
 
-        print("cbs:%r"%of_b)
+        #print("cbs:%r"%of_b)
         #print ("dead_cb:%r"%dead_cb)
 
         logic_blocks = list(blocks)
