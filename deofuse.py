@@ -142,7 +142,7 @@ def clear_itt_if_in_itt(fout, codelist, code_last_run):
 def fix_two_jmp_cause_by_two_true_parent(fin, fout, nexts_list, lb, trace, ins_mgr, addr2block_can_use):
     assert len(nexts_list) == 2, "fix_two_jmp_cause_by_two_true_parent"
     parent = list(lb.parent)
-    assert len(parent) == 2
+    assert len(parent) == 2, "fix_two_jmp_cause_by_two_true_parent %r has %d parent more than two %r"%(lb, len(parent), parent)
     p1b = parent[0]
 
     p1codelist = get_block_codes(fin, p1b, ins_mgr)
@@ -286,9 +286,8 @@ def patch_common(fin, fout, lb, code_last_run, codelist, trace, ins_mgr, addr2bl
             clean_bytes(fout, addr_next_insn, lb.end)
         else:
             #assert(trace_start >= 0)
-            print("warning here!!! [%r] has two destination can not distinguish [0x%08X] [0x%08X] cause by two true parent"\
+            print("warning here!!! [%r] has two destination [0x%08X] [0x%08X] cause by two true parent"\
                 %(lb, nexts_list[0], nexts_list[1]))
-            #这里是bug，有两个跳转但不知道怎么确定哪个跳是条件满足的跳转，先随便patch一个。。。
             fix_two_jmp_cause_by_two_true_parent(fin, fout, nexts_list, lb, trace, ins_mgr, addr2block_can_use)
         #
     #
@@ -387,7 +386,7 @@ if __name__ == "__main__":
 
         of_b, dead_cb = find_ofuse_control_block(f, blocks, base_addr, ins_mgr)
 
-        #print("cbs:%r"%of_b)
+        print("cbs:%r"%of_b)
         #print ("dead_cb:%r"%dead_cb)
 
         logic_blocks = list(blocks)

@@ -130,6 +130,11 @@ class IntructionManger:
             dests = self.__get_all_jump_dest(tmp_code_list, start_addr, my_code_bytes)
             all_dests.update(dests)
             dis_start = self.__find_nearest_dest(last_code.address, all_dests)
+            if (dis_start == 0):
+                #if no jump in codelist, the codelist maybe invalid, just return what we got
+                return codelist
+            #
+            
             off = dis_start - start_addr
             my_code_bytes = code_bytes[dis_start-start_addr:]
         #
