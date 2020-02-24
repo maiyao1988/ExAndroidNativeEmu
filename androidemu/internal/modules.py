@@ -270,23 +270,35 @@ class Modules:
                     #print("%x"%rel_addr)
                     # Relocation table for ARM
                     if rel_info_type == arm.R_ARM_ABS32:
-                        # Create the new value.
-                        value = load_base + sym_value
-                        # Write the new value
-                        #print(value)
-                        self.emu.mu.mem_write(rel_addr, value.to_bytes(4, byteorder='little'))
+                        if sym.name in symbols_resolved:
+                            sym_addr = symbols_resolved[sym.name].address
 
+                            value_orig_bytes = self.emu.mu.mem_read(rel_addr, 4)
+                            value_orig = int.from_bytes(value_orig_bytes, byteorder='little')
+
+                            #R_ARM_ABS32 重定位方式参见 android linker源码
+                            #*reinterpret_cast<Elf32_Addr*>(reloc) += sym_addr;
+                            value = sym_addr + value_orig
+                            # Write the new value
+                            #print(value)
+                            self.emu.mu.mem_write(rel_addr, value.to_bytes(4, byteorder='little'))
+                        #
+                    #
                     elif rel_info_type == arm.R_ARM_GLOB_DAT or \
                             rel_info_type == arm.R_ARM_JUMP_SLOT or \
                             rel_info_type == arm.R_AARCH64_GLOB_DAT or \
                             rel_info_type == arm.R_AARCH64_JUMP_SLOT:
                         # Resolve the symbol.
+                        #R_ARM_GLOB_DAT，R_ARM_JUMP_SLOT修复方式见linker源码
+                        #*reinterpret_cast<Elf32_Addr*>(reloc) = sym_addr;
                         if sym.name in symbols_resolved:
                             value = symbols_resolved[sym.name].address
 
                             # Write the new value
                             #print(value)
                             self.emu.mu.mem_write(rel_addr, value.to_bytes(4, byteorder='little'))
+                        #
+                    #
                     elif rel_info_type == arm.R_ARM_RELATIVE or \
                             rel_info_type == arm.R_AARCH64_RELATIVE:
                         if sym_value == 0:
