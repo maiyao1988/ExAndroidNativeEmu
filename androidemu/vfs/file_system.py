@@ -129,8 +129,10 @@ class VirtualFileSystem:
         If count is greater than SSIZE_MAX, the result is unspecified.
         """
         if fd <= 2:
-            raise NotImplementedError("Unsupported read operation for file descriptor %d." % fd)
-
+            logging.warning("skip read for fd %d"%fd)
+            return 0
+            #raise NotImplementedError("Unsupported read operation for file descriptor %d." % fd)
+        #
         if fd not in self._virtual_files:
             # TODO: Return valid error.
             raise NotImplementedError()
@@ -169,7 +171,12 @@ class VirtualFileSystem:
             raise NotImplementedError()
 
         file = self._virtual_files[fd]
-        r = os.write(file.descriptor, data)
+        try:
+            r = os.write(file.descriptor, data)
+        except OSError as e:
+            logger.warning("File write '%s' error %r skip" %(file.name, e))
+            return 0
+        #
         return r
     #
 
@@ -204,7 +211,7 @@ class VirtualFileSystem:
                 os.close(file.descriptor)
             except OSError as e:
                 logger.warning("File closed '%s' error %r skip" %(file.name, e))
-                return 1
+                return -1
             #
         else:
             logger.info("File closed '%s'" % '/dev/urandom')

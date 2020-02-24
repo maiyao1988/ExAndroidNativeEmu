@@ -41,9 +41,12 @@ class SyscallHooks:
         self._syscall_handler = syscall_handler
         self._syscall_handler.set_handler(0x2, "fork", 0, self._fork)
         self._syscall_handler.set_handler(0x14, "getpid", 0, self._getpid)
+        self._syscall_handler.set_handler(0x1A, "ptrace", 4, self.__ptrace)
+        self._syscall_handler.set_handler(0x25, "kill", 2, self.__kill)
         self._syscall_handler.set_handler(0x2A, "pipe", 1, self._pipe)
         self._syscall_handler.set_handler(0x43, "sigaction", 3, self._handle_sigaction)
         self._syscall_handler.set_handler(0x4E, "gettimeofday", 2, self._handle_gettimeofday)
+        self._syscall_handler.set_handler(0x72, "wait4", 4, self.__wait4)
         self._syscall_handler.set_handler(0xAC, "prctl", 5, self._handle_prctl)
         self._syscall_handler.set_handler(0xAF, "sigprocmask", 3, self._handle_sigprocmask)
         self._syscall_handler.set_handler(0xC7, "getuid32", 0, self._get_uid)
@@ -66,11 +69,26 @@ class SyscallHooks:
 
     def _fork(self, mu):
         logging.warning("skip syscall fork")
-        return 0
+        #fork return 0 for child process, return pid for parent process
+        #return 0
+        return 0x2122
     #
 
     def _getpid(self, mu):
         return 0x1122
+    #
+
+    def __ptrace(self, mu, request, pid, addr, data):
+        logging.warning("skip syscall ptrace request [%d] pid [0x%x] addr [0x%08X] data [0x%08X]"%(request, pid, addr, data))
+        return 0
+    #
+
+    def __kill(self, mu, pid, sig):
+        logging.warning("kill is call pid=0x%x sig=%d"%(pid, sig))
+        if (pid == self._getpid(mu)):
+            logging.error("process 0x%x is killing self!!! maybe encounter anti-debug!!!"%pid)
+            #sys.exit(-10)
+        #
     #
 
     def _pipe(self, mu, files):
@@ -116,6 +134,12 @@ class SyscallHooks:
             uc.mem_write(tz + 4, int().to_bytes(4, byteorder='little'))  # dsttime
 
         return 0
+    #
+
+    def __wait4(self, mu, pid, start_addr, options, ru):
+        logger.warning("skip syscall wait4 pid [0x%x]"%pid)
+        return 0
+    #
 
     def _handle_prctl(self, mu, option, arg2, arg3, arg4, arg5):
         """

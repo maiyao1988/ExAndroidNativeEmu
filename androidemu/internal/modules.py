@@ -284,10 +284,8 @@ class Modules:
                             self.emu.mu.mem_write(rel_addr, value.to_bytes(4, byteorder='little'))
                         #
                     #
-                    elif rel_info_type == arm.R_ARM_GLOB_DAT or \
-                            rel_info_type == arm.R_ARM_JUMP_SLOT or \
-                            rel_info_type == arm.R_AARCH64_GLOB_DAT or \
-                            rel_info_type == arm.R_AARCH64_JUMP_SLOT:
+                    elif rel_info_type in (arm.R_ARM_GLOB_DAT, arm.R_ARM_JUMP_SLOT, 
+                                                    arm.R_AARCH64_GLOB_DAT, arm.R_AARCH64_JUMP_SLOT):
                         # Resolve the symbol.
                         #R_ARM_GLOB_DAT，R_ARM_JUMP_SLOT修复方式见linker源码
                         #*reinterpret_cast<Elf32_Addr*>(reloc) = sym_addr;
@@ -299,8 +297,7 @@ class Modules:
                             self.emu.mu.mem_write(rel_addr, value.to_bytes(4, byteorder='little'))
                         #
                     #
-                    elif rel_info_type == arm.R_ARM_RELATIVE or \
-                            rel_info_type == arm.R_AARCH64_RELATIVE:
+                    elif rel_info_type in (arm.R_ARM_RELATIVE, arm.R_AARCH64_RELATIVE):
                         if sym_value == 0:
                             # Load address at which it was linked originally.
                             value_orig_bytes = self.emu.mu.mem_read(rel_addr, 4)
@@ -316,6 +313,7 @@ class Modules:
                             raise NotImplementedError()
                     else:
                         logger.error("Unhandled relocation type %i." % rel_info_type)
+                    #
 
             # Store information about loaded module.
             module = Module(filename, load_base, bound_high - bound_low, symbols_resolved, init_addr, init_array)
