@@ -30,23 +30,22 @@ def find_ofuse_control_block(f, blocks, base_addr, ins_mgr):
         #只有一条指令而且跳回给自己的是死块
             if (n == 1):
                 jmp_addr = get_jmp_dest(codelist[0])
-                if (jmp_addr == None):
+                if (jmp_addr != None and jmp_addr == b.start):
+                    dead_cb.append(b)
                     continue
                 #
-                if (jmp_addr == b.start):
-                    dead_cb.append(b)    
-                #
             #
-            continue
         #
         #if (n < 6):
         code_last = codelist[n-1]
-        code_cmp = codelist[n-2]
         
         maybe_cb = False
-        #if this block has cmp, it, tbb/tbw, maybe is a control block
-        suspect_ins = ("cmp", "it", "itt", "ittt", "itttt", "tbb", "tbb.h", "tbh", "tbh.w")
-        if (code_last.mnemonic[0] == "b"):
+        tbl_jmp = ("tbb", "tbb.h", "tbh", "tbh.w")
+        #if this block has cmp, itt, etc, maybe is a control block
+        suspect_ins = ("cmp", "it", "itt", "ittt", "itttt")
+        if (n==1 and code_last.mnemonic[0] == "b" or code_last.mnemonic in ("cbz", "cbnz") or code_last.mnemonic in tbl_jmp):
+            maybe_cb = True
+        elif (code_last.mnemonic[0] == "b" or code_last.mnemonic in ("cbz", "cbnz")):
             for j in range(n-1):
                 mne = codelist[j].mnemonic
                 
@@ -56,6 +55,7 @@ def find_ofuse_control_block(f, blocks, base_addr, ins_mgr):
                 #
             #
         #
+
         is_cb = maybe_cb
         mem_cmds = set(["str", "ldr", "push", "pop", "bl", "blx"])
         if (maybe_cb):
@@ -139,9 +139,44 @@ def clear_itt_if_in_itt(fout, codelist, code_last_run):
     #
 #
 
+def find_addr_in_parent(parents, addr):
+    for fake_parent in parents:
+        print ("b %r addr 0x%08X"%(fake_parent, addr))
+        if (fake_parent.start<=addr and fake_parent.end>addr):
+            return fake_parent
+        #
+    #
+    for fake_parent in parents:
+        return find_addr_in_parent(fake_parent.parent, addr)
+    #
+    return None
+#
+
+def find_logical_parent(lb, trace):
+    start = lb.start
+    start_indexes = trace.get_trace_index(start)
+    prev_indexes = []
+    for index in start_indexes:
+        if index > 0:
+            prev_indexes.append(index-1)
+        #
+    #
+    logical_parent_b = []
+    for prev_index in prev_indexes:
+        addr = trace.get_trace_by_index(prev_index)
+        print("prev_addr 0x%08X"%addr)
+
+        print("lb %r parent %r"%(lb, lb.parent))
+        lpb = find_addr_in_parent(lb.parent, addr)
+        logical_parent_b.append(lpb)
+    #
+    print("find_logical_parent return %r"%logical_parent_b)
+    return logical_parent_b
+#
+
 def fix_two_jmp_cause_by_two_true_parent(fin, fout, nexts_list, lb, trace, ins_mgr, addr2block_can_use):
     assert len(nexts_list) == 2, "fix_two_jmp_cause_by_two_true_parent"
-    parent = list(lb.parent)
+    parent = find_logical_parent(lb, trace)
     assert len(parent) == 2, "fix_two_jmp_cause_by_two_true_parent %r has %d parent more than two %r"%(lb, len(parent), parent)
     p1b = parent[0]
 
@@ -213,7 +248,7 @@ def patch_common(fin, fout, lb, code_last_run, codelist, trace, ins_mgr, addr2bl
 
     n_next = len(nexts)
     #暂时没见过超过两个的目的地
-    assert(n_next < 3)
+    assert n_next < 3, "lb %r nexts %r more than 3"%(lb, nexts)
     nexts_list = list(nexts)
     if (n_next == 0):
         print("warning true block %r has no sub true block"%lb)
@@ -394,7 +429,7 @@ if __name__ == "__main__":
         list_remove(logic_blocks, of_b)
         list_remove(logic_blocks, dead_cb)
         
-        #print(logic_blocks)
+        print("lbs:%r"%logic_blocks)
         #print (blocks)
 
         #print ("logic_block:%r"%logic_blocks)
