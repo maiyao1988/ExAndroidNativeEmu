@@ -4,77 +4,10 @@ from deofuse.intruction_mgr import IntructionManger
 from deofuse.ins_helper import *
 from deofuse import cfg
 from deofuse import tracer
+from deofuse.common_ofuse_detector import CommonOfDetector
+from deofuse.bb_ofuse_detector import BBOfDetector
 import shutil
 
-def _start_withs(str, sets):
-    for s in sets:
-        if (str.startswith(s)):
-            return True
-        #
-    #
-    return False
-#
-
-def find_ofuse_control_block(f, blocks, base_addr, ins_mgr):
-    obfuses_cb = []
-    dead_cb = []
-
-    for b in blocks:
-        #print(b)
-
-        codelist = get_block_codes(f, b, ins_mgr)
-        
-        n = len(codelist)
-
-        if (n < 2):
-        #只有一条指令而且跳回给自己的是死块
-            if (n == 1):
-                jmp_addr = get_jmp_dest(codelist[0])
-                if (jmp_addr != None and jmp_addr == b.start):
-                    dead_cb.append(b)
-                    continue
-                #
-            #
-        #
-        #if (n < 6):
-        code_last = codelist[n-1]
-        
-        maybe_cb = False
-        tbl_jmp = ("tbb", "tbb.h", "tbh", "tbh.w")
-        #if this block has cmp, itt, etc, maybe is a control block
-        suspect_ins = ("cmp", "it", "itt", "ittt", "itttt")
-        if (n==1 and code_last.mnemonic[0] == "b" or code_last.mnemonic in ("cbz", "cbnz") or code_last.mnemonic in tbl_jmp):
-            maybe_cb = True
-        elif (code_last.mnemonic[0] == "b" or code_last.mnemonic in ("cbz", "cbnz")):
-            for j in range(n-1):
-                mne = codelist[j].mnemonic
-                
-                if (mne in suspect_ins):
-                    maybe_cb = True
-                    break
-                #
-            #
-        #
-
-        is_cb = maybe_cb
-        mem_cmds = set(["str", "ldr", "push", "pop", "bl", "blx"])
-        if (maybe_cb):
-            #if not memory operation , treat as control block
-            for j in range(n-1):
-                mne = codelist[j].mnemonic
-                if (_start_withs(mne, mem_cmds)):
-                    is_cb = False
-                    break
-                #
-            #
-        #
-        if (is_cb):
-            obfuses_cb.append(b)
-        #
-
-    #
-    return obfuses_cb, dead_cb
-#
 
 def clear_control_block(fo, obfuses_blocks):
     for ob in obfuses_blocks:
@@ -398,10 +331,12 @@ def list_remove(srclist, listrmove):
     #
 #
 
+
 #尽量去除控制流平坦化fla
 if __name__ == "__main__":
+    _of_maps = {"common":CommonOfDetector(), "bb":BBOfDetector()}
     if (len(sys.argv)<7):
-        print("usage %s <elf_path> <elf_out_path> <trace_path> <func_start_hex> <end_start_hex> <is_thumb>"%(sys.argv[0]))
+        print("usage %s <elf_path> <elf_out_path> <trace_path> <func_start_hex> <end_start_hex> <is_thumb> <type>"%(sys.argv[0]))
         sys.exit(-1)
     #
     path = sys.argv[1]
@@ -410,6 +345,11 @@ if __name__ == "__main__":
     base_addr = int(sys.argv[4], 16)
     end_addr = int(sys.argv[5], 16)
     is_thumb = sys.argv[6] != "0"
+    of_type = "common"
+    if (len(sys.argv)>7):
+        of_type = sys.argv[7]
+    #
+    detector = _of_maps[of_type]
 
     lib_name = os.path.basename(path)
 
@@ -419,7 +359,7 @@ if __name__ == "__main__":
         #print (blocks)
         ins_mgr = IntructionManger(is_thumb)
 
-        of_b, dead_cb = find_ofuse_control_block(f, blocks, base_addr, ins_mgr)
+        of_b, dead_cb = detector.find_ofuse_control_block(f, blocks, base_addr, ins_mgr)
 
         #print("cbs:%r"%of_b)
         #print ("dead_cb:%r"%dead_cb)
