@@ -57,6 +57,9 @@ class IntructionManger:
             return
         #
         len_cbs = len(code_bytes)
+        if (dis_addr < base_addr):
+            return
+        #
         my_code_bytes_off = dis_addr - base_addr
         if (my_code_bytes_off >= len_cbs):
             return

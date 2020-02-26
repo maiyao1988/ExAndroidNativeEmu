@@ -18,7 +18,7 @@ class TestAsm(unittest.TestCase):
         ins_mgr = IntructionManger(True)
         with open("tests/bin/libcms.so", "rb") as f:
             codes = get_block_codes(f, block, ins_mgr)
-            self.assertEqual(len(codes), 3)
+            self.assertEqual(len(codes), 4)
         #
     #
     
