@@ -50,7 +50,7 @@ class IntructionManger:
     #
 
 
-    #递归下降返汇编代码，为了剔除非代码的部分
+    #using descent down to disasm codes, for extracting code, ignoring data
     def __disasm_recur(self, codelist, code_addr_set, base_addr, code_bytes, dis_addr):
         #print ("__disasm_recur dis addr 0x%08X"%(dis_addr,))
         if (dis_addr in code_addr_set):
@@ -80,7 +80,11 @@ class IntructionManger:
                 if (is_jmp(c, base_addr, len_cbs)):
                     #print ("get jmp %s %s 0x%08X"%(c.mnemonic, c.op_str, c.address))
                     if (is_table_jump(c)):
-                        assert code_prev[0] != None and code_prev[1] != None, "tbb/tbh list range not found..."
+                        if (code_prev[0] == None or code_prev[1] == None):
+                            print( "tbb/tbh list range not found...")
+                            #no more code can be disasm
+                            break
+                        #
                         code_cmp = code_prev[0]
                         assert code_cmp.mnemonic == "cmp", "tbb/tbh list range not found..."
                         op_str = code_cmp.op_str
@@ -106,12 +110,12 @@ class IntructionManger:
                         #非表跳转，b, bne, cbz等
                         dest_addr = get_jmp_dest(c)
                         if (dest_addr == None):
-                            print("can not get dest from ins %s %s addr 0x%08X"%(c.mnemonic, c.op_str, c.address))
+                            #print("can not get dest from ins %s %s addr 0x%08X"%(c.mnemonic, c.op_str, c.address))
                             if (is_jmp_no_ret(c)):
                                 break
                             #
                         #
-                        print ("call by jmp ins:%s %s addr: 0x%08X dest: 0x%08X"%(c.mnemonic, c.op_str, c.address, dest_addr))
+                        #print ("call by jmp ins:%s %s addr: 0x%08X dest: 0x%08X"%(c.mnemonic, c.op_str, c.address, dest_addr))
                         self.__disasm_recur(codelist, code_addr_set, base_addr, code_bytes, dest_addr)
                         if (is_jmp_no_ret(c)):
                             break

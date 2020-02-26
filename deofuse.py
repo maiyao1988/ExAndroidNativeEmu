@@ -369,7 +369,7 @@ if __name__ == "__main__":
         list_remove(logic_blocks, of_b)
         list_remove(logic_blocks, dead_cb)
         
-        print("lbs:%r"%logic_blocks)
+        #print("lbs:%r"%logic_blocks)
         #print (blocks)
 
         #print ("logic_block:%r"%logic_blocks)
