@@ -108,13 +108,14 @@ class IntructionManger:
                                 break
                             #
                         #
-                        #print ("call by jmp dest :0x%08X"%dest_addr)
+                        print ("call by jmp ins:%s %s addr: 0x%08X dest: 0x%08X"%(c.mnemonic, c.op_str, c.address, dest_addr))
                         self.__disasm_recur(codelist, code_addr_set, base_addr, code_bytes, dest_addr)
                         if (is_jmp_no_ret(c)):
                             break
                         #
                     #
                 #
+            #
         
             code_prev[0] = code_prev[1]
             code_prev[1] = c
@@ -132,13 +133,13 @@ class IntructionManger:
         codelist = []
         self.__disasm_recur(codelist, code_addr_set, start_addr, code_bytes, start_addr)
         new_list=sorted(codelist, key=IntructionManger._cmp)
-
+        
         '''
         for ins in new_list:
             print("[0x%08X] %s %s"%(ins.address, ins.mnemonic.upper(), ins.op_str.upper()))
         #
         '''
-
+        
         #print(len(new_list))
 
         #sys.exit(-1)
