@@ -30,7 +30,7 @@ class TestCfg(unittest.TestCase):
             #print(blocks[9].parent)
             #print(blocks[9].childs)
             #print(blocks)
-            self.assertTrue(len(cbs), len(blocks))
+            self.assertEqual(len(cbs), len(blocks))
             for i in range(0, len(cbs)):
                 self.hex_addr_assert(cbs[i].start, blocks[i].start)
                 self.hex_addr_assert(cbs[i].end, blocks[i].end)
@@ -153,7 +153,7 @@ class TestCfg(unittest.TestCase):
 
         with open("tests/bin/libSecShell.so", "rb") as f:
             blocks = cfg.create_cfg(f, 0x0001B180, 11724, True)
-            self.assertTrue(len(cbs), len(blocks))
+            self.assertEqual(len(cbs), len(blocks))
             for i in range(0, len(cbs)):
                 self.hex_addr_assert(cbs[i].start, blocks[i].start)
                 self.hex_addr_assert(cbs[i].end, blocks[i].end)

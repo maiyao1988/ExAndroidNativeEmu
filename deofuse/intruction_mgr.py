@@ -1,4 +1,5 @@
 import os
+import sys
 import capstone
 import keystone
 from deofuse.ins_helper import *
@@ -48,96 +49,99 @@ class IntructionManger:
         return self.__ks.asm(ins_str, offset)
     #
 
-    def __get_all_jump_dest(self, codelist, base_addr, code_bytes):
-        base_addr=codelist[0].address
-        dests = set()
-        nlen = len(codelist)
-        for index in range(0, nlen):
-            code = codelist[index]
-            mne = code.mnemonic
-            if (is_jmp(code)):
-                dest = get_jmp_dest(code)
-                if (dest != None):
-                    dests.add(dest)
-                #
-                else:
-                    if (code.mnemonic in ("tbb", "tbh", "tbb.w", "tbh.w")):
-                        assert index-2 > 0, "tbb/tbh list range not found..."
-                        code_cmp = codelist[index-2]
+
+    #递归下降返汇编代码，为了剔除非代码的部分
+    def __disasm_recur(self, codelist, code_addr_set, base_addr, code_bytes, dis_addr):
+        #print ("__disasm_recur dis addr 0x%08X"%(dis_addr,))
+        if (dis_addr in code_addr_set):
+            return
+        #
+        len_cbs = len(code_bytes)
+        my_code_bytes_off = dis_addr - base_addr
+        if (my_code_bytes_off >= len_cbs):
+            return
+        #
+        my_code_bytes = code_bytes[my_code_bytes_off:]
+        codes = self.__cs.disasm(my_code_bytes, dis_addr)
+        code_prev = [None, None]
+
+        for c in codes:
+            
+            if (c.address in code_addr_set):
+                break
+            else:
+                #assert c.address not in code_addr_set, "0x%08X not evalute"%c.address
+                code_addr_set.add(c.address)
+                codelist.append(c)
+                #print ("0x%08X %s %s"%(c.address, c.mnemonic.upper(), c.op_str.upper()))
+                if (is_jmp(c, base_addr, len_cbs)):
+                    #print ("get jmp %s %s 0x%08X"%(c.mnemonic, c.op_str, c.address))
+                    if (is_table_jump(c)):
+                        assert code_prev[0] != None and code_prev[1] != None, "tbb/tbh list range not found..."
+                        code_cmp = code_prev[0]
                         assert code_cmp.mnemonic == "cmp", "tbb/tbh list range not found..."
                         op_str = code_cmp.op_str
                         imm_id=op_str.find("#")
                         ntable = int(op_str[imm_id+1:], 16)+1
                         itemsz = 2 #tbh
+                        mne = c.mnemonic
                         if (mne.startswith("tbb")):
                             itemsz = 1
                         #
-                        assert code.op_str.find("pc")>-1, "table jump not by pc is not support now"
-                        addr = code.address
+                        assert c.op_str.find("pc")>-1, "table jump not by pc is not support now"
+                        addr = c.address
                         for jmp_id in range(0, ntable):
-                            offset_in_byte = addr + code.size + jmp_id * itemsz - base_addr
-                            jmp_off_b = code_bytes[offset_in_byte:offset_in_byte+itemsz]
+                            offset_in_byte = addr + c.size + jmp_id * itemsz - dis_addr
+                            jmp_off_b = my_code_bytes[offset_in_byte:offset_in_byte+itemsz]
                             jmp_off = int.from_bytes(jmp_off_b, byteorder='little')
-                            dest = addr + 4 + jmp_off*2
-                            dests.add(dest)
+                            dest_addr = addr + 4 + jmp_off*2
+                            self.__disasm_recur(codelist, code_addr_set, base_addr, code_bytes, dest_addr)
+                        #
+                        break
+                    #
+                    else:
+                        #非表跳转，b, bne, cbz等
+                        dest_addr = get_jmp_dest(c)
+                        if (dest_addr == None):
+                            print("can not get dest from ins %s %s addr 0x%08X"%(c.mnemonic, c.op_str, c.address))
+                            if (is_jmp_no_ret(c)):
+                                break
+                            #
+                        #
+                        #print ("call by jmp dest :0x%08X"%dest_addr)
+                        self.__disasm_recur(codelist, code_addr_set, base_addr, code_bytes, dest_addr)
+                        if (is_jmp_no_ret(c)):
+                            break
                         #
                     #
                 #
-            
-        #
         
-        return dests
-    #
-
-    def __find_nearest_dest(self, address, dests):
-        diff = 0xFFFFFFFF
-        r = 0
-        for d in dests:
-            if (d > address):
-                my_diff = d - address
-                if (diff > my_diff):
-                    diff = my_diff
-                    r = d
-                #
-            #
+            code_prev[0] = code_prev[1]
+            code_prev[1] = c
         #
-        return r
     #
 
-    def disasm(self, code_bytes, start_addr, size):
-        #this asm in ida can disasm..., true bytes return by kstool is [04 b0]
-        #0001D60E 04 B8                       ADD             SP, SP, #0x10
+    @staticmethod
+    def _cmp(a1):
+        return a1.address
+    #
+
+    #递归下降反汇编代码，为了剔除非代码的部分
+    def disasm(self, code_bytes, start_addr):
+        code_addr_set = set()
         codelist = []
-        dis_start = start_addr
-        end_addr = start_addr + size
-        all_dests = set()
-        n_start = 0
-        my_code_bytes = code_bytes
-        while True:
-            codes = self.__cs.disasm(my_code_bytes, dis_start)
-            tmp_code_list = []
-            for c in codes:
-                tmp_code_list.append(c)
-            #
-            codelist.extend(tmp_code_list)
-            nlen = len(tmp_code_list)
-            last_code = tmp_code_list[nlen-1]
-            code_end_addr = last_code.address + last_code.size
-            if (end_addr <= code_end_addr):
-                assert end_addr == code_end_addr
-                break
-            #
-            dests = self.__get_all_jump_dest(tmp_code_list, start_addr, my_code_bytes)
-            all_dests.update(dests)
-            dis_start = self.__find_nearest_dest(last_code.address, all_dests)
-            if (dis_start == 0):
-                #if no jump in codelist, the codelist maybe invalid, just return what we got
-                return codelist
-            #
-            
-            off = dis_start - start_addr
-            my_code_bytes = code_bytes[dis_start-start_addr:]
+        self.__disasm_recur(codelist, code_addr_set, start_addr, code_bytes, start_addr)
+        new_list=sorted(codelist, key=IntructionManger._cmp)
+
+        '''
+        for ins in new_list:
+            print("[0x%08X] %s %s"%(ins.address, ins.mnemonic.upper(), ins.op_str.upper()))
         #
-        return codelist
+        '''
+
+        #print(len(new_list))
+
+        #sys.exit(-1)
+        return new_list
     #
 #

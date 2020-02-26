@@ -31,7 +31,7 @@ def create_cfg(f, base_addr, size, thumb):
     blocks = []
     f.seek(base_addr, 0)
     code_bytes = f.read(size)
-    codes = ins_mgr.disasm(code_bytes, base_addr, size)
+    codes = ins_mgr.disasm(code_bytes, base_addr)
     m = 0
     
     cb = CodeBlock()
@@ -146,7 +146,7 @@ def create_cfg(f, base_addr, size, thumb):
         if (addr_next_ins in block_starts_map):
             #print ("cb_now %r child %r"%(cb_now, next_block))
             #pop xxx, pc mov pc, xxx and so on
-            #if it is a condition jump , there will be two branch 
+            #if it is not a no return jump , there will be two branch 
             if not is_jmp_no_ret(i, base_addr, size):
                 next_block = block_starts_map[addr_next_ins]
                 next_block.parent.add(cb_now)
