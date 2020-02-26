@@ -13,6 +13,14 @@ class TestCfg(unittest.TestCase):
         self.assertEqual(a, b, "0x%08X != 0x%08X"%(a, b))
     #
 
+    def cb_in_cbs(self, cb, cbs):
+        for b in cbs:
+            if cb.start == b.start and cb.end == cb.end:
+                return True
+            #
+        return False
+    #
+
     def test_cfg_libc_pthread_create(self):
         cbs = [CodeBlock(0x0000D218, 0x0000D268), CodeBlock(0x0000D268, 0x0000D274), 
         CodeBlock(0x0000D274, 0x0000D28C), CodeBlock(0x0000D28C, 0x0000D2C8), 
@@ -59,7 +67,7 @@ class TestCfg(unittest.TestCase):
         CodeBlock(0x0001B39A, 0x0001B39E), CodeBlock(0x0001B39E, 0x0001B3BC), 
         CodeBlock(0x0001B3BC, 0x0001B3DC), CodeBlock(0x0001B3DC, 0x0001B3E8), 
         CodeBlock(0x0001B3E8, 0x0001B3FC), CodeBlock(0x0001B3FC, 0x0001B400), 
-        CodeBlock(0x0001B400, 0x0001B402), CodeBlock(0x0001B402, 0x0001B406), 
+        CodeBlock(0x0001B400, 0x0001B402), 
         CodeBlock(0x0001B406, 0x0001B410), CodeBlock(0x0001B410, 0x0001B414), 
         CodeBlock(0x0001B414, 0x0001B41A), CodeBlock(0x0001B41A, 0x0001B430), 
         CodeBlock(0x0001B430, 0x0001B438), CodeBlock(0x0001B438, 0x0001B43A), 
@@ -69,19 +77,19 @@ class TestCfg(unittest.TestCase):
         CodeBlock(0x0001B46A, 0x0001B472), CodeBlock(0x0001B472, 0x0001B47C), 
         CodeBlock(0x0001B47C, 0x0001B47E), CodeBlock(0x0001B47E, 0x0001B486), 
         CodeBlock(0x0001B486, 0x0001B49A), CodeBlock(0x0001B49A, 0x0001B49E), CodeBlock(0x0001B49E, 0x0001B4A0),
-         CodeBlock(0x0001B4A0, 0x0001B4A4), CodeBlock(0x0001B4A4, 0x0001B4A8), CodeBlock(0x0001B4A8, 0x0001B4B8), 
+         CodeBlock(0x0001B4A4, 0x0001B4A8), CodeBlock(0x0001B4A8, 0x0001B4B8), 
          CodeBlock(0x0001B4B8, 0x0001B4BA), CodeBlock(0x0001B4BA, 0x0001B4BE), CodeBlock(0x0001B4BE, 0x0001B4C4), 
          CodeBlock(0x0001B4C4, 0x0001B4D4), CodeBlock(0x0001B4D4, 0x0001B4D6), CodeBlock(0x0001B4D6, 0x0001B4E4), 
          CodeBlock(0x0001B4FC, 0x0001B500), CodeBlock(0x0001B500, 0x0001B502), 
-         CodeBlock(0x0001B502, 0x0001B506), CodeBlock(0x0001B506, 0x0001B514), CodeBlock(0x0001B514, 0x0001B54C), 
+         CodeBlock(0x0001B502, 0x0001B506), CodeBlock(0x0001B506, 0x0001B514),
          CodeBlock(0x0001B54C, 0x0001B638), CodeBlock(0x0001B638, 0x0001B64A), CodeBlock(0x0001B64A, 0x0001B65C), 
          CodeBlock(0x0001B65C, 0x0001B66C), CodeBlock(0x0001B66C, 0x0001B7E4), CodeBlock(0x0001B7E4, 0x0001B93E), 
-         CodeBlock(0x0001B93E, 0x0001B940), CodeBlock(0x0001B940, 0x0001B960), CodeBlock(0x0001B960, 0x0001BA0E), 
+         CodeBlock(0x0001B93E, 0x0001B940), CodeBlock(0x0001B960, 0x0001BA0E), 
          CodeBlock(0x0001BA0E, 0x0001BA96), CodeBlock(0x0001BA96, 0x0001BDB4), CodeBlock(0x0001BDB4, 0x0001BDCA),
           CodeBlock(0x0001BDCA, 0x0001BDDA), CodeBlock(0x0001BDDA, 0x0001BDE8), CodeBlock(0x0001BDE8, 0x0001BDEE), 
-          CodeBlock(0x0001BDEE, 0x0001BF26), CodeBlock(0x0001BF26, 0x0001BF30), CodeBlock(0x0001BF30, 0x0001CC78), 
+          CodeBlock(0x0001BDEE, 0x0001BF26), CodeBlock(0x0001BF30, 0x0001CC78), 
           CodeBlock(0x0001CC78, 0x0001CD5E), CodeBlock(0x0001CD5E, 0x0001CDCC), CodeBlock(0x0001CDCC, 0x0001CDCE), 
-          CodeBlock(0x0001CDCE, 0x0001CDE4), CodeBlock(0x0001CDE4, 0x0001CDEA), CodeBlock(0x0001CDEA, 0x0001CDEC), 
+          CodeBlock(0x0001CDE4, 0x0001CDEA), CodeBlock(0x0001CDEA, 0x0001CDEC), 
           CodeBlock(0x0001CDEC, 0x0001CE76), CodeBlock(0x0001CE76, 0x0001CE86), CodeBlock(0x0001CE86, 0x0001CED0), 
           CodeBlock(0x0001CED0, 0x0001CEDA), CodeBlock(0x0001CEDA, 0x0001D022), CodeBlock(0x0001D022, 0x0001D024), 
           CodeBlock(0x0001D024, 0x0001D058), CodeBlock(0x0001D058, 0x0001D05E), CodeBlock(0x0001D05E, 0x0001D08C), 
@@ -100,11 +108,11 @@ class TestCfg(unittest.TestCase):
           CodeBlock(0x0001D288, 0x0001D28C), CodeBlock(0x0001D28C, 0x0001D296), CodeBlock(0x0001D296, 0x0001D356), 
           CodeBlock(0x0001D356, 0x0001D360), CodeBlock(0x0001D360, 0x0001D364), CodeBlock(0x0001D364, 0x0001D376), 
           CodeBlock(0x0001D376, 0x0001D380), CodeBlock(0x0001D380, 0x0001D38C), CodeBlock(0x0001D38C, 0x0001D3A0), 
-          CodeBlock(0x0001D3A0, 0x0001D3A4), CodeBlock(0x0001D3A4, 0x0001D3A6), CodeBlock(0x0001D3A6, 0x0001D3A8), 
+          CodeBlock(0x0001D3A0, 0x0001D3A4), CodeBlock(0x0001D3A4, 0x0001D3A6),
           CodeBlock(0x0001D3A8, 0x0001D3B8), CodeBlock(0x0001D3B8, 0x0001D3CE), CodeBlock(0x0001D3CE, 0x0001D3D4), 
           CodeBlock(0x0001D3D4, 0x0001D3D8), CodeBlock(0x0001D3D8, 0x0001D3DC), CodeBlock(0x0001D406, 0x0001D418), 
           CodeBlock(0x0001D418, 0x0001D446), CodeBlock(0x0001D446, 0x0001D460), CodeBlock(0x0001D460, 0x0001D490), 
-          CodeBlock(0x0001D490, 0x0001D494), CodeBlock(0x0001D494, 0x0001D508), CodeBlock(0x0001D508, 0x0001D522), 
+          CodeBlock(0x0001D490, 0x0001D494), CodeBlock(0x0001D508, 0x0001D522), 
           CodeBlock(0x0001D522, 0x0001D526), CodeBlock(0x0001D526, 0x0001D564), CodeBlock(0x0001D564, 0x0001D578), 
           CodeBlock(0x0001D578, 0x0001D582), CodeBlock(0x0001D582, 0x0001D59A), CodeBlock(0x0001D59A, 0x0001D5A0), 
           CodeBlock(0x0001D5A0, 0x0001D5E0), CodeBlock(0x0001D5E0, 0x0001D5E2), CodeBlock(0x0001D5E2, 0x0001D5E6), 
@@ -154,9 +162,8 @@ class TestCfg(unittest.TestCase):
         with open("tests/bin/libSecShell.so", "rb") as f:
             blocks = cfg.create_cfg(f, 0x0001B180, 11724, True)
             self.assertEqual(len(cbs), len(blocks))
-            for i in range(0, len(cbs)):
-                self.hex_addr_assert(cbs[i].start, blocks[i].start)
-                self.hex_addr_assert(cbs[i].end, blocks[i].end)
+            for b in cbs:
+                self.assertTrue(self.cb_in_cbs(b, blocks), "expect block %r not in result"%b)
             #
         #
     #
