@@ -7,7 +7,6 @@ import sys
 import ctypes
 from random import randint
 
-import hexdump
 from unicorn import Uc
 
 from androidemu.const.android import *
@@ -271,7 +270,7 @@ class SyscallHooks:
         If the connection or binding succeeds, zero is returned.
         On error, -1 is returned, and errno is set appropriately.
         """
-        hexdump.hexdump(mu.mem_read(addr, addr_len))
+        #hexdump.hexdump(mu.mem_read(addr, addr_len))
         
         # return 0
         return -1
