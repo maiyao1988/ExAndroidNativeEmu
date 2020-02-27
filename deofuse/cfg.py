@@ -4,6 +4,15 @@ import sys
 from deofuse.intruction_mgr import IntructionManger
 from deofuse.ins_helper import *
 
+def addr_in_blocks(addr, blocks):
+    for b in blocks:
+        if (b.start <= addr and b.end > addr):
+            return True
+        #
+    #
+    return False
+#
+
 class CodeBlock:
 
     def __init__(self, start=0, end=0):

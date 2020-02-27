@@ -1,6 +1,7 @@
 import os
 import sys
 from deofuse.ins_helper import *
+from deofuse.cfg import addr_in_blocks
 
 def get_ins_bytes_by_line(line):
     p = line.find(")")
@@ -9,15 +10,6 @@ def get_ins_bytes_by_line(line):
     p2 = subline.find("]")
     bytes_str = subline[p1+1:p2]
     return bytearray([int(x, 16) for x in bytes_str.split()])
-#
-
-def addr_in_blocks(addr, blocks):
-    for b in blocks:
-        if (b.start <= addr and b.end > addr):
-            return True
-        #
-    #
-    return False
 #
 
 #标识指令运行的运行信息

@@ -6,6 +6,7 @@ from deofuse import cfg
 from deofuse import tracer
 from deofuse.common_ofuse_detector import CommonOfDetector
 from deofuse.bb_ofuse_detector import BBOfDetector
+from deofuse.cfg import addr_in_blocks
 import shutil
 
 
@@ -172,6 +173,7 @@ def fix_two_jmp_cause_by_two_true_parent(fin, fout, nexts_list, lb, trace, ins_m
     clean_bytes(fout, addr_next_insn, lb.end)
 #
 
+
 def patch_common(fin, fout, lb, code_last_run, codelist, trace, ins_mgr, addr2block_can_use):
     n = len(codelist)  
     #TODO:识别所有类型的跳转,现在只支持bxx导致的跳转
@@ -191,11 +193,39 @@ def patch_common(fin, fout, lb, code_last_run, codelist, trace, ins_mgr, addr2bl
         code_r = "%s %s"%(code_last_run.mnemonic, code_last_run.op_str)
 
         fix_code = "b #0x%X"%(nexts_list[0],)
+        if (is_jmp(code_last_run)):
+            clear_itt_if_in_itt(fout, codelist, code_last_run)
+            addr_next_insn = safe_patch(fout, code_last_run.address, code_last_run.size, [fix_code], ins_mgr, addr2block_can_use)
+            clean_bytes(fout, addr_next_insn, lb.end)
+        #
+        else:
+            #如果逻辑块结尾不是一条jmp指令，这条指令不能随便覆盖，有两种可能
+            #子节点是逻辑块，和不是逻辑块
+            #结尾不是跳转，那么子节点只有可能有一个
+            assert(len(lb.childs) == 1) 
+            
+            child = next(iter(lb.childs))
+            child_block_is_lb = False
+            for next_addr in nexts:
+                if (next_addr == child.start):
+                    child_block_is_lb = True
+                #
+            #
+            
+            if (not child_block_is_lb):
+                #直接使用子节点做patch，子节点没有任何作用
 
-        clear_itt_if_in_itt(fout, codelist, code_last_run)
-        addr_next_insn = safe_patch(fout, code_last_run.address, code_last_run.size, [fix_code], ins_mgr, addr2block_can_use)
+                #子块在前面已经预留给这种情况用了
+                print("last code %s for %r is not jmp patch to next control block %r"%(code_r, lb, child))
+                
+                addr_next_insn = safe_patch(fout, child.start, child.end, [fix_code], ins_mgr, addr2block_can_use)
+            #
+            else:
+                #子节点是逻辑块，那就根本不用patch了
+                pass
+            #
+        #
 
-        clean_bytes(fout, addr_next_insn, lb.end)
     #
     elif (n_next == 2):
         #TODO:两个目的地，需要根据是否跑过一些指令判断，修正跳转
@@ -259,17 +289,31 @@ def patch_common(fin, fout, lb, code_last_run, codelist, trace, ins_mgr, addr2bl
             fix_two_jmp_cause_by_two_true_parent(fin, fout, nexts_list, lb, trace, ins_mgr, addr2block_can_use)
         #
     #
-
 #
 
 #将所有逻辑块最后的跳转，patch到另外一个有意义的逻辑块上
-#而不是去到控制块上再分发。简化逻辑，需要依赖unicorn做虚拟执行找到下一个真实逻辑块
+#而不是去到控制块上再分发。简化逻辑，需要依赖unicorn做虚拟执行或者ida trace找到下一个真实逻辑块
 def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, ins_mgr):
     addr2ofb = {}
     for ofb in obfuses_blocks:
         addr2ofb[ofb.start] = ofb
     #
-    addr2ofb_can_use = dict(addr2ofb)
+    addr2ofb_can_use = {}
+    for addr in addr2ofb:
+        ofb = addr2ofb[addr]
+        is_lb_child = False
+        parents = ofb.parent
+        for p in parents:
+            #如果父节点是逻辑块，则不标记为可用，预留给当逻辑块最后一个指令不是跳转的时候用
+            if (addr_in_blocks(p.start, logic_blocks)):
+                is_lb_child = True
+                break
+            #
+        #
+        if (not is_lb_child):
+            addr2ofb_can_use[addr] = ofb
+    #
+    
 
     clear_control_block(fout, obfuses_blocks)
     #print ("logic_blocks:%r"%logic_blocks)
@@ -320,7 +364,6 @@ def patch_logical_blocks(fin, fout, logic_blocks, obfuses_blocks, trace, ins_mgr
             patch_common(fin, fout, lb, code_last_run, codelist, trace, ins_mgr, addr2ofb_can_use)
         #
     #
-    #clear_control_block(fout, no_run_blocks)
 #
 
 def list_remove(srclist, listrmove):

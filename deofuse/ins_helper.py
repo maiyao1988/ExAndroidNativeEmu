@@ -196,3 +196,13 @@ def get_block_codes(f, block, ins_mgr):
     code_bytes = f.read(size)
     return ins_mgr.disasm(code_bytes, b.start)
 #
+
+
+def addr_in_blocks(addr, blocks):
+    for b in blocks:
+        if (b.start <= addr and b.end > addr):
+            return True
+        #
+    #
+    return False
+#
