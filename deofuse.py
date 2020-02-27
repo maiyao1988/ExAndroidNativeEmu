@@ -53,7 +53,7 @@ def safe_patch(fout, address, max_size, ins_list, ins_mgr, addr2block_can_use):
 #
 
 #如果逻辑块结尾是跳转指令，则直接patch结尾，否则，找到子控制块，利用子控制块的空间patch，避免覆盖最后一条有用的指令
-def safe_patch_last_code(fout, nexts_list, lb, codelist, code_last_run, fix_code_list, addr2block_can_use):
+def safe_patch_last_code_to_lb(fout, nexts_list, lb, codelist, code_last_run, fix_code_list, addr2block_can_use):
 
     code_r = "%s %s"%(code_last_run.mnemonic, code_last_run.op_str)
 
@@ -192,24 +192,26 @@ def fix_two_jmp_cause_by_two_true_parent(fin, fout, nexts_list, lb, trace, ins_m
     reg = next(iter(free_reg))
     print("reg %s is choosed"%reg)
 
+    #FIXME 这里的lastcode patch可能覆盖原有有用指令。
     fix_code1 = ["mov %s, #1"%reg, "b #0x%x"%lb.start]
-    #FIXME 可能有bug，如果父逻辑块有两个分支怎么办？
-    safe_patch_last_code(fout, [lb.start], p1b, p1codelist, p1last_code, fix_code1, addr2block_can_use)
+    clear_itt_if_in_itt(fout, p1codelist, p1last_code)
+    addr_next_insn = safe_patch(fout, p1last_code.address, p1last_code.size, fix_code1, ins_mgr, addr2block_can_use)
+    clean_bytes(fout, addr_next_insn, p1b.end)
 
+    p2last_code = p2codelist[len(p2codelist) - 1]
     fix_code2 = ["mov %s, #0"%reg, "b #0x%x"%lb.start]
-    p2last_code = p2codelist[len(p2codelist)-1]
-    safe_patch_last_code(fout, [lb.start], p2b, p2codelist, p2last_code, fix_code2, addr2block_can_use)
+    clear_itt_if_in_itt(fout, p2codelist, p2last_code)
+    addr_next_insn = safe_patch(fout, p2last_code.address, p2last_code.size, fix_code2, ins_mgr, addr2block_can_use)
+    clean_bytes(fout, addr_next_insn, p2b.end)
 
-    nexts_list_tmp = list(nexts_list)
-    nexts_list_tmp.remove(address)
-    another_branch_traget = nexts_list_tmp[0]
+    nexts_list.remove(address)
+    another_branch_traget = nexts_list[0]
     fix_code3 = ["cmp %s, #1"%reg, "beq #0x%x"%address, "b #0x%x"%another_branch_traget]
-
     last_code = codelist[len(codelist) - 1]
-
-    safe_patch_last_code(fout, nexts_list, lb, codelist, last_code, fix_code3, addr2block_can_use)
+    clear_itt_if_in_itt(fout, codelist, last_code)
+    addr_next_insn = safe_patch(fout, last_code.address, last_code.size, fix_code3, ins_mgr, addr2block_can_use)
+    clean_bytes(fout, addr_next_insn, lb.end)
 #
-
 
 def patch_common(fin, fout, lb, code_last_run, codelist, trace, ins_mgr, addr2block_can_use):
     n = len(codelist)  
@@ -228,7 +230,7 @@ def patch_common(fin, fout, lb, code_last_run, codelist, trace, ins_mgr, addr2bl
         #改跳转地址到下一个真实块
 
         fix_code = "b #0x%X"%(nexts_list[0],)
-        safe_patch_last_code(fout, nexts_list, lb, codelist, code_last_run, [fix_code], addr2block_can_use)
+        safe_patch_last_code_to_lb(fout, nexts_list, lb, codelist, code_last_run, [fix_code], addr2block_can_use)
     #
     elif (n_next == 2):
         #TODO:两个目的地，需要根据是否跑过一些指令判断，修正跳转
