@@ -11,7 +11,7 @@ from androidemu.java.java_class_def import JavaClassDef
 from androidemu.java.java_method_def import java_method_def
 from androidemu.java.java_field_def import JavaFieldDef
 import androidemu.config
-import androidemu.utils.debug_utils
+import androidemu.utils.debug_utils 
 from androidemu.utils.chain_log import ChainLogger
 
 import capstone
@@ -95,8 +95,8 @@ emulator.java_classloader.add_class(DexInstallV26)
 
 # Load all libraries.
 lib_module2 = emulator.load_library("vfs/system/lib/libdvm.so")
-lib_module = emulator.load_library("tests/bin/libSecShell.so")
-#lib_module = emulator.load_library("sec.so")
+#lib_module = emulator.load_library("tests/bin/libSecShell.so")
+lib_module = emulator.load_library("../deobf/sec.so")
 #androidemu.utils.debug_utils.dump_symbols(emulator, sys.stdout)
 
 # Show loaded modules.
