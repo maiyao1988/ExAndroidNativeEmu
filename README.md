@@ -1,6 +1,6 @@
 # ExAndroidNativeEmu
 
-This a personal improved version of [AndroidNativeEmu](https://github.com/AeonLucid/AndroidNativeEmu).Allow running android elf code on pc.
+This is a personal improved version of [AndroidNativeEmu](https://github.com/AeonLucid/AndroidNativeEmu).Allow running android elf code on pc.
 
 ## Difference between AndroidNativeEmu
  - Rewrite memory mapping module, fully support jemalloc
