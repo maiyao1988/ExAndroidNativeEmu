@@ -222,7 +222,7 @@ class MemoryMap:
         return (region[0], region[1]+1, prot, off, name)
     #
 
-    #dump maps like /system/self/maps
+    #dump maps like /proc/self/maps
     def dump_maps(self, stream):
         regions = []
         for region in self.__mu.mem_regions():

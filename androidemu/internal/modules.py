@@ -276,7 +276,7 @@ class Modules:
                             value_orig_bytes = self.emu.mu.mem_read(rel_addr, 4)
                             value_orig = int.from_bytes(value_orig_bytes, byteorder='little')
 
-                            #R_ARM_ABS32 重定位方式参见 android linker源码
+                            #R_ARM_ABS32 how to relocate see android linker source code
                             #*reinterpret_cast<Elf32_Addr*>(reloc) += sym_addr;
                             value = sym_addr + value_orig
                             # Write the new value
@@ -287,7 +287,7 @@ class Modules:
                     elif rel_info_type in (arm.R_ARM_GLOB_DAT, arm.R_ARM_JUMP_SLOT, 
                                                     arm.R_AARCH64_GLOB_DAT, arm.R_AARCH64_JUMP_SLOT):
                         # Resolve the symbol.
-                        #R_ARM_GLOB_DAT，R_ARM_JUMP_SLOT修复方式见linker源码
+                        #R_ARM_GLOB_DAT，R_ARM_JUMP_SLOT how to relocate see android linker source code
                         #*reinterpret_cast<Elf32_Addr*>(reloc) = sym_addr;
                         if sym.name in symbols_resolved:
                             value = symbols_resolved[sym.name].address
