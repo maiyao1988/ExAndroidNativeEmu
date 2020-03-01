@@ -15,9 +15,10 @@ class Module:
         self.init_array = list(init_array)
 
         # Create fast lookup.
-        for symbol_name, symbol in self.symbols.items():
-            if symbol.address != 0:
-                self.symbol_lookup[symbol.address] = (symbol_name, symbol)
+        for symbol_name in self.symbols:
+            addr = self.symbols[symbol_name]
+            if addr != 0:
+                self.symbol_lookup[addr] = symbol_name
 
     def find_symbol(self, name):
         if name in self.symbols:
@@ -26,9 +27,9 @@ class Module:
 
     def is_symbol_addr(self, addr):
         if addr in self.symbol_lookup:
-            return  self.symbol_lookup[addr][0]
+            return  self.symbol_lookup[addr]
         elif addr+1 in self.symbol_lookup:
-            return  self.symbol_lookup[addr+1][0]
+            return  self.symbol_lookup[addr+1]
         else:
             return None
 
