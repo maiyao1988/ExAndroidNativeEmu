@@ -38,4 +38,7 @@ class TestNative(unittest.TestCase):
             r_info_sym = item["r_info_sym"]
             sym_str = r.get_dyn_string_by_rel_sym(r_info_sym)
             self.assertEqual(sym_str, "getuid")
+
+            so_needed = r.get_so_need()
+            self.assertTrue("libc.so" in so_needed)
     #
