@@ -239,10 +239,9 @@ class Modules:
                         #
                     #
                 init_array_offset += 4
-
+            #
             # Resolve all symbols.
             symbols_resolved = dict()
-
 
             itersymbols = dynsym.iter_symbols()
             next(itersymbols)  # Skip first symbol which is always NULL.
