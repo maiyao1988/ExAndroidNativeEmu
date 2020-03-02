@@ -8,7 +8,6 @@ from unicorn import UC_PROT_ALL
 from androidemu.internal import arm
 from androidemu.utils.misc_utils import get_segment_protection,page_end, page_start
 from androidemu.internal.module import Module
-from androidemu.internal.symbol_resolved import SymbolResolved
 from androidemu.utils import memory_helpers,misc_utils
 from androidemu.vfs.file_system import VirtualFile
 from androidemu import config
@@ -68,6 +67,7 @@ class Modules:
         ret = self.counter_memory
         self.counter_memory += size_aligned
         return ret
+    #
 
     def load_module(self, filename, do_init=True):
         m = self.find_module_by_name(filename)
@@ -252,7 +252,7 @@ class Modules:
                 for symbol in itersymbols:
                     symbol_address = self._elf_get_symval(elf, load_base, symbol)
                     if symbol_address is not None:
-                        symbols_resolved[symbol.name] = SymbolResolved(symbol_address, symbol)
+                        symbols_resolved[symbol.name] = symbol_address
 
             # Relocate.
             for section in elf.iter_sections():
@@ -271,7 +271,7 @@ class Modules:
                     # Relocation table for ARM
                     if rel_info_type == arm.R_ARM_ABS32:
                         if sym.name in symbols_resolved:
-                            sym_addr = symbols_resolved[sym.name].address
+                            sym_addr = symbols_resolved[sym.name]
 
                             value_orig_bytes = self.emu.mu.mem_read(rel_addr, 4)
                             value_orig = int.from_bytes(value_orig_bytes, byteorder='little')
@@ -290,7 +290,7 @@ class Modules:
                         #R_ARM_GLOB_DAT，R_ARM_JUMP_SLOT how to relocate see android linker source code
                         #*reinterpret_cast<Elf32_Addr*>(reloc) = sym_addr;
                         if sym.name in symbols_resolved:
-                            value = symbols_resolved[sym.name].address
+                            value = symbols_resolved[sym.name]
 
                             # Write the new value
                             #print(value)
@@ -314,6 +314,8 @@ class Modules:
                     else:
                         logger.error("Unhandled relocation type %i." % rel_info_type)
                     #
+                #
+            #
 
             # Store information about loaded module.
             module = Module(filename, load_base, bound_high - bound_low, symbols_resolved, init_addr, init_array)
@@ -374,10 +376,12 @@ class Modules:
     def _elf_lookup_symbol(self, name):
         for module in self.modules:
             if name in module.symbols:
-                symbol = module.symbols[name]
-
-                if symbol.address != 0:
-                    return symbol.address
+                addr = module.symbols[name]
+                if addr != 0:
+                    return addr
+                #
+            #
+        #
 
         return None
 

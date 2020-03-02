@@ -145,13 +145,13 @@ class Emulator:
         return libmod
 
     def call_symbol(self, module, symbol_name, *argv):
-        symbol = module.find_symbol(symbol_name)
+        symbol_addr = module.find_symbol(symbol_name)
 
-        if symbol is None:
+        if symbol_addr is None:
             logger.error('Unable to find symbol \'%s\' in module \'%s\'.' % (symbol_name, module.filename))
             return
 
-        return self.call_native(symbol.address, *argv)
+        return self.call_native(symbol_addr, *argv)
     #
 
     def call_native(self, addr, *argv):
