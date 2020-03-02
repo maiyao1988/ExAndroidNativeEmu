@@ -243,16 +243,15 @@ class Modules:
             # Resolve all symbols.
             symbols_resolved = dict()
 
-            for section in elf.iter_sections():
-                if not isinstance(section, SymbolTableSection):
-                    continue
 
-                itersymbols = section.iter_symbols()
-                next(itersymbols)  # Skip first symbol which is always NULL.
-                for symbol in itersymbols:
-                    symbol_address = self._elf_get_symval(elf, load_base, symbol)
-                    if symbol_address is not None:
-                        symbols_resolved[symbol.name] = symbol_address
+            itersymbols = dynsym.iter_symbols()
+            next(itersymbols)  # Skip first symbol which is always NULL.
+            for symbol in itersymbols:
+                symbol_address = self._elf_get_symval(elf, load_base, symbol)
+                if symbol_address is not None:
+                    symbols_resolved[symbol.name] = symbol_address
+                #
+            #
 
             # Relocate.
             for section in elf.iter_sections():
