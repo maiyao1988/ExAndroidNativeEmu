@@ -41,6 +41,24 @@ DT_JMPREL	=23
 DT_LOPROC	=0x70000000
 DT_HIPROC	=0x7fffffff
 
+SHN_UNDEF	=0
+SHN_LORESERVE	=0xff00
+SHN_LOPROC	=0xff00
+SHN_HIPROC	=0xff1f
+SHN_ABS	=0xfff1
+SHN_COMMON	=0xfff2
+SHN_HIRESERVE	=0xffff
+SHN_MIPS_ACCOMON	=0xff00
+
+STB_LOCAL = 0
+STB_GLOBAL =1
+STB_WEAK   =2
+STT_NOTYPE  =0
+STT_OBJECT  =1
+STT_FUNC    =2
+STT_SECTION =3
+STT_FILE    =4
+
 class ELFReader:
     '''
     #define EI_NIDENT	16
@@ -99,6 +117,26 @@ class ELFReader:
         return x & 0xff
     #
 
+#define ELF_ST_BIND(x)	((x) >> 4)
+#define ELF_ST_TYPE(x)	(((unsigned int) x) & 0xf)
+
+    @staticmethod
+    def __elf_st_bind(x):
+        return x >> 4
+    #
+
+    @staticmethod
+    def __elf_st_type(x):
+        return x & 0xf
+    #
+
+    def __st_name_to_name(self, st_name):
+        assert st_name < self.__dyn_str_sz, "__st_name_to_name st_name %d out of range %d"%(st_name, self.__dyn_str_sz)
+        endId=self.__dyn_str_buf.find(b"\x00", st_name)
+        r = self.__dyn_str_buf[st_name:endId]
+        return r.decode("utf-8")
+    #
+
     def __init__(self, f):
         ehdr32_sz = 52
         phdr32_sz = 32
@@ -146,6 +184,7 @@ class ELFReader:
         rel_count = 0
         relplt_off = 0
         relplt_count = 0
+        dt_needed = []
         while True:
             dyn_item_bytes = f.read(elf32_dyn_sz)
             d_tag, d_val_ptr = struct.unpack("<II", dyn_item_bytes)
@@ -179,8 +218,10 @@ class ELFReader:
                 memcpy(&nbucket, buffer + g_shdr[HASH].sh_offset, 4);
 				memcpy(&nchain, buffer + g_shdr[HASH].sh_offset + 4, 4)
                 '''
+                n = f.tell()
                 f.seek(d_val_ptr, 0)
                 hash_heads = f.read(8)
+                f.seek(n, 0)
                 nbucket, nchain = struct.unpack("<II", hash_heads)
                 nsymbol = nchain
             #
@@ -190,6 +231,9 @@ class ELFReader:
                 self.__init_array_off = d_val_ptr
             elif(d_tag == DT_INIT_ARRAYSZ):
                 self.__init_array_size = d_val_ptr
+            #
+            elif (d_tag == DT_NEEDED):
+                dt_needed.append(d_val_ptr)
             #
         #
         assert nsymbol > -1, "can not detect nsymbol by DT_HASH, DT_GNUHASH, not support now"
@@ -202,7 +246,12 @@ class ELFReader:
         for i in range(0, nsymbol):
             sym_bytes = f.read(elf32_sym_sz)
             st_name, st_value, st_size, st_info, st_other, st_shndx = struct.unpack("<IIIccH", sym_bytes)
-            d = {"st_name":st_name, "st_value":st_value, "st_size":st_size, "st_info":st_info, "st_other":st_other, "st_shndx":st_shndx}
+            int_st_info = int.from_bytes(st_info, byteorder='little', signed = False)
+            st_info_bind = ELFReader.__elf_st_bind(int_st_info)
+            st_info_type = ELFReader.__elf_st_type(int_st_info)
+            name = self.__st_name_to_name(st_name)
+            d = {"name":name, "st_name":st_name, "st_value":st_value, "st_size":st_size, "st_info":st_info, "st_other":st_other, 
+            "st_shndx":st_shndx, "st_info_bind":st_info_bind, "st_info_type":st_info_type}
             self.__dynsymols.append(d)
         #
 
@@ -231,6 +280,12 @@ class ELFReader:
         #
         self.__rels["relplt"] = relplt_table
         print("ok")
+        self.__so_needed = []
+        for str_off in dt_needed:
+            endId=self.__dyn_str_buf.find(b"\x00", str_off)
+            so_name = self.__dyn_str_buf[str_off:endId]
+            self.__so_needed.append(so_name.decode("utf-8"))
+        #
     #
 
     def get_load(self):
@@ -250,13 +305,19 @@ class ELFReader:
         assert rel_sym < nsym
         sym =  self.__dynsymols[rel_sym]
         st_name = sym["st_name"]
-        assert st_name < self.__dyn_str_sz, "get_dyn_string_by_rel_sym st_name %d out of range %d"%(st_name, self.__dyn_str_sz)
-        endId=self.__dyn_str_buf.find(b"\x00", st_name)
-        r = self.__dyn_str_buf[st_name:endId]
-        return r.decode("utf-8")
+        r = self.__st_name_to_name(st_name)
+        return r
     #
 
     def get_init_array(self):
         return self.__init_array_off, self.__init_array_size
+    #
+
+    def get_init(self):
+        return self.__init_off
+    #
+
+    def get_so_need(self):
+        return self.__so_needed
     #
 #

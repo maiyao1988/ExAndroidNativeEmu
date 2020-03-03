@@ -5,13 +5,13 @@ class Module:
     :type base int
     :type size int
     """
-    def __init__(self, filename, address, size, symbols_resolved, init_addr, init_array=[]):
+    def __init__(self, filename, address, size, symbols_resolved, init_offset, init_array=[]):
         self.filename = filename
         self.base = address
         self.size = size
         self.symbols = symbols_resolved
         self.symbol_lookup = dict()
-        self.init_addr = init_addr
+        self.init_offset = init_offset
         self.init_array = list(init_array)
 
         # Create fast lookup.
@@ -34,14 +34,15 @@ class Module:
             return None
 
     def call_init(self, emu):                
-        if (self.init_addr != 0):
-            print("Calling init 0x%08X for: %s " % (self.init_addr, self.filename))
+        if (self.init_offset != 0):
+            init_addr = self.base + self.init_offset
+            print("Calling init %s function 0x%08X" % (self.filename, init_addr))
             emu.call_native(self.init_addr)
         #
         for fun_ptr in self.init_array:
-            print("Calling Init_array %s function: 0x%08X " %(self.filename, fun_ptr))
-            emu.call_native(fun_ptr)
+            fun_addr = fun_ptr + self.base
+            print("Calling Init_array %s function: 0x%08X " %(self.filename, fun_addr))
+            emu.call_native(fun_addr)
         #
-        
     #
 

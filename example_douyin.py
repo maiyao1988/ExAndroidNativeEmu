@@ -95,6 +95,22 @@ class java_lang_Thread(metaclass=JavaClassDef, jvm_name='java/lang/Thread'):
                 java_lang_StackTraceElement("dalvik.system.NativeStart")
                 ]
 
+def hook_mem_read(uc, access, address, size, value, user_data):
+    pc = uc.reg_read(UC_ARM_REG_PC)
+    
+    if (address == 3419067861):
+        data = uc.mem_read(address, size)
+        v = int.from_bytes(data, byteorder='little', signed=False)
+        print("read")
+    #
+#
+
+def hook_mem_write(uc, access, address, size, value, user_data):
+    pc = uc.reg_read(UC_ARM_REG_PC)
+    if (address == 3419067861):
+        print("write")
+    #
+#
 g_cfd = ChainLogger(sys.stdout, "./ins-douyin.txt")
 # Add debugging.
 def hook_code(mu, address, size, user_data):
@@ -128,6 +144,9 @@ emulator = Emulator(
 )
 
 #emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
+
+emulator.mu.hook_add(UC_HOOK_MEM_WRITE, hook_mem_write)
+emulator.mu.hook_add(UC_HOOK_MEM_READ, hook_mem_read)
 # Register Java class.
 # emulator.java_classloader.add_class(MainActivity)
 emulator.java_classloader.add_class(XGorgen)

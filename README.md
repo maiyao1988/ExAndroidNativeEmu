@@ -11,11 +11,12 @@ This is a personal improved version of [AndroidNativeEmu](https://github.com/Aeo
  - Auto Load dependency so.
  - auto generate /proc/\[pid\]/maps according to current memory map
  - fix R_ARM_ABS32 relocation bug.
+ - use program header to load so instead of section header
  
 ## TODO
  - Simulate linker TLS initialization.
  - Support well known virtual file like /proc/self/maps...
- - Get rid of dependency on Section Header when loading ELF.
+ - ~~Get rid of dependency on Section Header when loading ELF~~.
  
 ## Usage
 
