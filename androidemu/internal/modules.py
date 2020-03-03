@@ -170,10 +170,7 @@ class Modules:
             init_addr = 0
             init_array_offset, init_array_size = reader.get_init_array()
             init_array = []
-            init_addr = 0
             init_offset = reader.get_init()
-            if (init_offset != 0):
-                init_addr = load_base+reader.get_init()
 
             so_needed = reader.get_so_need()
             for so_name in so_needed:
@@ -191,7 +188,7 @@ class Modules:
                 b = self.emu.mu.mem_read(load_base+init_array_offset, 4)
                 fun_ptr = int.from_bytes(b, byteorder='little', signed = False)
                 if (fun_ptr != 0):
-                    init_array.append(fun_ptr + load_base)
+                    init_array.append(fun_ptr)
                 else:
                     # search in reloc
                     reltbl = rels["dynrel"]
@@ -203,7 +200,7 @@ class Modules:
                             sym = symbols[r_info_sym]
                             sym_value = sym['st_value']
                             assert(sym_value != 0)
-                            init_array.append(load_base + sym_value)
+                            init_array.append(sym_value)
                             # print ("find init array for :%s %x" % (filename, sym_value))
                             break
                         #
@@ -288,7 +285,7 @@ class Modules:
             #
 
             # Store information about loaded module.
-            module = Module(filename, load_base, bound_high - bound_low, symbols_resolved, init_addr, init_array)
+            module = Module(filename, load_base, bound_high - bound_low, symbols_resolved, init_offset, init_array)
             self.modules.append(module)
             #TODO init tls like linker
             '''
