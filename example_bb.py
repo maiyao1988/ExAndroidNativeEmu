@@ -91,7 +91,7 @@ emulator = Emulator(
 emulator.java_classloader.add_class(Helper)
 emulator.java_classloader.add_class(DexInstall)
 emulator.java_classloader.add_class(DexInstallV26)
-#emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
+emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
 
 # Load all libraries.
 lib_module2 = emulator.load_library("vfs/system/lib/libdvm.so")
