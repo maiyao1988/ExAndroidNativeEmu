@@ -167,11 +167,8 @@ class Modules:
             #
 
             # Find init array.
-            init_array_addr = 0
             init_addr = 0
             init_array_offset, init_array_size = reader.get_init_array()
-            if (init_array_offset > 0):
-                init_array_addr = load_base + init_array_offset
             init_array = []
             init_addr = 0
             init_offset = reader.get_init()
@@ -191,7 +188,7 @@ class Modules:
             rels = reader.get_rels()
             symbols = reader.get_symbols()
             for _ in range(int(init_array_size / 4)):
-                b = self.emu.mu.mem_read(init_array_addr, 4)
+                b = self.emu.mu.mem_read(load_base+init_array_offset, 4)
                 fun_ptr = int.from_bytes(b, byteorder='little', signed = False)
                 if (fun_ptr != 0):
                     init_array.append(fun_ptr + load_base)
@@ -212,7 +209,7 @@ class Modules:
                         #
                     #
                 #
-                init_array_addr += 4
+                init_array_offset += 4
             #
             # Resolve all symbols.
             symbols_resolved = dict()
