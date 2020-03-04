@@ -167,7 +167,6 @@ class Modules:
             #
 
             # Find init array.
-            init_addr = 0
             init_array_offset, init_array_size = reader.get_init_array()
             init_array = []
             init_offset = reader.get_init()
@@ -184,30 +183,6 @@ class Modules:
 
             rels = reader.get_rels()
             symbols = reader.get_symbols()
-            for _ in range(int(init_array_size / 4)):
-                b = self.emu.mu.mem_read(load_base+init_array_offset, 4)
-                fun_ptr = int.from_bytes(b, byteorder='little', signed = False)
-                if (fun_ptr != 0):
-                    init_array.append(fun_ptr)
-                else:
-                    # search in reloc
-                    reltbl = rels["dynrel"]
-                    for rel in reltbl:
-                        rel_info_type = rel['r_info_type']
-                        rel_addr = rel['r_offset']
-                        if rel_info_type == arm.R_ARM_ABS32 and rel_addr == init_array_offset:
-                            r_info_sym = rel["r_info_sym"]
-                            sym = symbols[r_info_sym]
-                            sym_value = sym['st_value']
-                            assert(sym_value != 0)
-                            init_array.append(sym_value)
-                            # print ("find init array for :%s %x" % (filename, sym_value))
-                            break
-                        #
-                    #
-                #
-                init_array_offset += 4
-            #
             # Resolve all symbols.
             symbols_resolved = dict()
 
@@ -282,6 +257,15 @@ class Modules:
                         logger.error("Unhandled relocation type %i." % rel_info_type)
                     #
                 #
+            #
+
+            for _ in range(int(init_array_size / 4)):
+                b = self.emu.mu.mem_read(load_base+init_array_offset, 4)
+                fun_ptr = int.from_bytes(b, byteorder='little', signed = False)
+                if (fun_ptr != 0):
+                    init_array.append(fun_ptr)
+                #
+                init_array_offset += 4
             #
 
             # Store information about loaded module.
