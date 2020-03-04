@@ -258,7 +258,9 @@ class Modules:
                     #
                 #
             #
-
+            if (init_offset != 0):
+                init_array.appen(load_base+init_offset)
+            #
             for _ in range(int(init_array_size / 4)):
                 b = self.emu.mu.mem_read(load_base+init_array_offset, 4)
                 fun_ptr = int.from_bytes(b, byteorder='little', signed = False)
@@ -269,7 +271,7 @@ class Modules:
             #
 
             # Store information about loaded module.
-            module = Module(filename, load_base, bound_high - bound_low, symbols_resolved, init_offset, init_array)
+            module = Module(filename, load_base, bound_high - bound_low, symbols_resolved, init_array)
             self.modules.append(module)
             #TODO init tls like linker
             '''
