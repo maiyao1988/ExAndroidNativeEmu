@@ -1,28 +1,35 @@
 from androidemu.java.java_class_def import JavaClassDef
 from androidemu.java.java_field_def import JavaFieldDef
 from androidemu.java.java_method_def import java_method_def, JavaMethodDef
+import time
 
 
 class ApplicationInfo(metaclass=JavaClassDef, jvm_name='android/content/pm/ApplicationInfo', 
 jvm_fields=[
                      JavaFieldDef('sourceDir', 'Ljava/lang/String;', False),
                      JavaFieldDef('dataDir', 'Ljava/lang/String;', False),
-                     JavaFieldDef('nativeLibraryDir', 'Ljava/lang/String;', False)
+                     JavaFieldDef('nativeLibraryDir', 'Ljava/lang/String;', False),
+                     JavaFieldDef('flags', 'I', False),
                  ]):
     
     def __init__(self):
         self.sourceDir = "/data/app/com.myxh.coolshopping/"
         self.dataDir = "/data/data/com.myxh.coolshopping/"
         self.nativeLibraryDir = "/data/data/com.myxh.coolshopping/lib/"
+        self.flags = "0x30e8bf46"
     #
 #
 
 class PackageInfo(metaclass=JavaClassDef, jvm_name='android/content/pm/PackageInfo', 
 jvm_fields=[
-                     JavaFieldDef('applicationInfo', 'Landroid/content/pm/ApplicationInfo;', False)
-                 ]):
+                     JavaFieldDef('applicationInfo', 'Landroid/content/pm/ApplicationInfo;', False),
+                     JavaFieldDef('firstInstallTime', 'J', False),
+                     JavaFieldDef('lastUpdateTime', 'J', False)                
+                    ]):
     def __init__(self):
         self.applicationInfo = ApplicationInfo()
+        self.firstInstallTime = int(time.time())
+        self.lastUpdateTime = self.firstInstallTime
     #
 #
 
