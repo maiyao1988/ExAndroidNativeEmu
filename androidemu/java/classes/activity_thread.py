@@ -1,7 +1,7 @@
 from androidemu.java.java_class_def import JavaClassDef
 from androidemu.java.java_field_def import JavaFieldDef
 from androidemu.java.java_method_def import java_method_def, JavaMethodDef
-from androidemu.java.classes.contextimpl import ContextImpl
+from androidemu.java.classes.context import ContextImpl
 
 class ActivityThread(metaclass=JavaClassDef, jvm_name='android/app/ActivityThread'):
 
