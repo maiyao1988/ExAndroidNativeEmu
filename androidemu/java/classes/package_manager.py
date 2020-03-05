@@ -16,7 +16,7 @@ jvm_fields=[
         self.sourceDir = "/data/app/com.myxh.coolshopping/"
         self.dataDir = "/data/data/com.myxh.coolshopping/"
         self.nativeLibraryDir = "/data/data/com.myxh.coolshopping/lib/"
-        self.flags = "0x30e8bf46"
+        self.flags = 0x30e8bf46
     #
 #
 
