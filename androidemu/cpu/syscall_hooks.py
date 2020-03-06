@@ -46,6 +46,7 @@ class SyscallHooks:
         self._syscall_handler.set_handler(0x43, "sigaction", 3, self._handle_sigaction)
         self._syscall_handler.set_handler(0x4E, "gettimeofday", 2, self._handle_gettimeofday)
         self._syscall_handler.set_handler(0x72, "wait4", 4, self.__wait4)
+        self._syscall_handler.set_handler(0x74, "sysinfo", 1, self.__sysinfo)
         self._syscall_handler.set_handler(0xAC, "prctl", 5, self._handle_prctl)
         self._syscall_handler.set_handler(0xAF, "sigprocmask", 3, self._handle_sigprocmask)
         self._syscall_handler.set_handler(0xC7, "getuid32", 0, self._get_uid)
@@ -138,6 +139,11 @@ class SyscallHooks:
     def __wait4(self, mu, pid, start_addr, options, ru):
         logger.warning("skip syscall wait4 pid [0x%x]"%pid)
         return 0
+    #
+
+    def __sysinfo(self, mu, info):
+        logger.warning("skip syscall sysinfo buf 0x%08X just return error"%(info))
+        return -1
     #
 
     def _handle_prctl(self, mu, option, arg2, arg3, arg4, arg5):

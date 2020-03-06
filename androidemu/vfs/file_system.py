@@ -50,6 +50,7 @@ class VirtualFileSystem:
         syscall_handler.set_handler(0x5, "open", 3, self._handle_open)
         syscall_handler.set_handler(0x6, "close", 1, self._handle_close)
         syscall_handler.set_handler(0x0A, "unlink", 1, self._handle_unlink)
+        syscall_handler.set_handler(0x13, "lseek", 3, self._handle_lseek)
         syscall_handler.set_handler(0x21, "access", 2, self._handle_access)
         syscall_handler.set_handler(0x27, "mkdir", 2, self.__mkdir)
         syscall_handler.set_handler(0x37, "fcntl", 6, self.__fcntl64)
@@ -223,6 +224,15 @@ class VirtualFileSystem:
         vfs_path = self.translate_path(path)
         logger.info("unlink call path [%s]"%path)
         return 0
+    #
+
+    def _handle_lseek(self, mu, fd, offset, whence):
+        if fd not in self._virtual_files:
+            raise RuntimeError("fd %d not opened"%(fd,))
+            #for debug
+        #
+        file = self._virtual_files[fd]
+        return os.lseek(file.descriptor, offset, whence)
     #
 
     def _handle_access(self, mu, filename_ptr, flags):

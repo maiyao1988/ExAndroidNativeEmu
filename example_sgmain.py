@@ -75,7 +75,7 @@ class JNICLibrary(metaclass=JavaClassDef, jvm_name='com/taobao/wireless/security
         pass
 
     @staticmethod
-    @java_method_def(name='doCommandNative', signature='(ILjava/lang/Object;)Ljava/lang/Object;', native=True)
+    @java_method_def(name='doCommandNative', signature='(I[Ljava/lang/Object;)Ljava/lang/Object;', native=True)
     def doCommandNative(mu, i1, obj):
         pass
     #

@@ -158,6 +158,7 @@ emulator.java_classloader.add_class(java_lang_StackTraceElement)
 
 # Load all libraries.
 lib_module = emulator.load_library("tests/bin/libcms.so")
+#lib_module = emulator.load_library("../deobf/tests/bin/libcms2.so")
 #lib_module = emulator.load_library("../deobf/cms.so")
 
 # Show loaded modules.
@@ -184,6 +185,7 @@ try:
     result = x.leviathan(emulator, 1562848170, data)
 
     print(''.join(['%02x' % b for b in result]))
+    
     # 037d560d0000903e34fb093f1d21e78f3bdf3fbebe00b124becc
     # 036d2a7b000010f4d05395b7df8b0ec2b5ec085b938a473a6a51
     # 036d2a7b000010f4d05395b7df8b0ec2b5ec085b938a473a6a51

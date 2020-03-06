@@ -19,7 +19,7 @@ class JNIEnv:
     :type class_loader JavaClassLoader
     :type hooker Hooker
     """
-
+    JNI_OK = 0
     def __init__(self, emu, class_loader, hooker):
         self._emu = emu
         self._class_loader = class_loader
@@ -573,7 +573,10 @@ class JNIEnv:
 
     @native_method
     def ensure_local_capacity(self, mu, env):
-        raise NotImplementedError()
+        #raise NotImplementedError()
+        #ignore
+        return JNIEnv.JNI_OK
+    #
 
     @native_method
     def alloc_object(self, mu, env):
