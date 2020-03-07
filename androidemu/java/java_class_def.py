@@ -65,6 +65,7 @@ class JavaClassDef(type):
             return cls.jvm_super.find_method(name, signature)
         #
         return None
+    #
 
     def find_method_by_id(cls, jvm_id):
         if (jvm_id in cls.jvm_methods):
