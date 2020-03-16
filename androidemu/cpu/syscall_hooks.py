@@ -8,6 +8,7 @@ import ctypes
 from random import randint
 
 from unicorn import Uc
+from unicorn.arm_const import *
 
 from androidemu.const.android import *
 from androidemu.const.linux import *
@@ -66,7 +67,9 @@ class SyscallHooks:
         self._clock_offset = randint(1000, 2000)
         self._socket_id = 0x100000
         self._sockets = dict()
-
+        self._sig_maps = {}
+        
+    #
     def _fork(self, mu):
         logging.warning("skip syscall fork")
         #fork return 0 for child process, return pid for parent process
@@ -95,8 +98,30 @@ class SyscallHooks:
         logging.warning("skip syscall pipe files [0x%08X]"%files)
         return 0
     #
-        
+    
     def _handle_sigaction(self, mu, sig, act, oact):
+        '''
+        struct sigaction {
+            union {
+                void     (*sa_handler)(int);
+                void     (*sa_sigaction)(int, siginfo_t *, void *);
+            },
+            sigset_t   sa_mask;
+            int        sa_flags;
+            void     (*sa_restorer)(void);
+        };
+        '''
+        act_off = act
+        sa_handler = memory_helpers.read_ptr(mu, act_off)
+        act_off+=4
+        sa_mask = memory_helpers.read_ptr(mu, act_off)
+        act_off+=4
+        sa_flag = memory_helpers.read_ptr(mu, act_off)
+        act_off+=4
+        sa_restorer = memory_helpers.read_ptr(mu, act_off)
+
+        logging.warning("sa_handler [0x%08X] sa_mask [0x%08X] sa_flag [0x%08X] sa_restorer [0x%08X]"%(sa_handler, sa_mask, sa_flag, sa_restorer))
+        self._sig_maps[sig] = (sa_handler, sa_mask, sa_flag, sa_restorer)
         return 0
     #
 
@@ -208,6 +233,20 @@ class SyscallHooks:
         if (tgid ==  self._getpid(mu) and sig == 6):
             logger.warn("tgkill abort self, skip!!!")
             return 0
+        #
+        if (tgid == self._getpid(mu) and tid == self._gettid(mu)):
+            if (sig in self._sig_maps):
+                sigact = self._sig_maps[sig]
+                addr = sigact[0]
+
+                ctx = memory_helpers.reg_context_save(mu)
+                mu.reg_write(UC_ARM_REG_R0, sig)
+                logging.info("_handle_tgkill calling proc 0x%08X sig:0x%X"%(addr, sig))
+                mu.emu_start(addr, 0xFFFFFFFF)
+                logging.info("_handle_tgkill calling sigal call return")
+                memory_helpers.reg_context_restore(mu, ctx)
+                return 0
+            #
         #
         raise NotImplementedError()
         return 0
