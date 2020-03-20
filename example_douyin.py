@@ -15,6 +15,7 @@ from androidemu.java.java_class_def import JavaClassDef
 from androidemu.java.java_method_def import java_method_def
 from androidemu.utils.chain_log import ChainLogger
 from androidemu.java.classes.string import String
+from androidemu.java.classes.list import List
 
 
 class XGorgen(metaclass=JavaClassDef, jvm_name='com/ss/sys/ces/a'):
@@ -77,7 +78,7 @@ class java_lang_Thread(metaclass=JavaClassDef, jvm_name='java/lang/Thread'):
 
     @java_method_def(name="getStackTrace", signature='()[Ljava/lang/StackTraceElement;', native=False)
     def getStackTrace(self, *args, **kwargs):
-        return [java_lang_StackTraceElement(String("dalvik.system.VMStack")),
+        l = [java_lang_StackTraceElement(String("dalvik.system.VMStack")),
                 java_lang_StackTraceElement(String("java.lang.Thread")),
                 java_lang_StackTraceElement(String("com.ss.sys.ces.a")),
                 java_lang_StackTraceElement(String("com.yf.douyintool.MainActivity")),
@@ -95,6 +96,11 @@ class java_lang_Thread(metaclass=JavaClassDef, jvm_name='java/lang/Thread'):
                 java_lang_StackTraceElement(String("com.android.internal.os.ZygoteInit")),
                 java_lang_StackTraceElement(String("dalvik.system.NativeStart"))
                 ]
+            #
+        #
+        r = List(l)
+        return r
+    #
 
 def hook_mem_read(uc, access, address, size, value, user_data):
     pc = uc.reg_read(UC_ARM_REG_PC)

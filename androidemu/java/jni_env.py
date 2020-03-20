@@ -1386,7 +1386,7 @@ class JNIEnv:
         pystr = memory_helpers.read_utf8(mu, utf8_ptr)
         logger.debug("JNIEnv->NewStringUtf(%s) was called" % pystr)
         string =String(pystr)
-        idx = self.add_local_reference(jstring(string))
+        idx = self.add_local_reference(jobject(string))
         logger.debug("JNIEnv->NewStringUtf(%s) return id(%d)" %(pystr, idx))
         return idx
 
@@ -1423,9 +1423,6 @@ class JNIEnv:
 
         obj = self.get_reference(array)
 
-        if not isinstance(obj, jarray):
-            raise ValueError('Expected a jarray.')
-
         pyobj = JNIEnv.jobject_to_pyobject(obj)
         return len(pyobj)
     #
@@ -1433,6 +1430,7 @@ class JNIEnv:
     @native_method
     def new_object_array(self, mu, env):
         raise NotImplementedError()
+    #
 
     @native_method
     def get_object_array_element(self, mu, env, array_idx, item_idx):
@@ -1440,11 +1438,9 @@ class JNIEnv:
 
         obj = self.get_reference(array_idx)
 
-        if not isinstance(obj, jarray):
-            raise ValueError('Expected a jarray.')
-
         pyobj = JNIEnv.jobject_to_pyobject(obj)
         return pyobj[item_idx]
+    #
 
     @native_method
     def set_object_array_element(self, mu, env):
@@ -1457,7 +1453,7 @@ class JNIEnv:
     @native_method
     def new_byte_array(self, mu, env, bytelen):
         logger.debug("JNIEnv->NewByteArray(%u) was called" % bytelen)
-        return self.add_local_reference(jbyteArray(bytelen))
+        return self.add_local_reference(jobject(bytelen))
         #raise NotImplementedError()
 
     @native_method
@@ -1557,10 +1553,10 @@ class JNIEnv:
         logger.debug("JNIEnv->GetByteArrayRegion(%u, %u, %u, 0x%x) was called" % (array_idx, start, len_in, buf_ptr))
 
         obj = self.get_reference(array_idx)
-
+        '''
         if not isinstance(obj, jbyteArray):
             raise ValueError('Expected a jbyteArray.')
-
+        '''
         pyobj = JNIEnv.jobject_to_pyobject(obj)
         mu.mem_write(buf_ptr, bytes(pyobj[start:start + len_in]))
 
@@ -1598,7 +1594,7 @@ class JNIEnv:
     def set_byte_array_region(self, mu, env, arrayJREF, startIndex, length, bufAddress):
         string = memory_helpers.read_byte_array(mu, bufAddress, length)
         logger.debug("JNIEnv->SetByteArrayRegion was called")
-        self.set_local_reference(arrayJREF, jbyteArray(string))
+        self.set_local_reference(arrayJREF, jobject(string))
 
     @native_method
     def set_char_array_region(self, mu, env):
