@@ -638,7 +638,7 @@ class JNIEnv:
         #
         pyobj = JNIEnv.jobject_to_pyobject(obj)
         clazz  = pyobj.__class__
-        return self.add_global_reference(jclass(clazz))
+        return self.add_local_reference(jclass(clazz))
     #
 
     @native_method
