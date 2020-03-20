@@ -1,9 +1,9 @@
 from androidemu.java.java_class_def import JavaClassDef
 from androidemu.java.java_field_def import JavaFieldDef
 from androidemu.java.java_method_def import java_method_def,JavaMethodDef
-from androidemu.java.classes.package_manager import PackageManager
+from androidemu.java.classes.package_manager import *
 from androidemu.java.classes.contentresolver import ContentResolver
-
+from androidemu.java.classes.string import String
 
 class Context(metaclass=JavaClassDef, jvm_name='android/content/Context',
                  jvm_fields=[
@@ -27,12 +27,19 @@ class Context(metaclass=JavaClassDef, jvm_name='android/content/Context',
     def getSystemService(self, emu, s1):
         pass
     #
+
+    @java_method_def(name='getApplicationInfo', signature='()Landroid/content/pm/ApplicationInfo;', native=False)
+    def getApplicationInfo(self, emu):
+        pass
+    #
 #
 
 class ContextImpl(Context, metaclass=JavaClassDef, jvm_name='android/app/ContextImpl', jvm_super=Context):
     def __init__(self):
         Context.__init__(self)
-        self.__pkg_mgr = PackageManager()
+        pyPkgName = "com.ss.android.ugc.aweme"
+        self.__pkgName = String(pyPkgName)
+        self.__pkg_mgr = PackageManager(pyPkgName)
         self.__resolver = ContentResolver()
     #
     
@@ -50,6 +57,18 @@ class ContextImpl(Context, metaclass=JavaClassDef, jvm_name='android/app/Context
     def getSystemService(self, emu, s1):
         print(s1)
         raise NotImplementedError()
+    #
+
+    @java_method_def(name='getApplicationInfo', signature='()Landroid/content/pm/ApplicationInfo;', native=False)
+    def getApplicationInfo(self, emu):
+        pkgMgr = self.__pkg_mgr
+        pkgInfo = pkgMgr.getPackageInfo(emu)
+        return pkgInfo.applicationInfo
+    #
+
+    @java_method_def(name='getPackageName', signature='()Ljava/lang/String;', native=False)
+    def getPackageName(self, emu):
+        return self.__pkgName
     #
 #
 
@@ -77,5 +96,15 @@ class ContextWrapper(Context, metaclass=JavaClassDef, jvm_name='android/content/
     @java_method_def(name='getSystemService', signature='(Ljava/lang/String;)Ljava/lang/Object;', native=False)
     def getSystemService(self, emu, s1):
         return self.__impl.getSystemService(emu, s1)
+    #
+
+    @java_method_def(name='getApplicationInfo', signature='()Landroid/content/pm/ApplicationInfo;', native=False)
+    def getApplicationInfo(self, emu):
+        return self.__impl.getApplicationInfo(emu)
+    #
+
+    @java_method_def(name='getPackageName', signature='()Ljava/lang/String;', native=False)
+    def getPackageName(self, emu):
+        return self.__impl.getPackageName(emu)
     #
 #
