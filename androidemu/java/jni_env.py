@@ -10,6 +10,7 @@ from androidemu.java.jni_ref import *
 from androidemu.java.reference_table import ReferenceTable
 from androidemu.utils import memory_helpers
 from androidemu.java.classes.string import String
+from androidemu.java.classes.array import Array
 
 logger = logging.getLogger(__name__)
 
@@ -323,10 +324,15 @@ class JNIEnv:
             ref = args[i]
             if arg_name == 'jint':
                 result.append(ref)
-            elif arg_name == 'jstring':
-                result.append(self.get_reference(ref))
-            elif arg_name == 'jobject':
-                result.append(self.get_reference(ref))
+            elif arg_name == 'jstring' or arg_name == "jobject":
+                jobj = self.get_reference(ref)
+                obj = None
+                if (jobj == None):
+                    logging.warning("arg_name %s ref %d is not vaild maybe wrong arglist"%(arg_name, ref))
+                    obj = None
+                else:
+                    obj = jobj.value
+                result.append(obj)
             else:
                 raise NotImplementedError('Unknown arg name %s' % arg_name)
             i = i+1
@@ -1453,7 +1459,9 @@ class JNIEnv:
     @native_method
     def new_byte_array(self, mu, env, bytelen):
         logger.debug("JNIEnv->NewByteArray(%u) was called" % bytelen)
-        return self.add_local_reference(jobject(bytelen))
+        barr = bytearray([0] * bytelen)
+        arr = Array("B", barr)
+        return self.add_local_reference(jobject(arr))
         #raise NotImplementedError()
 
     @native_method
@@ -1558,9 +1566,11 @@ class JNIEnv:
             raise ValueError('Expected a jbyteArray.')
         '''
         pyobj = JNIEnv.jobject_to_pyobject(obj)
-        mu.mem_write(buf_ptr, bytes(pyobj[start:start + len_in]))
+        barr = pyobj.get_py_items()
+        mu.mem_write(buf_ptr, bytes(barr[start:start + len_in]))
 
         return None
+    #
 
     @native_method
     def get_char_array_region(self, mu, env):
@@ -1594,7 +1604,9 @@ class JNIEnv:
     def set_byte_array_region(self, mu, env, arrayJREF, startIndex, length, bufAddress):
         string = memory_helpers.read_byte_array(mu, bufAddress, length)
         logger.debug("JNIEnv->SetByteArrayRegion was called")
-        self.set_local_reference(arrayJREF, jobject(string))
+        arr = Array("B", string)
+        self.set_local_reference(arrayJREF, jobject(arr))
+    #
 
     @native_method
     def set_char_array_region(self, mu, env):
