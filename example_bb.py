@@ -10,6 +10,7 @@ from androidemu.emulator import Emulator
 from androidemu.java.java_class_def import JavaClassDef
 from androidemu.java.java_method_def import java_method_def
 from androidemu.java.java_field_def import JavaFieldDef
+from androidemu.java.classes.string import String
 import androidemu.config
 import androidemu.utils.debug_utils 
 from androidemu.utils.chain_log import ChainLogger
@@ -37,7 +38,7 @@ def hook_code(mu, address, size, user_data):
 
 class Helper(metaclass=JavaClassDef, jvm_name='com/SecShell/SecShell/Helper',
 jvm_fields=[
-                     JavaFieldDef('PKGNAME', 'Ljava/lang/String;', True, "com.myxh.coolshopping")
+                     JavaFieldDef('PKGNAME', 'Ljava/lang/String;', True, String("com.myxh.coolshopping"))
                  ]):
 
     def __init__(self):

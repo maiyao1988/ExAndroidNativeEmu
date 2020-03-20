@@ -7,7 +7,6 @@ from androidemu.hooker import STACK_OFFSET
 from androidemu.java.java_class_def import JavaClassDef
 from androidemu.java.jni_const import JNI_ERR
 from androidemu.java.jni_ref import jobject, jstring, jobjectArray, jbyteArray
-from androidemu.java.classes.string import String
 
 
 def native_write_args(emu, *argv):
@@ -70,11 +69,8 @@ def native_translate_arg(emu, val):
     if isinstance(val, int):
         return val
     elif isinstance(val, str):
-        s = val
-        obj = String(s)
-        return emu.java_vm.jni_env.add_local_reference(jstring(obj))
+        return emu.java_vm.jni_env.add_local_reference(jstring(val))
     elif isinstance(val, list):
-        #FIXME:All python object here should treat like string above
         return emu.java_vm.jni_env.add_local_reference(jobjectArray(val))
     elif isinstance(val, bytearray):
         return emu.java_vm.jni_env.add_local_reference(jbyteArray(val))

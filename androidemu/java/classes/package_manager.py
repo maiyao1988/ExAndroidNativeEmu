@@ -1,6 +1,7 @@
 from androidemu.java.java_class_def import JavaClassDef
 from androidemu.java.java_field_def import JavaFieldDef
 from androidemu.java.java_method_def import java_method_def, JavaMethodDef
+from androidemu.java.classes.string import String
 import time
 
 
@@ -13,9 +14,9 @@ jvm_fields=[
                  ]):
     
     def __init__(self):
-        self.sourceDir = "/data/app/com.myxh.coolshopping/"
-        self.dataDir = "/data/data/com.myxh.coolshopping/"
-        self.nativeLibraryDir = "/data/data/com.myxh.coolshopping/lib/"
+        self.sourceDir = String("/data/app/com.myxh.coolshopping/")
+        self.dataDir = String("/data/data/com.myxh.coolshopping/")
+        self.nativeLibraryDir = String("/data/data/com.myxh.coolshopping/lib/")
         self.flags = 0x30e8bf46
     #
 #

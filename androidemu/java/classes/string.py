@@ -11,4 +11,13 @@ class String(metaclass=JavaClassDef, jvm_name='java/lang/String'):
     def get_py_string(self):
         return self.__str
     #
+
+    @java_method_def(name='getBytes', args_list=["jstring"], signature='(Ljava/lang/String;)[B', native=False)
+    def getBytes(self, emu, charset):
+        print(charset)
+        raise NotImplementedError()
+    #
+
+    def __repr__(self):
+        return "JavaString(%s)"%self.get_py_string()
 #

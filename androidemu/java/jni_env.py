@@ -308,10 +308,9 @@ class JNIEnv:
     def delete_global_reference(self, obj):
         if not isinstance(obj, jobject):
             raise ValueError('Expected a jobject.')
-
+        #
         return self._globals.remove(obj)
     #
-
 
     #args is a tuple or list
     def read_args(self, mu, args, args_list):
@@ -1282,6 +1281,7 @@ class JNIEnv:
                 "Could not find static field ('%s', '%s') in class %s." % (name, sig, clazz.value.jvm_name))
 
         return field.jvm_id
+    #
 
     @native_method
     def get_static_object_field(self, mu, env, clazz_idx, field_id):
@@ -1428,6 +1428,7 @@ class JNIEnv:
 
         pyobj = JNIEnv.jobject_to_pyobject(obj)
         return len(pyobj)
+    #
 
     @native_method
     def new_object_array(self, mu, env):

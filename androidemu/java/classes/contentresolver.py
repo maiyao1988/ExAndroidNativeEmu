@@ -10,6 +10,6 @@ class ContentResolver(metaclass=JavaClassDef, jvm_name='android/content/ContentR
 
     @java_method_def(name='getSystemService', signature='(Ljava/lang/String;)Ljava/lang/Object;', native=False)
     def getSystemService(self, emu):
-        return self.__pkg_mgr
+        raise NotImplementedError()
     #
 #

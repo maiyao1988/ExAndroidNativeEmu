@@ -14,6 +14,7 @@ from androidemu.java.helpers.native_method import native_method
 from androidemu.java.java_class_def import JavaClassDef
 from androidemu.java.java_method_def import java_method_def
 from androidemu.utils.chain_log import ChainLogger
+from androidemu.java.classes.string import String
 
 
 class XGorgen(metaclass=JavaClassDef, jvm_name='com/ss/sys/ces/a'):
@@ -54,7 +55,7 @@ class java_lang_System(metaclass=JavaClassDef, jvm_name='java/lang/System'):
                      native=False)
     def getProperty(self, *args, **kwargs):
         print(args[0].value)
-        return "2.1.0"
+        return String("2.1.0")
 
 
 class java_lang_StackTraceElement(metaclass=JavaClassDef, jvm_name='java/lang/StackTraceElement'):
@@ -76,23 +77,23 @@ class java_lang_Thread(metaclass=JavaClassDef, jvm_name='java/lang/Thread'):
 
     @java_method_def(name="getStackTrace", signature='()[Ljava/lang/StackTraceElement;', native=False)
     def getStackTrace(self, *args, **kwargs):
-        return [java_lang_StackTraceElement("dalvik.system.VMStack"),
-                java_lang_StackTraceElement("java.lang.Thread"),
-                java_lang_StackTraceElement("com.ss.sys.ces.a"),
-                java_lang_StackTraceElement("com.yf.douyintool.MainActivity"),
-                java_lang_StackTraceElement("java.lang.reflect.Method"),
-                java_lang_StackTraceElement("java.lang.reflect.Method"),
-                java_lang_StackTraceElement("android.support.v7.app.AppCompatViewInflater$DeclaredOnClickListener"),
-                java_lang_StackTraceElement("android.view.View"),
-                java_lang_StackTraceElement("android.os.Handler"),
-                java_lang_StackTraceElement("android.os.Handler"),
-                java_lang_StackTraceElement("android.os.Looper"),
-                java_lang_StackTraceElement("android.app.ActivityThread"),
-                java_lang_StackTraceElement("java.lang.reflect.Method"),
-                java_lang_StackTraceElement("java.lang.reflect.Method"),
-                java_lang_StackTraceElement("com.android.internal.os.ZygoteInit$MethodAndArgsCaller"),
-                java_lang_StackTraceElement("com.android.internal.os.ZygoteInit"),
-                java_lang_StackTraceElement("dalvik.system.NativeStart")
+        return [java_lang_StackTraceElement(String("dalvik.system.VMStack")),
+                java_lang_StackTraceElement(String("java.lang.Thread")),
+                java_lang_StackTraceElement(String("com.ss.sys.ces.a")),
+                java_lang_StackTraceElement(String("com.yf.douyintool.MainActivity")),
+                java_lang_StackTraceElement(String("java.lang.reflect.Method")),
+                java_lang_StackTraceElement(String("java.lang.reflect.Method")),
+                java_lang_StackTraceElement(String("android.support.v7.app.AppCompatViewInflater$DeclaredOnClickListener")),
+                java_lang_StackTraceElement(String("android.view.View")),
+                java_lang_StackTraceElement(String("android.os.Handler")),
+                java_lang_StackTraceElement(String("android.os.Handler")),
+                java_lang_StackTraceElement(String("android.os.Looper")),
+                java_lang_StackTraceElement(String("android.app.ActivityThread")),
+                java_lang_StackTraceElement(String("java.lang.reflect.Method")),
+                java_lang_StackTraceElement(String("java.lang.reflect.Method")),
+                java_lang_StackTraceElement(String("com.android.internal.os.ZygoteInit$MethodAndArgsCaller")),
+                java_lang_StackTraceElement(String("com.android.internal.os.ZygoteInit")),
+                java_lang_StackTraceElement(String("dalvik.system.NativeStart"))
                 ]
 
 def hook_mem_read(uc, access, address, size, value, user_data):

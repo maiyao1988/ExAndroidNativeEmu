@@ -9,6 +9,7 @@ from unicorn.arm_const import *
 from androidemu.emulator import Emulator
 from androidemu.java.java_class_def import JavaClassDef
 from androidemu.java.java_method_def import java_method_def
+from androidemu.java.classes.string import String
 import androidemu.config
 import androidemu.utils.debug_utils
 from androidemu.utils.chain_log import ChainLogger
@@ -121,7 +122,7 @@ class SPUtility2(metaclass=JavaClassDef, jvm_name='com/taobao/wireless/security/
     def readSS(mu, ctx, s1):
         if (s1 in _kv):
             return _kv[s1]
-        return ""
+        return String("")
     #
 
     @staticmethod
@@ -129,7 +130,7 @@ class SPUtility2(metaclass=JavaClassDef, jvm_name='com/taobao/wireless/security/
     def read(mu, s1):
         if (s1 in _kv):
             return _kv[s1]
-        return ""
+        return String("")
     #
 
 
@@ -138,7 +139,7 @@ class SPUtility2(metaclass=JavaClassDef, jvm_name='com/taobao/wireless/security/
     def write(mu, s1, s2):
         if (s1 in _kv):
             return _kv[s1]
-        return ""
+        return String("")
     #
 #
 
@@ -150,7 +151,7 @@ class DeviceInfoCapturer(metaclass=JavaClassDef, jvm_name='com/taobao/wireless/s
     @staticmethod
     @java_method_def(name='doCommandForString', signature='(I)Ljava/lang/String;', native=False)
     def doCommandForString(mu, cmdId):
-        return "0"
+        return String("0")
     #
 
 #
@@ -163,7 +164,7 @@ class DataReportJniBridge(metaclass=JavaClassDef, jvm_name='com/taobao/wireless/
     @staticmethod
     @java_method_def(name='sendReportBridge', signature='(Ljava/lang/String;Ljava/lang/String;[B)Ljava/lang/String;', native=False)
     def sendReportBridge(mu, s1, s2, bytes1):
-        return ""
+        return String("")
     #
 
 

@@ -2,6 +2,7 @@ from androidemu.java.java_class_def import JavaClassDef
 from androidemu.java.java_field_def import JavaFieldDef
 from androidemu.java.java_method_def import java_method_def,JavaMethodDef
 from androidemu.java.classes.list import List
+from androidemu.java.classes.string import String
 
 
 class WifiConfiguration(metaclass=JavaClassDef, jvm_name='android/net/wifi/WifiConfiguration',
@@ -16,13 +17,13 @@ class WifiConfiguration(metaclass=JavaClassDef, jvm_name='android/net/wifi/WifiC
                       ]
                       ):
     def __init__(self):
-        self.SSID = ""
-        self.BSSID=""
-        self.FQDN=""
+        self.SSID = String("")
+        self.BSSID=String("")
+        self.FQDN=String("")
         self.hiddenSSID = False
         self.networkId = 0
         self.priority = 0
-        self.providerFriendlyName = "hello"
+        self.providerFriendlyName = String("hello")
     #
 
 #
