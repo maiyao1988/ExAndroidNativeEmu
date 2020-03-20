@@ -18,12 +18,3 @@ class Integer(metaclass=JavaClassDef, jvm_name='java/lang/Integer'):
     #
 
 #
-
-
-class String(metaclass=JavaClassDef, jvm_name='java/lang/String'):
-    
-    def __init__(self, value):
-        self.__value = value
-    #
-
-#

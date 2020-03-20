@@ -9,6 +9,7 @@ from androidemu.java.jni_const import *
 from androidemu.java.jni_ref import *
 from androidemu.java.reference_table import ReferenceTable
 from androidemu.utils import memory_helpers
+from androidemu.java.classes.string import String
 
 logger = logging.getLogger(__name__)
 
@@ -1382,10 +1383,11 @@ class JNIEnv:
 
     @native_method
     def new_string_utf(self, mu, env, utf8_ptr):
-        string = memory_helpers.read_utf8(mu, utf8_ptr)
-        logger.debug("JNIEnv->NewStringUtf(%s) was called" % string)
+        pystr = memory_helpers.read_utf8(mu, utf8_ptr)
+        logger.debug("JNIEnv->NewStringUtf(%s) was called" % pystr)
+        string =String(pystr)
         idx = self.add_local_reference(jstring(string))
-        logger.debug("JNIEnv->NewStringUtf(%s) return id(%d)" %(string, idx))
+        logger.debug("JNIEnv->NewStringUtf(%s) return id(%d)" %(pystr, idx))
         return idx
 
     @native_method
@@ -1400,7 +1402,8 @@ class JNIEnv:
             raise NotImplementedError()
 
         str_ref = self.get_reference(string)
-        str_val = str_ref.value
+        str_obj = str_ref.value
+        str_val = str_obj.get_py_string()
         str_ptr = self._emu.native_memory.allocate(len(str_val) + 1)
 
         logger.debug("=> %s" % str_val)
