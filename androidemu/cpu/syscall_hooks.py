@@ -63,6 +63,7 @@ class SyscallHooks:
         self._syscall_handler.set_handler(0x14e, "faccessat", 4, self._faccessat)
         self._syscall_handler.set_handler(0x159, "getcpu", 3, self._getcpu)
         # self._syscall_handler.set_handler(0x180,"null1",0, self._null)
+        self._syscall_handler.set_handler(0x178, "process_vm_readv", 6, self.__process_vm_readv)
         self._syscall_handler.set_handler(0x180, "getrandom", 3, self._getrandom)
         self._clock_start = time.time()
         self._clock_offset = randint(1000, 2000)
@@ -349,3 +350,35 @@ class SyscallHooks:
     def _getrandom(self, mu, buf, count, flags):
         mu.mem_write(buf, b"\x01" * count)
         return count
+
+    def __process_vm_readv(self, mu, pid, local_iov, liovcnt, remote_iov, riovcnt, flag):
+        '''
+        struct iovec {
+            void  *iov_base;    /* Starting address */
+            size_t iov_len;     /* Number of bytes to transfer */
+        };
+        '''
+        if (pid != self._getpid(mu)):
+            raise NotImplementedError("__process_vm_readv return other process not support...")
+        off_r = remote_iov
+        b = b''
+        for i in range(0, riovcnt):
+            rbase = memory_helpers.read_ptr(mu, off_r)
+            iov_len = memory_helpers.read_ptr(mu, off_r+4)
+            tmp = memory_helpers.read_byte_array(mu, rbase, iov_len)
+            b+=tmp
+            #for j in range(0, liovcnt)
+            off_r+=8
+        #
+        off_l = local_iov
+        has_read = 0
+        for j in range(0, liovcnt):
+            lbase = memory_helpers.read_ptr(mu, off_l)
+            liov_len = memory_helpers.read_ptr(mu, off_l+4)
+            tmp = b[has_read:liov_len]
+            has_read += len(tmp)
+            off_l += 8
+        #
+        print(b)
+        return has_read
+    #

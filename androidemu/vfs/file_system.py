@@ -339,6 +339,8 @@ class VirtualFileSystem:
         filename = memory_helpers.read_utf8(mu, filename_ptr)
 
         if not filename.startswith("/") and dfd != 0:
+            #FIXME check what wrong for filename is empty
+            return -1
             raise NotImplementedError("Directory file descriptor has not been implemented yet.")
 
         return self._open_file(filename, mode)
@@ -416,3 +418,5 @@ class VirtualFileSystem:
         #
         return -1
     #
+    
+#
