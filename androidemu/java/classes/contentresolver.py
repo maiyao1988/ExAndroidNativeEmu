@@ -27,6 +27,7 @@ class ContentResolver(metaclass=JavaClassDef, jvm_name='android/content/ContentR
         #
         elif (pyuri_str == "content://settings/system" and py_method == "GET_secure" and py_arg == "android_id"):
             #aid taken from nexus5 android 4.4
+            #TODO put info config file
             m = {"value":"39cc04a2ae83db0b"}
             return Bundle(m)
         #

@@ -12,6 +12,11 @@ class Secure(metaclass=JavaClassDef, jvm_name='android/provider/Settings$Secure'
     @staticmethod
     @java_method_def(name='getString', args_list=["jobject", "jstring"], signature='(Landroid/content/ContentResolver;Ljava/lang/String;)Ljava/lang/String;', native=False)
     def getString(emu, resolver, s1):
+        print("call getString %r %r"%(resolver, s1))
+        pys1 = s1.get_py_string()
+        if (pys1 == "android_id"):
+            return String("39cc04a2ae83db0b")
+        #
         raise NotImplementedError()
         return String("")
     #
