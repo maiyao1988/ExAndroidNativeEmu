@@ -37,12 +37,9 @@ class NativeMemory:
         """
         void *mmap2(void *addr, size_t length, int prot, int flags, int fd, off_t pgoffset);
         """
-
-        #define PROT_EXEC 0x4
-        #define PROT_SEM 0x8
-        #define PROT_NONE 0x0
-        #define PROT_GROWSDOWN 0x01000000
-        #define PROT_GROWSUP 0x02000000
+        #define	PROT_READ	0x04	/* pages can be read */
+        #define	PROT_WRITE	0x02	/* pages can be written */
+        #define	PROT_EXEC	0x01	/* pages can be executed */
         #define MAP_SHARED 0x01
         #define MAP_PRIVATE 0x02
         #define MAP_TYPE 0x0f
@@ -64,6 +61,7 @@ class NativeMemory:
         else:
             res = self._memory.map(addr, length, prot)
         #
+        print("mmap return 0x%08X"%res)
         return res
     #
 

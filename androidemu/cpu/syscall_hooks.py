@@ -62,7 +62,6 @@ class SyscallHooks:
         self._syscall_handler.set_handler(0x126, "setsockopt", 5, self._setsockopt)
         self._syscall_handler.set_handler(0x14e, "faccessat", 4, self._faccessat)
         self._syscall_handler.set_handler(0x159, "getcpu", 3, self._getcpu)
-        self._syscall_handler.set_handler(0x14e, "faccessat", 4, self._faccessat)
         # self._syscall_handler.set_handler(0x180,"null1",0, self._null)
         self._syscall_handler.set_handler(0x180, "getrandom", 3, self._getrandom)
         self._clock_start = time.time()
@@ -183,7 +182,12 @@ class SyscallHooks:
 
     def __clone(self, mu, fn, child_stack, flags, arg1, arg2):
         #FIXME implement...
-        raise NotImplementedError()
+        #0x01200011 is a code addr?
+        #clone(0x01200011, 0x00000000, 0x00000000, 0x00000000, 0x00000008) ???
+        #0x01200011 is an invalid addr, a invalid syscall!!!
+        logging.warning("syscall clone skip.")
+        return -1
+        #raise NotImplementedError()
     #
 
     def _handle_prctl(self, mu, option, arg2, arg3, arg4, arg5):

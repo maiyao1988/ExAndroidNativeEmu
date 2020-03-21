@@ -61,6 +61,7 @@ class VirtualFileSystem:
         syscall_handler.set_handler(0x10A, "statfs64", 3, self.__statfs64)
         syscall_handler.set_handler(0x142, "openat", 4, self._handle_openat)
         syscall_handler.set_handler(0x147, "fstatat64", 4, self._handle_fstatat64)
+        syscall_handler.set_handler(0x14c, "readlinkat", 4, self.__readlinkat)
 
     def translate_path(self, filename):
         return androidemu.utils.misc_utils.vfs_path_to_system_path(self._root_path, filename)
@@ -385,3 +386,33 @@ class VirtualFileSystem:
         file_helpers.stat_to_memory(mu, buf, stat, WRITE_FSTAT_TIMES)
 
         return 0
+    #
+
+    def __readlinkat(self, mu, dfd, path, buf, bufsz):
+        path_utf8 = memory_helpers.read_utf8(mu, path)
+        logging.info("%x %s %x %r"%(dfd, path_utf8, buf, bufsz))
+        print(self._virtual_files)
+        
+        path_std_utf = path_utf8.replace("%d"%0x1122, "self")
+        fd_base = "/proc/self/fd/"
+        if (path_std_utf.startswith(fd_base)):
+            fd_str = os.path.basename(path_std_utf)
+            fd = int(fd_str)
+            if (fd in self._virtual_files):
+                name = self._virtual_files[fd].name
+                n = len(name)
+                if (n <= bufsz):
+                    memory_helpers.write_utf8(mu, buf, name)
+                    return 0
+                #
+                else:
+                    raise RuntimeError("buffer overflow!!!")
+                #
+            else:
+                raise RuntimeError("fd %d not found in opened file..."%fd)
+            #
+        else:
+            raise NotImplementedError()
+        #
+        return -1
+    #

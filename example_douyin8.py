@@ -89,8 +89,8 @@ class java_lang_System(metaclass=JavaClassDef, jvm_name='java/lang/System'):
     @java_method_def(name='getProperty', args_list=["jstring"], signature='(Ljava/lang/String;)Ljava/lang/String;',
                      native=False)
     def getProperty(self, *args, **kwargs):
-        print(args[0].value)
-        return "2.1.0"
+        print(args[0])
+        return String("2.1.0")
 
 
 class java_lang_StackTraceElement(metaclass=JavaClassDef, jvm_name='java/lang/StackTraceElement'):
@@ -168,7 +168,7 @@ def hook_code(mu, address, size, user_data):
         #
         # androidemu.utils.debug_utils.dump_registers(mu, sys.stdout)
         # androidemu.utils.debug_utils.dump_code(emu, address, size, sys.stdout)
-        # androidemu.utils.debug_utils.dump_code(emu, address, size, g_cfd)
+        androidemu.utils.debug_utils.dump_code(emu, address, size, g_cfd)
     except Exception as e:
         logger.exception("exception in hook_code")
         sys.exit(-1)
@@ -191,8 +191,6 @@ emulator = Emulator(
     vfp_inst_set=True,
     vfs_root=posixpath.join(posixpath.dirname(__file__), "vfs")
 )
-
-emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
 
 emulator.mu.hook_add(UC_HOOK_MEM_WRITE, hook_mem_write)
 emulator.mu.hook_add(UC_HOOK_MEM_READ, hook_mem_read)
@@ -232,6 +230,9 @@ try:
     data = 'acde74a94e6b493a3399fac83c7c08b35D58B21D9582AF77647FC9902E36AE70f9c001e9334e6e94916682224fbe4e5f00000000000000000000000000000000'
     data = bytearray(bytes.fromhex(data))
     arr = Array("B", data)
+    
+    #emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
+
     result = x.leviathan(emulator, 1562848170, arr)
 
     print(''.join(['%02x' % b for b in result]))
@@ -250,4 +251,5 @@ try:
 #         logger.info("- [0x%08x] %s - %s" % (method.native_addr, method.name, method.signature))
 except UcError as e:
     print("Exit at %x" % emulator.mu.reg_read(UC_ARM_REG_PC))
+    emulator.memory.dump_maps(sys.stdout)
     raise
