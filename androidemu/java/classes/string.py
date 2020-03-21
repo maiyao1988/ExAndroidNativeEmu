@@ -5,12 +5,21 @@ from androidemu.java.classes.array import Array
 
 class String(metaclass=JavaClassDef, jvm_name='java/lang/String'):
     
-    def __init__(self, pystr):
+    def __init__(self, pystr=""):
         self.__str = pystr
     #
 
     def get_py_string(self):
         return self.__str
+    #
+
+    @java_method_def(name='<init>', args_list=["jobject", "jstring"], signature='([BLjava/lang/String;)V', native=False)
+    def ctor(self, emu, barr, charset):
+        #print("%r %r"%(barr, charset))
+        pyarr =barr.get_py_items()
+        pystr = charset.get_py_string()
+        self.__str = pyarr.decode(pystr)
+        #print(self.__str)
     #
 
     @java_method_def(name='getBytes', args_list=["jstring"], signature='(Ljava/lang/String;)[B', native=False)
