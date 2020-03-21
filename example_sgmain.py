@@ -13,6 +13,7 @@ from androidemu.java.classes.string import String
 import androidemu.config
 import androidemu.utils.debug_utils
 from androidemu.utils.chain_log import ChainLogger
+from androidemu.java.constant_values import *
 
 import capstone
 import traceback
@@ -42,17 +43,17 @@ class HttpUtil(metaclass=JavaClassDef, jvm_name='com/taobao/wireless/security/ad
 
     @java_method_def(name='sendSyncHttpGetRequestBridge', signature='(Ljava/lang/String;)Ljava/lang/String;', native=False)
     def sendSyncHttpGetRequestBridge(self, mu, string):
-        return None
+        return JAVA_RET_NULL
     #
 
     @java_method_def(name='sendSyncHttpPostRequestBridge', signature='(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;II)Ljava/lang/String;', native=False)
     def sendSyncHttpPostRequestBridge(self, mu, s1, s2, s3, i1, i2):
-        return None
+        return JAVA_RET_NULL
     #
 
     @java_method_def(name='downloadFileBridge', signature='(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;', native=False)
     def downloadFileBridge(self, mu, s1, s2):
-        return None
+        return JAVA_RET_NULL
     #
 #
 

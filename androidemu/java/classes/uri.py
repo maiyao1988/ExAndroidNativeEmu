@@ -8,6 +8,10 @@ class Uri(metaclass=JavaClassDef, jvm_name="android/net/Uri"):
         self.__uri = pystr
     #
 
+    def get_py_string(self):
+        return self.__uri
+    #
+
     @staticmethod
     @java_method_def(name='parse', args_list=["jstring"], signature='(Ljava/lang/String;)Landroid/net/Uri;', native=False)
     def parse(emu, uri):
