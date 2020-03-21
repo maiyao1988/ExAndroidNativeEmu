@@ -68,6 +68,8 @@ class SyscallHooks:
         self._socket_id = 0x100000
         self._sockets = dict()
         self._sig_maps = {}
+        #TODO read it from config file
+        self._process_name = "com.ss.android.ugc.aweme"
         
     #
     def _fork(self, mu):
@@ -187,6 +189,12 @@ class SyscallHooks:
             # arg5 contains ptr to a name.
             return 0
         elif option == PR_SET_DUMPABLE:
+            return 0
+        elif option == PR_GET_NAME:
+            memory_helpers.write_utf8(mu, arg2, self._process_name)
+            return 0
+        elif option == PR_SET_NAME:
+            self._process_name = memory_helpers.read_utf8(mu, arg2)
             return 0
         else:
             raise NotImplementedError("Unsupported prctl option %d (0x%x)" % (option, option))
