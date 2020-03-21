@@ -13,12 +13,13 @@ jvm_fields=[
                      JavaFieldDef('flags', 'I', False),
                  ]):
     
-    def __init__(self):
-        self.sourceDir = String("/data/app/com.myxh.coolshopping/")
-        self.dataDir = String("/data/data/com.myxh.coolshopping/")
-        self.nativeLibraryDir = String("/data/data/com.myxh.coolshopping/lib/")
+    def __init__(self, pyPkgName):
+        self.sourceDir = String("/data/app/%s/"%pyPkgName)
+        self.dataDir = String("/data/data/%s"%pyPkgName)
+        self.nativeLibraryDir = String("/data/data/%s"%pyPkgName)
         self.flags = 0x30e8bf46
     #
+
 #
 
 class PackageInfo(metaclass=JavaClassDef, jvm_name='android/content/pm/PackageInfo', 
@@ -27,8 +28,8 @@ jvm_fields=[
                      JavaFieldDef('firstInstallTime', 'J', False),
                      JavaFieldDef('lastUpdateTime', 'J', False)                
                     ]):
-    def __init__(self):
-        self.applicationInfo = ApplicationInfo()
+    def __init__(self, pyPkgName):
+        self.applicationInfo = ApplicationInfo(pyPkgName)
         self.firstInstallTime = int(time.time())
         self.lastUpdateTime = self.firstInstallTime
     #
@@ -36,12 +37,12 @@ jvm_fields=[
 
 
 class PackageManager(metaclass=JavaClassDef, jvm_name='android/content/pm/PackageManager'):
-    def __init__(self):
-        self.__pkg_info = PackageInfo()
+    def __init__(self, pyPkgName):
+        self.__pkg_info = PackageInfo(pyPkgName)
     #
 
     @java_method_def(name='getPackageInfo', signature='(Ljava/lang/String;I)Landroid/content/pm/PackageInfo;', native=False)
-    def getPackageManager(self, emu):
+    def getPackageInfo(self, emu):
         return self.__pkg_info
     #
 #

@@ -16,6 +16,7 @@ from androidemu.java.java_method_def import java_method_def
 from androidemu.utils.chain_log import ChainLogger
 from androidemu.java.classes.string import String
 from androidemu.java.classes.list import List
+from androidemu.java.classes.array import Array
 
 
 class XGorgen(metaclass=JavaClassDef, jvm_name='com/ss/sys/ces/a'):
@@ -55,7 +56,7 @@ class java_lang_System(metaclass=JavaClassDef, jvm_name='java/lang/System'):
     @java_method_def(name='getProperty', args_list=["jstring"], signature='(Ljava/lang/String;)Ljava/lang/String;',
                      native=False)
     def getProperty(self, *args, **kwargs):
-        print(args[0].value)
+        print(args[0])
         return String("2.1.0")
 
 
@@ -189,7 +190,8 @@ try:
     x = XGorgen()
     data = 'acde74a94e6b493a3399fac83c7c08b35D58B21D9582AF77647FC9902E36AE70f9c001e9334e6e94916682224fbe4e5f00000000000000000000000000000000'
     data = bytearray(bytes.fromhex(data))
-    result = x.leviathan(emulator, 1562848170, data)
+    arr = Array("B", data)
+    result = x.leviathan(emulator, 1562848170, arr)
 
     print(''.join(['%02x' % b for b in result]))
     
