@@ -53,6 +53,7 @@ class VirtualFileSystem:
         syscall_handler.set_handler(0x13, "lseek", 3, self._handle_lseek)
         syscall_handler.set_handler(0x21, "access", 2, self._handle_access)
         syscall_handler.set_handler(0x27, "mkdir", 2, self.__mkdir)
+        syscall_handler.set_handler(0x36, "ioctl", 6, self.__ioctl)
         syscall_handler.set_handler(0x37, "fcntl", 6, self.__fcntl64)
         syscall_handler.set_handler(0x92, "writev", 3, self._handle_writev)
         syscall_handler.set_handler(0xC5, "fstat64", 2, self._handle_fstat64)
@@ -135,8 +136,10 @@ class VirtualFileSystem:
             #raise NotImplementedError("Unsupported read operation for file descriptor %d." % fd)
         #
         if fd not in self._virtual_files:
-            # TODO: Return valid error.
-            raise NotImplementedError()
+            # TODO: 重构，写到socket fd里面的都是合法的
+            #raise NotImplementedError()
+            return 0
+        #
 
         file = self._virtual_files[fd]
 
@@ -168,8 +171,10 @@ class VirtualFileSystem:
         #
 
         if fd not in self._virtual_files:
-            # TODO: Return valid error.
-            raise NotImplementedError()
+            # TODO: 重构，写到socket fd里面的都是合法的
+            logging.info("write to fd %x data:%r"%(fd, data))
+            return count
+            #raise NotImplementedError()
 
         file = self._virtual_files[fd]
         try:
@@ -283,6 +288,21 @@ class VirtualFileSystem:
         file_helpers.stat_to_memory(mu, buf_ptr, stat, WRITE_FSTAT_TIMES)
 
         return 0
+    #
+
+    def __ioctl(self, mu, fd, cmd, arg1, arg2, arg3, arg4):
+        #http://man7.org/linux/man-pages/man2/ioctl_list.2.html
+        #0x00008912   SIOCGIFCONF      struct ifconf *
+        #TODO:ifconf struct is complex, implement it
+        SIOCGIFCONF = 0x00008912
+        logging.info("%x %x %x"%(fd, cmd, arg1))
+        if (cmd == SIOCGIFCONF):
+            #this is a way to get network address
+            logging.info("warning ioctl SIOCGIFCONF to get net addrs not implemented return -1 and skip")
+            return -1
+        #
+        raise NotImplementedError()
+    #
 
     def __fcntl64(self, mu, fd, cmd, arg1, arg2, arg3, arg4):
         #fcntl is not support on windows

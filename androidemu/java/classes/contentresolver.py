@@ -25,6 +25,11 @@ class ContentResolver(metaclass=JavaClassDef, jvm_name='android/content/ContentR
         if (pyuri_str == "content://settings/system" and py_method == "GET_system" and py_arg == "__MTA_DEVICE_INFO__"):
             return Bundle()
         #
+        elif (pyuri_str == "content://settings/system" and py_method == "GET_secure" and py_arg == "android_id"):
+            #aid taken from nexus5 android 4.4
+            m = {"value":"39cc04a2ae83db0b"}
+            return Bundle(m)
+        #
         raise NotImplementedError()
     #
 #

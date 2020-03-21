@@ -58,6 +58,7 @@ class SyscallHooks:
         self._syscall_handler.set_handler(0x119, "socket", 3, self._socket)
         self._syscall_handler.set_handler(0x11a, "bind", 3, self._bind)
         self._syscall_handler.set_handler(0x11b, "connect", 3, self._connect)
+        self._syscall_handler.set_handler(0x126, "setsockopt", 5, self._setsockopt)
         self._syscall_handler.set_handler(0x14e, "faccessat", 4, self._faccessat)
         self._syscall_handler.set_handler(0x159, "getcpu", 3, self._getcpu)
         self._syscall_handler.set_handler(0x14e, "faccessat", 4, self._faccessat)
@@ -129,6 +130,12 @@ class SyscallHooks:
 
     def _gettid(self, mu):
         return 0x2211
+    #
+
+    def _setsockopt(self, mu, fd, level, optname, optval, optlen):
+        logging.warn("_setsockopt not implement skip")
+        return 0
+    #
 
     def _faccessat(self, mu, filename, pathname, mode, flag):
         file = memory_helpers.read_utf8(mu, pathname)
