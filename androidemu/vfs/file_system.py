@@ -93,11 +93,20 @@ class VirtualFileSystem:
             if (not os.path.exists(parent)):
                 os.makedirs(parent)
             #
+            filename2 = filename.replace(str(0x1122), "self")
             #TODO: move pid to config
-            map_paths = ("/proc/%d/maps"%0x1122, "/proc/self/maps")
-            if (filename in map_paths):
+
+            map_path = "/proc/self/maps"
+            if (filename2 == map_path):
                 with open(file_path, "w") as f:
                     self.__memory_map.dump_maps(f)
+                #
+            #
+            cmdline_path = "/proc/self/cmdline"
+            if (filename2 == cmdline_path):
+                with open(file_path, "w") as f:
+                    #TODO put to config
+                    f.write("com.ss.android.ugc.aweme")
                 #
             #
         #
@@ -337,7 +346,7 @@ class VirtualFileSystem:
             pathname is relative and dirfd is a file descriptor referring to a file other than a directory.
         """
         filename = memory_helpers.read_utf8(mu, filename_ptr)
-
+        logging.info("openat filename %s flags 0x%x mode 0x%x"%(filename, flags, mode))
         if not filename.startswith("/") and dfd != 0:
             #FIXME check what wrong for filename is empty
             return -1

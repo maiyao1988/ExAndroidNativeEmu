@@ -256,7 +256,7 @@ try:
     data = bytearray(bytes.fromhex(data))
     arr = Array("B", data)
     
-    emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
+    #emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
 
     result = x.leviathan(emulator, 1562848170, arr)
 
