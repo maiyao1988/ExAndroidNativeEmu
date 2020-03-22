@@ -1634,7 +1634,7 @@ class JNIEnv:
 
     @native_method
     def register_natives(self, mu, env, clazz_id, methods, methods_count):
-        logger.debug("JNIEnv->RegisterNatives(%d, 0x%08x, %d) was called" % (clazz_id, methods, methods_count))
+        logger.debug("JNIEnv->RegisterNatives(%d, 0x%08X, %d) was called" % (clazz_id, methods, methods_count))
 
         clazz = self.get_local_reference(clazz_id)
 

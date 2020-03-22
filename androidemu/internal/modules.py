@@ -299,7 +299,7 @@ class Modules:
                 '''
                 module.call_init(self.emu)
             #
-            logger.info("finish load lib %s"%filename)
+            logger.info("finish load lib %s base 0x%08X"%(filename, load_base))
             return module
 
     def _elf_get_symval(self, elf_base, symbol):

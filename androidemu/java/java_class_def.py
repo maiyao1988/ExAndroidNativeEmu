@@ -48,13 +48,14 @@ class JavaClassDef(type):
                 break
 
         if not found:
-            x = "Register native ('%s', '%s') failed on class %s." % (name, signature, cls.__name__)
+            x = "Register native ('%s', '%s', '0x%08X') failed on class %s." % (name, signature, ptr_func, cls.__name__)
             logger.warning(x)
             return
             # raise RuntimeError("Register native ('%s', '%s') failed on class %s." % (name, signature, cls.__name__))
-        logger.debug("Registered native function ('%s', '%s') to %s.%s" % (name, signature,
+        logger.debug("Registered native function ('%s', '%s', ''0x%08X'') to %s.%s" % (name, signature, ptr_func,
                                                                            cls.__name__, found_method.func_name))
-
+    #
+    
     def find_method(cls, name, signature):
         for method in cls.jvm_methods.values():
             if method.name == name and method.signature == signature:

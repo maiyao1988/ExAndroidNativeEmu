@@ -29,6 +29,31 @@ class XGorgen(metaclass=JavaClassDef, jvm_name='com/ss/sys/ces/a'):
         pass
 
     @staticmethod
+    @java_method_def(name='Francies', signature='()V', native=False)
+    def Francies(mu):
+        pass
+    #
+
+    @staticmethod
+    @java_method_def(name='Bill', signature='()V', native=False)
+    def Bill(mu):
+        pass
+    #
+
+    
+    @staticmethod
+    @java_method_def(name='Louis', signature='()V', native=False)
+    def Louis(mu):
+        pass
+    #
+
+    @staticmethod
+    @java_method_def(name='Zeoy', signature='()V', native=False)
+    def Zeoy(mu):
+        pass
+    #
+
+    @staticmethod
     @java_method_def(name='njss', args_list=["jint", "jobject"], signature='(ILjava/lang/Object;)Ljava/lang/Object;', native=False)
     def njss(mu, i1, o1):
         print("njss arg %d %s" % (i1, o1))
@@ -231,7 +256,7 @@ try:
     data = bytearray(bytes.fromhex(data))
     arr = Array("B", data)
     
-    #emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
+    emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
 
     result = x.leviathan(emulator, 1562848170, arr)
 
@@ -250,6 +275,6 @@ try:
 #      if method.native:
 #         logger.info("- [0x%08x] %s - %s" % (method.native_addr, method.name, method.signature))
 except UcError as e:
-    print("Exit at %x" % emulator.mu.reg_read(UC_ARM_REG_PC))
+    print("Exit at 0x%08X" % emulator.mu.reg_read(UC_ARM_REG_PC))
     emulator.memory.dump_maps(sys.stdout)
     raise
