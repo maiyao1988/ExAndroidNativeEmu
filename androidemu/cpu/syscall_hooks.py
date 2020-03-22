@@ -63,6 +63,7 @@ class SyscallHooks:
         self._syscall_handler.set_handler(0x14e, "faccessat", 4, self._faccessat)
         self._syscall_handler.set_handler(0x159, "getcpu", 3, self._getcpu)
         # self._syscall_handler.set_handler(0x180,"null1",0, self._null)
+        self._syscall_handler.set_handler(0x167, "pipe2", 2, self.__pipe2)
         self._syscall_handler.set_handler(0x178, "process_vm_readv", 6, self.__process_vm_readv)
         self._syscall_handler.set_handler(0x180, "getrandom", 3, self._getrandom)
         self._clock_start = time.time()
@@ -346,6 +347,12 @@ class SyscallHooks:
         # return 0
         return -1
         # raise NotImplementedError()
+    #
+
+    def __pipe2(self, mu, fds, flags):
+        raise NotImplementedError()
+        return -1
+    #
 
     def _getrandom(self, mu, buf, count, flags):
         mu.mem_write(buf, b"\x01" * count)
