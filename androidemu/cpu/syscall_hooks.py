@@ -16,6 +16,7 @@ from androidemu.cpu.syscall_handlers import SyscallHandlers
 from androidemu.data import socket_info
 from androidemu.data.socket_info import SocketInfo
 from androidemu.utils import memory_helpers
+from androidemu import config
 
 OVERRIDE_TIMEOFDAY = False
 OVERRIDE_TIMEOFDAY_SEC = 0
@@ -72,7 +73,7 @@ class SyscallHooks:
         self._sockets = dict()
         self._sig_maps = {}
         #TODO read it from config file
-        self._process_name = "com.ss.android.ugc.aweme"
+        self._process_name = config.global_config_get("pkg_name")
         
     #
     def _fork(self, mu):

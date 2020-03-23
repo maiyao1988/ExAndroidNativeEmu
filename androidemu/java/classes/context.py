@@ -4,6 +4,7 @@ from androidemu.java.java_method_def import java_method_def,JavaMethodDef
 from androidemu.java.classes.package_manager import *
 from androidemu.java.classes.contentresolver import ContentResolver
 from androidemu.java.classes.string import String
+from androidemu import config
 
 class Context(metaclass=JavaClassDef, jvm_name='android/content/Context',
                  jvm_fields=[
@@ -37,7 +38,8 @@ class Context(metaclass=JavaClassDef, jvm_name='android/content/Context',
 class ContextImpl(Context, metaclass=JavaClassDef, jvm_name='android/app/ContextImpl', jvm_super=Context):
     def __init__(self):
         Context.__init__(self)
-        pyPkgName = "com.ss.android.ugc.aweme"
+
+        pyPkgName = config.global_config_get("pkg_name")
         self.__pkgName = String(pyPkgName)
         self.__pkg_mgr = PackageManager(pyPkgName)
         self.__resolver = ContentResolver()

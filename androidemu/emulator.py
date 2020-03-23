@@ -10,7 +10,6 @@ from random import randint
 from unicorn import *
 from unicorn.arm_const import *
 from androidemu import config
-from androidemu.config import HOOK_MEMORY_BASE, HOOK_MEMORY_SIZE
 from androidemu.cpu.interrupt_handler import InterruptHandler
 from androidemu.cpu.syscall_handlers import SyscallHandlers
 from androidemu.cpu.syscall_hooks import SyscallHooks
@@ -91,8 +90,9 @@ class Emulator:
     :type modules Modules
     :type memory Memory
     """
-    def __init__(self, vfs_root="vfs", vfp_inst_set=False):
+    def __init__(self, vfs_root="vfs", config_path="default.json", vfp_inst_set=True):
         # Unicorn.
+        config.global_config_init(config_path)
         self.mu = Uc(UC_ARCH_ARM, UC_MODE_ARM)
         self.__vfs_root = vfs_root
 
@@ -166,7 +166,7 @@ class Emulator:
         try:
             # Execute native call.
             native_write_args(self, *argv)
-            stop_pos = randint(HOOK_MEMORY_BASE, HOOK_MEMORY_BASE + HOOK_MEMORY_SIZE) | 1
+            stop_pos = randint(config.HOOK_MEMORY_BASE, config.HOOK_MEMORY_BASE + config.HOOK_MEMORY_SIZE) | 1
             self.mu.reg_write(UC_ARM_REG_LR, stop_pos)
             r = self.mu.emu_start(addr, stop_pos - 1)
             # Read result from locals if jni.

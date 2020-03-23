@@ -4,8 +4,6 @@ from os import stat_result
 
 from unicorn import Uc
 
-from androidemu.config import WRITE_FSTAT_TIMES
-
 def _get_def_dic():
    return {
         'st_dev': 0,

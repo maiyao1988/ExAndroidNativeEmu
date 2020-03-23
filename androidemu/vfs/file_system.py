@@ -3,6 +3,7 @@ import os
 import posixpath
 
 from androidemu.const.linux import *
+from androidemu import config
 from androidemu.config import WRITE_FSTAT_TIMES
 from androidemu.cpu.syscall_handlers import SyscallHandlers
 from androidemu.utils import memory_helpers
@@ -106,7 +107,8 @@ class VirtualFileSystem:
             if (filename2 == cmdline_path):
                 with open(file_path, "w") as f:
                     #TODO put to config
-                    f.write("com.ss.android.ugc.aweme")
+                    content = config.global_config_get("pkg_name")
+                    f.write(content)
                 #
             #
         #

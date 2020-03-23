@@ -213,7 +213,6 @@ logger = logging.getLogger(__name__)
 
 # Initialize emulator
 emulator = Emulator(
-    vfp_inst_set=True,
     vfs_root=posixpath.join(posixpath.dirname(__file__), "vfs")
 )
 
