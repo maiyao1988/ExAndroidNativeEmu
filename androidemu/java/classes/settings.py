@@ -2,6 +2,7 @@ from androidemu.java.java_class_def import JavaClassDef
 from androidemu.java.java_field_def import JavaFieldDef
 from androidemu.java.java_method_def import java_method_def,JavaMethodDef
 from androidemu.java.classes.string import String
+from androidemu import config
 
 
 class Secure(metaclass=JavaClassDef, jvm_name='android/provider/Settings$Secure'):
@@ -15,7 +16,8 @@ class Secure(metaclass=JavaClassDef, jvm_name='android/provider/Settings$Secure'
         print("call getString %r %r"%(resolver, s1))
         pys1 = s1.get_py_string()
         if (pys1 == "android_id"):
-            return String("39cc04a2ae83db0b")
+            android_id = config.global_config_get("android_id")
+            return String(android_id)
         #
         raise NotImplementedError()
         return String("")

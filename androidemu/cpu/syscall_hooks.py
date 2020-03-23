@@ -17,6 +17,7 @@ from androidemu.data import socket_info
 from androidemu.data.socket_info import SocketInfo
 from androidemu.utils import memory_helpers
 from androidemu import config
+from androidemu import pcb
 
 OVERRIDE_TIMEOFDAY = False
 OVERRIDE_TIMEOFDAY_SEC = 0
@@ -80,11 +81,13 @@ class SyscallHooks:
         logging.warning("skip syscall fork")
         #fork return 0 for child process, return pid for parent process
         #return 0
+        #FIXME fork and get from pcb
         return 0x2122
     #
 
     def _getpid(self, mu):
-        return 0x1122
+        pobj = pcb.get_pcb()
+        return pobj.get_pid()
     #
 
     def __ptrace(self, mu, request, pid, addr, data):
@@ -96,7 +99,7 @@ class SyscallHooks:
         logging.warning("kill is call pid=0x%x sig=%d"%(pid, sig))
         if (pid == self._getpid(mu)):
             logging.error("process 0x%x is killing self!!! maybe encounter anti-debug!!!"%pid)
-            #sys.exit(-10)
+            sys.exit(-10)
         #
     #
 

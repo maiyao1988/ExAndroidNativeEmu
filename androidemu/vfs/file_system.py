@@ -8,6 +8,7 @@ from androidemu.config import WRITE_FSTAT_TIMES
 from androidemu.cpu.syscall_handlers import SyscallHandlers
 from androidemu.utils import memory_helpers
 from androidemu.vfs import file_helpers
+from androidemu import pcb
 import androidemu.utils.misc_utils
 import platform
 g_isWin = platform.system() == "Windows"
@@ -94,7 +95,10 @@ class VirtualFileSystem:
             if (not os.path.exists(parent)):
                 os.makedirs(parent)
             #
-            filename2 = filename.replace(str(0x1122), "self")
+            
+            pobj = pcb.get_pcb()
+            pid = pobj.get_pid()
+            filename2 = filename.replace(str(pid), "self")
             #TODO: move pid to config
 
             map_path = "/proc/self/maps"
@@ -406,7 +410,9 @@ class VirtualFileSystem:
         logging.info("%x %s %x %r"%(dfd, path_utf8, buf, bufsz))
         print(self._virtual_files)
         
-        path_std_utf = path_utf8.replace("%d"%0x1122, "self")
+        pobj = pcb.get_pcb()
+        pid = pobj.get_pid()
+        path_std_utf = path_utf8.replace(str(pid), "self")
         fd_base = "/proc/self/fd/"
         if (path_std_utf.startswith(fd_base)):
             fd_str = os.path.basename(path_std_utf)

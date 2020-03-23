@@ -3,6 +3,7 @@ from androidemu.java.java_field_def import JavaFieldDef
 from androidemu.java.java_method_def import java_method_def, JavaMethodDef
 from androidemu.java.classes.string import String
 from androidemu.java.classes.array import Array
+from androidemu import config
 
 class NetworkInterface(metaclass=JavaClassDef, jvm_name='java/net/NetworkInterface'):
     def __init__(self, pyname):
@@ -19,7 +20,8 @@ class NetworkInterface(metaclass=JavaClassDef, jvm_name='java/net/NetworkInterfa
 
     @java_method_def(name='getHardwareAddress', signature='()[B', native=False)
     def getHardwareAddress(self, emu):
-        barr = bytearray([0xcc, 0xfa, 0x0, 0xa6, 0x8a, 0xa9])
+        mac = config.global_config_get("mac")
+        barr = bytearray(mac)
         arr = Array("B", barr)
         return arr
     #

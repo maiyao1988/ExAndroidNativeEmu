@@ -10,6 +10,7 @@ from random import randint
 from unicorn import *
 from unicorn.arm_const import *
 from androidemu import config
+from androidemu import pcb
 from androidemu.cpu.interrupt_handler import InterruptHandler
 from androidemu.cpu.syscall_handlers import SyscallHandlers
 from androidemu.cpu.syscall_hooks import SyscallHooks
@@ -99,7 +100,9 @@ class Emulator:
         if vfp_inst_set:
             self._enable_vfp()
         #
+        pobj = pcb.get_pcb()
 
+        logger.info("process pid:%d"%pobj.get_pid())
         #注意，原有缺陷，libc_preinit init array中访问R1参数是从内核传过来的
         #而这里直接将0映射空间，,强行运行过去，因为R1刚好为0,否则会报memory unmap异常
         #FIXME:MRC指令总是返回0,TLS模擬
