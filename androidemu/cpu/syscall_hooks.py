@@ -17,6 +17,7 @@ from androidemu.cpu.syscall_handlers import SyscallHandlers
 from androidemu.utils import memory_helpers
 from androidemu import config
 from androidemu import pcb
+from androidemu.utils import debug_utils
 
 OVERRIDE_TIMEOFDAY = False
 OVERRIDE_TIMEOFDAY_SEC = 0
@@ -40,11 +41,12 @@ class SyscallHooks:
         self._mu = mu
  
         self._syscall_handler = syscall_handler
-        self._syscall_handler.set_handler(0x2, "fork", 0, self._fork)
+        self._syscall_handler.set_handler(0x2, "fork", 0, self.__fork)
+        self._syscall_handler.set_handler(0x0B, "execve", 3, self.__execve)
         self._syscall_handler.set_handler(0x14, "getpid", 0, self._getpid)
         self._syscall_handler.set_handler(0x1A, "ptrace", 4, self.__ptrace)
         self._syscall_handler.set_handler(0x25, "kill", 2, self.__kill)
-        self._syscall_handler.set_handler(0x2A, "pipe", 1, self._pipe)
+        self._syscall_handler.set_handler(0x2A, "pipe", 1, self.__pipe)
         self._syscall_handler.set_handler(0x43, "sigaction", 3, self._handle_sigaction)
         self._syscall_handler.set_handler(0x4E, "gettimeofday", 2, self._handle_gettimeofday)
         self._syscall_handler.set_handler(0x72, "wait4", 4, self.__wait4)
@@ -52,6 +54,7 @@ class SyscallHooks:
         self._syscall_handler.set_handler(0x78, "clone", 5, self.__clone)
         self._syscall_handler.set_handler(0xAC, "prctl", 5, self._handle_prctl)
         self._syscall_handler.set_handler(0xAF, "sigprocmask", 3, self._handle_sigprocmask)
+        self._syscall_handler.set_handler(0xBE, "vfork", 0, self.__vfork)
         self._syscall_handler.set_handler(0xC7, "getuid32", 0, self._get_uid)
         self._syscall_handler.set_handler(0xE0, "gettid", 0, self._gettid)
         self._syscall_handler.set_handler(0xF0, "futex", 6, self._handle_futex)
@@ -63,6 +66,7 @@ class SyscallHooks:
         self._syscall_handler.set_handler(0x126, "setsockopt", 5, self._setsockopt)
         self._syscall_handler.set_handler(0x14e, "faccessat", 4, self._faccessat)
         self._syscall_handler.set_handler(0x159, "getcpu", 3, self._getcpu)
+        self._syscall_handler.set_handler(0x166, "dup3", 3, self.__dup3)
         self._syscall_handler.set_handler(0x167, "pipe2", 2, self.__pipe2)
         self._syscall_handler.set_handler(0x178, "process_vm_readv", 6, self.__process_vm_readv)
         self._syscall_handler.set_handler(0x180, "getrandom", 3, self._getrandom)
@@ -74,12 +78,29 @@ class SyscallHooks:
         self._process_name = config.global_config_get("pkg_name")
         
     #
-    def _fork(self, mu):
-        logging.warning("skip syscall fork")
-        #fork return 0 for child process, return pid for parent process
-        #return 0
-        #FIXME fork and get from pcb
-        return 0x2122
+    def __fork(self, mu):
+        logging.warning("syscall fork")
+        return os.fork()
+    #
+
+    def __execve(self, mu, filename_ptr, argv_ptr, envp_ptr):
+        filename =memory_helpers.read_utf8(mu, filename_ptr)
+        logging.info("execve")
+        ptr = argv_ptr
+        params = []
+        while True:
+            #debug_utils.dump_memory(mu, sys.stdout, ptr, ptr+30)
+            b = memory_helpers.read_byte_array(mu, ptr, 30)
+            logging.info("bytes %r"%b)
+            param = memory_helpers.read_utf8(mu, ptr)
+            logging.info("exec %s"%param)
+            if (len(param) == 0):
+                break
+            params.append(param)
+            ptr += 4
+        #
+        logging.warning("execve %s %r"%filename, params)
+        raise NotImplementedError()
     #
 
     def _getpid(self, mu):
@@ -100,9 +121,18 @@ class SyscallHooks:
         #
     #
 
-    def _pipe(self, mu, files):
-        logging.warning("skip syscall pipe files [0x%08X]"%files)
+    def __pipe_common(self, mu, files_ptr, flags):
+        #logging.warning("skip syscall pipe files [0x%08X]"%files_ptr)
+        ps = os.pipe2(flags)
+        self.__pcb.add_fd("[pipe_r]", "[pipe_r]", ps[0])
+        self.__pcb.add_fd("[pipe_w]", "[pipe_w]", ps[1])
+        mu.mem_write(files_ptr, int(ps[0]).to_bytes(4, byteorder='little'))
+        mu.mem_write(files_ptr+4, int(ps[1]).to_bytes(4, byteorder='little'))
         return 0
+    #
+
+    def __pipe(self, mu, files_ptr):
+        return self.__pipe_common(self, mu, files_ptr, 0)
     #
     
     def _handle_sigaction(self, mu, sig, act, oact):
@@ -225,6 +255,18 @@ class SyscallHooks:
         return 0
     #
 
+    def __vfork(self, mu):
+        logger.info("vfork called")
+        r = os.fork()
+        if (r == 0):
+            logger.info("-----here is child process")
+        #
+        else:
+            logger.info("-----here is parent process")
+        #
+        return r
+    #
+
     def _get_uid(self, mu):
         #return a android valid app uid, which is >10000
         return 10023
@@ -337,10 +379,17 @@ class SyscallHooks:
         return -1
         # raise NotImplementedError()
     #
+    
+    def __dup3(self, mu, oldfd, newfd, flags):
+        assert flags == 0, "dup3 flag not support now"
+        old_detail = self.__pcb.get_fd_detail(oldfd)
+        os.dup2(oldfd, newfd)
+        self.__pcb.add_fd(old_detail.name, old_detail.name_in_system, newfd)
+        return 0
+    #
 
-    def __pipe2(self, mu, fds, flags):
-        raise NotImplementedError()
-        return -1
+    def __pipe2(self, mu, files_ptr, flags):
+        return self.__pipe_common(mu, files_ptr, flags)
     #
 
     def _getrandom(self, mu, buf, count, flags):

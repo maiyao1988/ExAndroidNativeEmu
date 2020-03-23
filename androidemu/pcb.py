@@ -31,6 +31,10 @@ class Pcb:
         return self._fds[fd]
     #
 
+    def has_fd(self, fd):
+        return fd in self._fds
+    #
+    
     def remove_fd(self, fd):
         self._fds.pop(fd)
     #

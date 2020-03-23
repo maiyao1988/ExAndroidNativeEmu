@@ -25,8 +25,9 @@ from androidemu.native.memory_map import MemoryMap
 from androidemu.vfs.file_system import VirtualFileSystem
 
 from androidemu.java.java_class_def import JavaClassDef
-logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG, format='%(process)d - %(asctime)s - %(levelname)s - %(message)s')
 
+logger = logging.getLogger(__name__)
 
 class Emulator:
 
