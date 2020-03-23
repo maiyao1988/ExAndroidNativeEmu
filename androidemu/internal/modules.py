@@ -6,7 +6,7 @@ from androidemu.internal import arm
 from androidemu.utils.misc_utils import get_segment_protection,page_end, page_start
 from androidemu.internal.module import Module
 from androidemu.utils import memory_helpers,misc_utils
-from androidemu.vfs.file_system import VirtualFile
+from androidemu.vfs.virtual_file import VirtualFile
 from androidemu import config
 from androidemu.internal import elf_reader
 import os

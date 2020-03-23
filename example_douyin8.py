@@ -8,7 +8,7 @@ from unicorn.arm_const import *
 
 from androidemu.emulator import Emulator
 import androidemu.utils.debug_utils
-from androidemu.vfs.file_system import VirtualFile
+from androidemu.vfs.virtual_file import VirtualFile
 from androidemu.utils import misc_utils
 from androidemu.java.helpers.native_method import native_method
 from androidemu.java.java_class_def import JavaClassDef
