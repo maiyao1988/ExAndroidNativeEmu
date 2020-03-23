@@ -22,7 +22,7 @@ class Pcb:
         return os.getpid()
     #
 
-    def _store_fd(self, name, name_in_system, fd):
+    def add_fd(self, name, name_in_system, fd):
         self._fds[fd] = VirtualFile(name, fd, name_in_system=name_in_system)
         return fd
     #
@@ -31,7 +31,7 @@ class Pcb:
         return self._fds[fd]
     #
 
-    def close_fd(self, fd):
+    def remove_fd(self, fd):
         self._fds.pop(fd)
     #
 #

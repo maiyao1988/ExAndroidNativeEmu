@@ -109,7 +109,7 @@ class VirtualFileSystem:
             if (mode & 2000):
                 flags | os.O_APPEND
             #
-            return self.__pcb._store_fd(filename, file_path, androidemu.utils.misc_utils.my_open(file_path, flags))
+            return self.__pcb.add_fd(filename, file_path, androidemu.utils.misc_utils.my_open(file_path, flags))
         else:
             logger.warning("File does not exist '%s'" % filename)
             return -1
@@ -186,7 +186,7 @@ class VirtualFileSystem:
         close() returns zero on success. On error, -1 is returned, and errno is set appropriately.
         """
         try:
-            self.__pcb.close_fd(fd)
+            self.__pcb.remove_fd(fd)
             os.close(fd)
         except OSError as e:
             logger.warning("fd %d close error."%fd)

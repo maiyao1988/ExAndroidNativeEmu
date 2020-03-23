@@ -5,6 +5,7 @@ import os
 import time
 import sys
 import ctypes
+import socket
 from random import randint
 
 from unicorn import Uc
@@ -13,8 +14,6 @@ from unicorn.arm_const import *
 from androidemu.const.android import *
 from androidemu.const.linux import *
 from androidemu.cpu.syscall_handlers import SyscallHandlers
-from androidemu.data import socket_info
-from androidemu.data.socket_info import SocketInfo
 from androidemu.utils import memory_helpers
 from androidemu import config
 from androidemu import pcb
@@ -64,15 +63,13 @@ class SyscallHooks:
         self._syscall_handler.set_handler(0x126, "setsockopt", 5, self._setsockopt)
         self._syscall_handler.set_handler(0x14e, "faccessat", 4, self._faccessat)
         self._syscall_handler.set_handler(0x159, "getcpu", 3, self._getcpu)
-        # self._syscall_handler.set_handler(0x180,"null1",0, self._null)
         self._syscall_handler.set_handler(0x167, "pipe2", 2, self.__pipe2)
         self._syscall_handler.set_handler(0x178, "process_vm_readv", 6, self.__process_vm_readv)
         self._syscall_handler.set_handler(0x180, "getrandom", 3, self._getrandom)
         self._clock_start = time.time()
         self._clock_offset = randint(1000, 2000)
-        self._socket_id = 0x100000
-        self._sockets = dict()
         self._sig_maps = {}
+        self.__pcb = pcb.get_pcb()
         #TODO read it from config file
         self._process_name = config.global_config_get("pkg_name")
         
@@ -314,31 +311,19 @@ class SyscallHooks:
             raise NotImplementedError("Unsupported clk_id: %d (%x)" % (clk_id, clk_id))
 
     def _socket(self, mu, family, type_in, protocol):
-        socket_id = self._socket_id + 1
-        socket = SocketInfo()
-        socket.domain = family
-        socket.type = type_in
-        socket.protocol = protocol
-
-        self._sockets[socket_id] = socket
-        self._socket_id = self._socket_id + 1
-
+        s = socket.socket(family, type_in, protocol)
+        socket_id = s.fileno()
+        self.__pcb.add_fd("[socket]", "[socket]", socket_id)
         return socket_id
+    #
 
     def _bind(self, mu, fd, addr, addr_len):
-        socket = self._sockets.get(fd, None)
-
-        if socket is None:
-            raise Exception('Expected a socket')
-
-        if socket.domain != socket_info.AF_UNIX and socket.type != socket_info.SOCK_STREAM:
-            raise Exception('Unexpected socket domain / type.')
 
         # The struct is confusing..
-        socket.addr = mu.mem_read(addr + 3, addr_len - 3).decode(encoding="utf-8")
+        addr = mu.mem_read(addr + 3, addr_len - 3).decode(encoding="utf-8")
 
-        logger.info('Binding socket to ://%s' % socket.addr)
-
+        logger.info('Binding socket to ://%s' % addr)
+        raise NotImplementedError()
         return 0
 
     def _connect(self, mu, fd, addr, addr_len):
