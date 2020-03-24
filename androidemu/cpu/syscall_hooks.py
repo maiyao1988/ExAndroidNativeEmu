@@ -85,20 +85,31 @@ class SyscallHooks:
 
     def __execve(self, mu, filename_ptr, argv_ptr, envp_ptr):
         filename =memory_helpers.read_utf8(mu, filename_ptr)
-        logging.info("execve")
         ptr = argv_ptr
         params = []
+        logger.info("execve run")
         while True:
             off = memory_helpers.read_ptr(mu, ptr)
             param = memory_helpers.read_utf8(mu, off)
-            logging.info("exec %s"%param)
             if (len(param) == 0):
                 break
             params.append(param)
             ptr += 4
         #
         logging.warning("execve %s %r"%(filename, params))
-        raise NotImplementedError()
+        cmd = " ".join(params)
+
+        pkg_name = config.global_config_get("pkg_name")
+        pm = "pm path %s"%(pkg_name,)
+        if(cmd.find(pm) > -1):
+            output = "package:/data/app/%s/base.apk"%pkg_name
+            logger.info("write to stdout")
+            os.write(1, output.encode("utf-8"))
+            sys.exit(0)
+        #
+        else:
+            raise NotImplementedError()
+        #
     #
 
     def _getpid(self, mu):
@@ -411,7 +422,6 @@ class SyscallHooks:
             iov_len = memory_helpers.read_ptr(mu, off_r+4)
             tmp = memory_helpers.read_byte_array(mu, rbase, iov_len)
             b+=tmp
-            #for j in range(0, liovcnt)
             off_r+=8
         #
         off_l = local_iov
