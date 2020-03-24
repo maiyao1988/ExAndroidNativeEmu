@@ -89,17 +89,15 @@ class SyscallHooks:
         ptr = argv_ptr
         params = []
         while True:
-            #debug_utils.dump_memory(mu, sys.stdout, ptr, ptr+30)
-            b = memory_helpers.read_byte_array(mu, ptr, 30)
-            logging.info("bytes %r"%b)
-            param = memory_helpers.read_utf8(mu, ptr)
+            off = memory_helpers.read_ptr(mu, ptr)
+            param = memory_helpers.read_utf8(mu, off)
             logging.info("exec %s"%param)
             if (len(param) == 0):
                 break
             params.append(param)
             ptr += 4
         #
-        logging.warning("execve %s %r"%filename, params)
+        logging.warning("execve %s %r"%(filename, params))
         raise NotImplementedError()
     #
 
@@ -124,6 +122,7 @@ class SyscallHooks:
     def __pipe_common(self, mu, files_ptr, flags):
         #logging.warning("skip syscall pipe files [0x%08X]"%files_ptr)
         ps = os.pipe2(flags)
+        logger.info("pipe return %r"%(ps,))
         self.__pcb.add_fd("[pipe_r]", "[pipe_r]", ps[0])
         self.__pcb.add_fd("[pipe_w]", "[pipe_w]", ps[1])
         mu.mem_write(files_ptr, int(ps[0]).to_bytes(4, byteorder='little'))
