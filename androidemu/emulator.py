@@ -4,6 +4,7 @@ import time
 import importlib
 import inspect
 import pkgutil
+import sys
 
 from random import randint
 
@@ -25,7 +26,7 @@ from androidemu.native.memory_map import MemoryMap
 from androidemu.vfs.file_system import VirtualFileSystem
 
 from androidemu.java.java_class_def import JavaClassDef
-logging.basicConfig(level=logging.DEBUG, format='%(process)d - %(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(process)d - %(asctime)s - %(levelname)s - %(message)s', stream=sys.stdout)
 
 logger = logging.getLogger(__name__)
 

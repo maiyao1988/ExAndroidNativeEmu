@@ -208,9 +208,13 @@ class SyscallHooks:
         return 0
     #
 
-    def __wait4(self, mu, pid, start_addr, options, ru):
-        logger.warning("skip syscall wait4 pid [0x%x]"%pid)
-        return 0
+    def __wait4(self, mu, pid, wstatus, options, ru):
+        assert ru==0
+        logger.warning("syscall wait4 pid %d"%pid)
+        t = os.wait4(pid, options)
+        logger.info("wait4 return %r"%(t,))
+        mu.mem_write(wstatus, int(t[1]).to_bytes(4, "little"))
+        return t[0]
     #
 
     def __sysinfo(self, mu, info):

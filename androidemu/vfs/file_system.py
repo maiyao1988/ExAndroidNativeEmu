@@ -322,6 +322,7 @@ class VirtualFileSystem:
         """
         pathname = memory_helpers.read_utf8(mu, pathname_ptr)
 
+        logger.info("fstatat64 patename=[%s]"%pathname)
         if not pathname.startswith('/'):
             raise NotImplementedError("Directory file descriptor has not been implemented yet.")
 
