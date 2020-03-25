@@ -141,7 +141,7 @@ class SyscallHooks:
     #
 
     def __pipe(self, mu, files_ptr):
-        return self.__pipe_common(self, mu, files_ptr, 0)
+        return self.__pipe_common(mu, files_ptr, 0)
     #
     
     def _handle_sigaction(self, mu, sig, act, oact):

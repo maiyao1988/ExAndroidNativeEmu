@@ -243,13 +243,9 @@ class VirtualFileSystem:
 
         fstat() is identical to stat(), except that the file to be stat-ed is specified by the file descriptor fd.
         """
-
-        file = self.__pcb.get_fd_detail(fd)
-        logger.info("File stat64 '%s'" % file.name)
-
-        stat = file_helpers.stat64(file.name_in_system)
-        # stat = os.fstat(file.descriptor)
-        file_helpers.stat_to_memory(mu, buf_ptr, stat, WRITE_FSTAT_TIMES)
+        stats = os.fstat(fd)
+        uid = config.global_config_get("uid")
+        file_helpers.stat_to_memory2(mu, buf_ptr, stats, uid)
 
         return 0
     #
@@ -343,11 +339,12 @@ class VirtualFileSystem:
             logger.warning('> File was not found.')
             return -1
 
-        logger.warning('> File was found.')
+        logger.info('> File was found.')
 
-        stat = file_helpers.stat64(path=pathname)
+        stat = os.stat(pathname)
         # stat = os.stat(path=file_path, dir_fd=None, follow_symlinks=False)
-        file_helpers.stat_to_memory(mu, buf, stat, WRITE_FSTAT_TIMES)
+        uid = config.global_config_get("uid")
+        file_helpers.stat_to_memory2(mu, buf, stat, uid)
 
         return 0
     #
