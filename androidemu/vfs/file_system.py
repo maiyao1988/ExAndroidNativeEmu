@@ -49,6 +49,7 @@ class VirtualFileSystem:
         syscall_handler.set_handler(0x142, "openat", 4, self._handle_openat)
         syscall_handler.set_handler(0x147, "fstatat64", 4, self._handle_fstatat64)
         syscall_handler.set_handler(0x14c, "readlinkat", 4, self.__readlinkat)
+        syscall_handler.set_handler(0x14e, "faccessat", 4, self._faccessat)
     #
 
     def translate_path(self, filename):
@@ -378,4 +379,21 @@ class VirtualFileSystem:
         return -1
     #
     
+    def _faccessat(self, mu, dirfd, pathname_ptr, mode, flag):
+        filename = memory_helpers.read_utf8(mu, pathname_ptr)
+        logger.info("faccessat filename:[%s]"%filename)
+        if (not os.path.isabs(filename)):
+            raise NotImplementedError("faccessat with relative filename not support now.")
+        #
+        else:
+            name_in_host = self.translate_path(filename)
+            if (os.access(name_in_host, mode)):
+                return 0
+            else:
+                logger.info("faccessat filename:[%s] not exist"%filename)
+                return -1
+            #
+        #
+    #
+
 #

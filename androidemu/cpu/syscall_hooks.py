@@ -64,7 +64,6 @@ class SyscallHooks:
         self._syscall_handler.set_handler(0x11a, "bind", 3, self._bind)
         self._syscall_handler.set_handler(0x11b, "connect", 3, self._connect)
         self._syscall_handler.set_handler(0x126, "setsockopt", 5, self._setsockopt)
-        self._syscall_handler.set_handler(0x14e, "faccessat", 4, self._faccessat)
         self._syscall_handler.set_handler(0x159, "getcpu", 3, self._getcpu)
         self._syscall_handler.set_handler(0x166, "dup3", 3, self.__dup3)
         self._syscall_handler.set_handler(0x167, "pipe2", 2, self.__pipe2)
@@ -179,10 +178,6 @@ class SyscallHooks:
         logging.warn("_setsockopt not implement skip")
         return 0
     #
-
-    def _faccessat(self, mu, filename, pathname, mode, flag):
-        file = memory_helpers.read_utf8(mu, pathname)
-        return 0
 
     def _getcpu(self, mu, _cpu, node, cache):
         if _cpu != 0:
