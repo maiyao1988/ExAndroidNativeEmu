@@ -273,8 +273,8 @@ class SyscallHooks:
     #
 
     def _get_uid(self, mu):
-        #return a android valid app uid, which is >10000
-        return 10023
+        uid = config.global_config_get("uid")
+        return uid
     #
 
     def _handle_futex(self, mu, uaddr, op, val, timeout, uaddr2, val3):
