@@ -101,8 +101,8 @@ class SyscallHooks:
         pkg_name = config.global_config_get("pkg_name")
         pm = "pm path %s"%(pkg_name,)
         if(cmd.find(pm) > -1):
-            output = "package:/data/app/%s/base.apk"%pkg_name
-            logger.info("write to stdout")
+            output = "package:/data/app/%s-1.apk"%pkg_name
+            logger.info("write to stdout [%s]"%output)
             os.write(1, output.encode("utf-8"))
             sys.exit(0)
         #
