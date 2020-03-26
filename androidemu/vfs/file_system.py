@@ -297,8 +297,40 @@ class VirtualFileSystem:
         
         path = memory_helpers.read_utf8(mu, path_ptr)
         logger.info("statfs64 path %s"%path)
+        path = self.translate_path(path)
+        if (not os.path.exists(path)):
+            return -1
+        #
+        statv = os.statvfs(path)
+        '''
+        f_type = {uint32_t} 61267
+        f_bsize = {uint32_t} 4096
+        f_blocks = {uint64_t} 3290543
+        f_bfree = {uint64_t} 2499155
+        f_bavail = {uint64_t} 2499155
+        f_files = {uint64_t} 838832
+        f_ffree = {uint64_t} 828427
+        f_fsid = {fsid_t} 
+            __val = {int [2]} 
+        f_namelen = {uint32_t} 255
+        f_frsize = {uint32_t} 4096
+        f_flags = {uint32_t} 1062
+        f_spare = {uint32_t [4]} 
+        '''
+        mu.mem_write(buf, int(0xef53).to_bytes(4, 'little'))
+        mu.mem_write(buf+4, int(statv.f_bsize).to_bytes(4, 'little'))
+        mu.mem_write(buf+8, int(statv.f_blocks).to_bytes(8, 'little'))
+        mu.mem_write(buf+16, int(statv.f_bfree).to_bytes(8, 'little'))
+        mu.mem_write(buf+24, int(statv.f_bavail).to_bytes(8, 'little'))
+        mu.mem_write(buf+32, int(statv.f_files).to_bytes(8, 'little'))
+        mu.mem_write(buf+40, int(statv.f_ffree).to_bytes(8, 'little'))
+        mu.mem_write(buf+48, int(statv.f_fsid).to_bytes(8, 'little'))
+        mu.mem_write(buf+56, int(statv.f_namemax).to_bytes(4, 'little'))
+        mu.mem_write(buf+60, int(statv.f_frsize).to_bytes(4, 'little'))
+        mu.mem_write(buf+64, int(statv.f_flag).to_bytes(4, 'little'))
+        mu.mem_write(buf+68, int(0).to_bytes(16, 'little'))
         #raise NotImplementedError()
-        return -1
+        return 0
     #
 
     def _handle_openat(self, mu, dfd, filename_ptr, flags, mode):
