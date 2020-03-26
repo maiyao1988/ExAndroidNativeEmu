@@ -110,10 +110,14 @@ class VirtualFileSystem:
             if (mode & 2000):
                 flags | os.O_APPEND
             #
-            return self.__pcb.add_fd(filename, file_path, androidemu.utils.misc_utils.my_open(file_path, flags))
+            fd = androidemu.utils.misc_utils.my_open(file_path, flags)
+            self.__pcb.add_fd(filename, file_path, fd)
+            logger.info("openat return fd %d"%fd)
+            return fd
         else:
             logger.warning("File does not exist '%s'" % filename)
             return -1
+        #
 
     def _handle_read(self, mu, fd, buf_addr, count):
         """
@@ -139,6 +143,7 @@ class VirtualFileSystem:
 
         buf = os.read(fd, count)
 
+        logger.info("read return %r"%buf)
         result = len(buf)
         mu.mem_write(buf_addr, buf)
         return result
@@ -277,8 +282,12 @@ class VirtualFileSystem:
         raise NotImplementedError()
     #
 
-    def __statfs64(self, mu, path, sz, buf):
+    def __statfs64(self, mu, path_ptr, sz, buf):
         #TODO
+        
+        path = memory_helpers.read_utf8(mu, path_ptr)
+        logger.info("statfs64 path %s"%path)
+        #raise NotImplementedError()
         return -1
     #
 
@@ -302,6 +311,7 @@ class VirtualFileSystem:
             raise NotImplementedError("Directory file descriptor has not been implemented yet.")
 
         return self._open_file(filename, mode)
+    #
 
     def _handle_fstatat64(self, mu, dirfd, pathname_ptr, buf, flags):
         """

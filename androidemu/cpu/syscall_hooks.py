@@ -77,9 +77,23 @@ class SyscallHooks:
         self._process_name = config.global_config_get("pkg_name")
         
     #
+
+    def __do_fork(self, mu):
+        logger.info("vfork called")
+        r = os.fork()
+        if (r == 0):
+            pass
+            #实测这样改没效果
+            #logging.basicConfig(level=logging.DEBUG, format='%(process)d - %(asctime)s - %(levelname)s - %(message)s', stream=sys.stdout)
+        #
+        else:
+            logger.info("-----here is parent process child pid=%d"%r)
+        #
+        return r
+    #
+
     def __fork(self, mu):
-        logging.warning("syscall fork")
-        return os.fork()
+        return self.__do_fork(mu)
     #
 
     def __execve(self, mu, filename_ptr, argv_ptr, envp_ptr):
@@ -171,7 +185,8 @@ class SyscallHooks:
     #
 
     def _gettid(self, mu):
-        return 0x2211
+        #单线程直接用pid代替
+        return self._getpid(mu)
     #
 
     def _setsockopt(self, mu, fd, level, optname, optval, optlen):
@@ -210,6 +225,7 @@ class SyscallHooks:
 
     def __wait4(self, mu, pid, wstatus, options, ru):
         assert ru==0
+        #return pid
         logger.warning("syscall wait4 pid %d"%pid)
         t = os.wait4(pid, options)
         logger.info("wait4 return %r"%(t,))
@@ -265,15 +281,7 @@ class SyscallHooks:
     #
 
     def __vfork(self, mu):
-        logger.info("vfork called")
-        r = os.fork()
-        if (r == 0):
-            logger.info("-----here is child process")
-        #
-        else:
-            logger.info("-----here is parent process")
-        #
-        return r
+        return self.__do_fork(mu)
     #
 
     def _get_uid(self, mu):

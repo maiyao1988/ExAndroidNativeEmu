@@ -9,12 +9,6 @@ from androidemu.utils import debug_utils
 from androidemu.emulator import Emulator
 from androidemu.java.classes.string import String
 
-logging.basicConfig(
-    stream=sys.stdout,
-    level=logging.DEBUG,
-    format="%(asctime)s %(levelname)7s %(name)34s | %(message)s"
-)
-
 logger = logging.getLogger(__name__)
 
 def hook_code(mu, address, size, user_data):

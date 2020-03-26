@@ -174,10 +174,19 @@ def hook_mem_read(uc, access, address, size, value, user_data):
 
 def hook_mem_write(uc, access, address, size, value, user_data):
     pc = uc.reg_read(UC_ARM_REG_PC)
-    if (address == 3419067861):
-        print("write")
+    base = address
+    end = address+size
+    '''
+    if (base <=  0x30001645 and end >= 0x30001645):
+        print("write!!! base=0x%08X end=0x%08X pc=0x%08X"%(base, end, pc))
     #
-
+    if (base <=  0x30001646 and end >= 0x30001646):
+        print("write!!! base=0x%08X end=0x%08X pc=0x%08X"%(base, end, pc))
+    #
+    if (base <=  0x3000166B and end >= 0x3000166B):
+        print("write!!! base=0x%08X end=0x%08X pc=0x%08X"%(base, end, pc))
+    #
+    '''
 
 #
 g_cfd = ChainLogger(sys.stdout, "./ins-douyin.txt")
@@ -201,13 +210,6 @@ def hook_code(mu, address, size, user_data):
 
 
 #
-
-# Configure logging
-logging.basicConfig(
-    stream=sys.stdout,
-    level=logging.DEBUG,
-    format="%(asctime)s %(levelname)7s %(name)34s | %(message)s"
-)
 
 logger = logging.getLogger(__name__)
 

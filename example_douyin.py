@@ -136,12 +136,6 @@ def hook_code(mu, address, size, user_data):
     #
 #
 
-# Configure logging
-logging.basicConfig(
-    stream=sys.stdout,
-    level=logging.DEBUG,
-    format="%(asctime)s %(levelname)7s %(name)34s | %(message)s"
-)
 
 logger = logging.getLogger(__name__)
 
