@@ -97,6 +97,16 @@ class VirtualFileSystem:
                     f.write(content)
                 #
             #
+            cgroup_path = "/proc/self/cgroup"
+            if (filename2 == cgroup_path):
+                with open(file_path, "w") as f:
+                    #TODO put to config
+                    uid = config.global_config_get("uid")
+                    content = "2:cpu:/apps\n1:cpuacct:/uid/%d\n"%uid
+                    f.write(content)
+                #
+            #
+            
         #
 
         if os.path.isfile(file_path):
