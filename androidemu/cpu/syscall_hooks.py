@@ -73,7 +73,6 @@ class SyscallHooks:
         self._clock_offset = randint(1000, 2000)
         self._sig_maps = {}
         self.__pcb = pcb.get_pcb()
-        #TODO read it from config file
         self._process_name = config.global_config_get("pkg_name")
         
     #

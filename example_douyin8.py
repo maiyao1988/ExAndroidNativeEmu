@@ -230,6 +230,7 @@ emulator.java_classloader.add_class(java_lang_Thread)
 emulator.java_classloader.add_class(java_lang_StackTraceElement)
 
 # Load all libraries.
+libdvm = emulator.load_library("vfs/system/lib/libdvm.so")
 lib_module = emulator.load_library("tests/bin/libcms8.so")
 # lib_module = emulator.load_library("../deobf/tests/bin/libcms2.so")
 # lib_module = emulator.load_library("../deobf/cms.so")
