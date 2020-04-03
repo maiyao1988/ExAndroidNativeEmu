@@ -232,9 +232,46 @@ class SyscallHooks:
         return t[0]
     #
 
-    def __sysinfo(self, mu, info):
-        logger.warning("skip syscall sysinfo buf 0x%08X just return error"%(info))
-        return -1
+    def __sysinfo(self, mu, info_ptr):
+        '''
+        si = {sysinfo} 
+        uptime = {__kernel_long_t} 91942
+        loads = {__kernel_ulong_t [3]} 
+        [0] = {__kernel_ulong_t} 503328
+        [1] = {__kernel_ulong_t} 504576
+        [2] = {__kernel_ulong_t} 537280
+        totalram = {__kernel_ulong_t} 1945137152
+        freeram = {__kernel_ulong_t} 47845376
+        sharedram = {__kernel_ulong_t} 0
+        bufferram = {__kernel_ulong_t} 169373696
+        totalswap = {__kernel_ulong_t} 0
+        freeswap = {__kernel_ulong_t} 0
+        procs = {__u16} 1297
+        pad = {__u16} 0
+        totalhigh = {__kernel_ulong_t} 1185939456
+        freehigh = {__kernel_ulong_t} 1863680
+        mem_unit = {__u32} 1
+        f = 0 char[8]
+        '''
+        mu.mem_write(info_ptr + 0, int(91942).to_bytes(4, byteorder='little'))
+        mu.mem_write(info_ptr + 4, int(503328).to_bytes(4, byteorder='little'))
+        mu.mem_write(info_ptr + 8, int(504576).to_bytes(4, byteorder='little'))
+        mu.mem_write(info_ptr + 12, int(537280).to_bytes(4, byteorder='little'))
+        mu.mem_write(info_ptr + 16, int(1945137152).to_bytes(4, byteorder='little'))
+        mu.mem_write(info_ptr + 20, int(47845376).to_bytes(4, byteorder='little'))
+        mu.mem_write(info_ptr + 24, int(0).to_bytes(4, byteorder='little'))
+        mu.mem_write(info_ptr + 28, int(169373696).to_bytes(4, byteorder='little'))
+        mu.mem_write(info_ptr + 32, int(0).to_bytes(4, byteorder='little'))
+        mu.mem_write(info_ptr + 36, int(0).to_bytes(4, byteorder='little'))
+        mu.mem_write(info_ptr + 40, int(1297).to_bytes(2, byteorder='little'))
+        mu.mem_write(info_ptr + 42, int(0).to_bytes(2, byteorder='little'))
+        mu.mem_write(info_ptr + 44, int(1185939456).to_bytes(4, byteorder='little'))
+        mu.mem_write(info_ptr + 48, int(1863680).to_bytes(4, byteorder='little'))
+        mu.mem_write(info_ptr + 52, int(1).to_bytes(4, byteorder='little'))
+        mu.mem_write(info_ptr + 56, int(0).to_bytes(8, byteorder='little'))
+        #sz 64
+        logger.warning("syscall sysinfo buf 0x%08X return fixed value"%(info_ptr))
+        return 0
     #
 
     def __clone(self, mu, fn, child_stack, flags, arg1, arg2):
