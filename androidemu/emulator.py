@@ -4,6 +4,7 @@ import time
 import importlib
 import inspect
 import pkgutil
+import sys
 
 from random import randint
 
@@ -25,8 +26,13 @@ from androidemu.native.memory_map import MemoryMap
 from androidemu.vfs.file_system import VirtualFileSystem
 
 from androidemu.java.java_class_def import JavaClassDef
-logger = logging.getLogger(__name__)
 
+sys.stdout = sys.stderr
+#由于这里的stream只能改一次，为避免与fork之后的子进程写到stdout混合，将这些log写到stderr
+#FIXME:解除这种特殊的依赖
+logging.basicConfig(level=logging.DEBUG, format='%(process)d - %(asctime)s - %(levelname)s - %(message)s', stream=sys.stderr)
+
+logger = logging.getLogger(__name__)
 
 class Emulator:
 

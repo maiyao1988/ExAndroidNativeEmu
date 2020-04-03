@@ -1493,8 +1493,13 @@ class JNIEnv:
         raise NotImplementedError()
 
     @native_method
-    def get_byte_array_elements(self, mu, env):
-        raise NotImplementedError()
+    def get_byte_array_elements(self, mu, env ,array_idx, item_idx):
+        logger.debug("JNIEnv->get_byte_array_elements(%u, %u) was called" % (array_idx, item_idx))
+
+        obj = self.get_reference(array_idx)
+        pyobj = JNIEnv.jobject_to_pyobject(obj)
+        return pyobj[item_idx]
+
 
     @native_method
     def get_char_array_elements(self, mu, env):
@@ -1525,8 +1530,10 @@ class JNIEnv:
         raise NotImplementedError()
 
     @native_method
-    def release_byte_array_elements(self, mu, env):
-        raise NotImplementedError()
+    def release_byte_array_elements(self, mu, env,array_idx, item_idx):
+        logger.debug("JNIEnv->release_byte_array_elements(%u, %u) was called" % (array_idx, item_idx))
+        return 0
+        #raise NotImplementedError()
 
     @native_method
     def release_char_array_elements(self, mu, env):

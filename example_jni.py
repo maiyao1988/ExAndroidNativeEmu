@@ -64,13 +64,6 @@ class MainActivity(metaclass=JavaClassDef, jvm_name='local/myapp/testnativeapp/M
         pass
 
 
-# Configure logging
-logging.basicConfig(
-    stream=sys.stdout,
-    level=logging.DEBUG,
-    format="%(asctime)s %(levelname)7s %(name)34s | %(message)s"
-)
-
 logger = logging.getLogger(__name__)
 
 # Initialize emulator
