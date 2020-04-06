@@ -143,23 +143,20 @@ class java_lang_Thread(metaclass=JavaClassDef, jvm_name='java/lang/Thread'):
 
     @java_method_def(name="getStackTrace", signature='()[Ljava/lang/StackTraceElement;', native=False)
     def getStackTrace(self, *args, **kwargs):
-        l = [java_lang_StackTraceElement(String("dalvik.system.VMStack")),
-                java_lang_StackTraceElement(String("java.lang.Thread")),
-                java_lang_StackTraceElement(String("com.ss.sys.ces.a")),
-                java_lang_StackTraceElement(String("com.yf.douyintool.MainActivity")),
-                java_lang_StackTraceElement(String("java.lang.reflect.Method")),
-                java_lang_StackTraceElement(String("java.lang.reflect.Method")),
+        l = [java_lang_StackTraceElement(String("dalvik.system.VMStack.getThreadStackTrace(Native Method)")),
+                java_lang_StackTraceElement(String("java.lang.Thread.getStackTrace(Thread.java:580)")),
+                java_lang_StackTraceElement(String("com.ss.sys.ces.a.leviathan(Native Method)")),
+                java_lang_StackTraceElement(String("com.ss.sys.ces.gg.tt$1.a(Unknown Source)")),
+                java_lang_StackTraceElement(String("com.bytedance.frameworks.baselib.network.http.e.a(SourceFile:33947656)")),
+                java_lang_StackTraceElement(String("com.bytedance.ttnet.a.a.onCallToAddSecurityFactor(SourceFile:33816621)")),
                 java_lang_StackTraceElement(String("android.support.v7.app.AppCompatViewInflater$DeclaredOnClickListener")),
-                java_lang_StackTraceElement(String("android.view.View")),
-                java_lang_StackTraceElement(String("android.os.Handler")),
-                java_lang_StackTraceElement(String("android.os.Handler")),
-                java_lang_StackTraceElement(String("android.os.Looper")),
-                java_lang_StackTraceElement(String("android.app.ActivityThread")),
-                java_lang_StackTraceElement(String("java.lang.reflect.Method")),
-                java_lang_StackTraceElement(String("java.lang.reflect.Method")),
-                java_lang_StackTraceElement(String("com.android.internal.os.ZygoteInit$MethodAndArgsCaller")),
-                java_lang_StackTraceElement(String("com.android.internal.os.ZygoteInit")),
-                java_lang_StackTraceElement(String("dalvik.system.NativeStart"))
+                java_lang_StackTraceElement(String("java.lang.reflect.Method.invoke(Native Method)")),
+                java_lang_StackTraceElement(String("com.ttnet.org.chromium.base.Reflect.on(SourceFile:50659347)")),
+                java_lang_StackTraceElement(String("com.ttnet.org.chromium.base.Reflect.call(SourceFile:50528262)")),
+                java_lang_StackTraceElement(String("org.chromium.c.a(SourceFile:33882174)")),
+                java_lang_StackTraceElement(String("org.chromium.e.onCallToAddSecurityFactor(SourceFile:33685508)")),
+                java_lang_StackTraceElement(String("com.ttnet.org.chromium.net.impl.CronetUrlRequestContext.onCallToAddSecurityFactor(SourceFile:33685512)")),
+                java_lang_StackTraceElement(String("com.ttnet.org.chromium.net.impl.CronetUrlRequest.addSecurityFactor(SourceFile:33882142)")),
                 ]
         return List(l)
             
@@ -266,13 +263,26 @@ try:
     r = x.meta(emulator, 1020, 0, String(""))
     print("meta return 0x%08X"%r)
     
-    data = 'acde74a94e6b493a3399fac83c7c08b35D58B21D9582AF77647FC9902E36AE70f9c001e9334e6e94916682224fbe4e5f00000000000000000000000000000000'
-    data = bytearray(bytes.fromhex(data))
-    arr = Array("B", data)
+    #data = 'acde74a94e6b493a3399fac83c7c08b35D58B21D9582AF77647FC9902E36AE70f9c001e9334e6e94916682224fbe4e5f00000000000000000000000000000000'
+    #data = bytearray(bytes.fromhex(data))
+    #n2 = 1562848170
+    #arr = Array("B", data)
+
+    l = [71,57,-52,16,-33,-74,56,-78,88,-1,81,113,90,-56,-109,-114,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,7,-89,102,-14,26,-10,-97,-18,-41,27,113,-106,-61,36,106,-12,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+    l2 = []
+    for item in l:
+        r = item
+        if (item < 0):
+            r = item+256
+        l2.append(r)
+    #
+    data2 = bytearray(l2)
+    n2 = 1585841725
+    arr2 = Array("B", data2)
     
     #emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
 
-    result = x.leviathan(emulator, 1562848170, arr)
+    result = x.leviathan(emulator, n2, arr2)
 
     print(''.join(['%02x' % b for b in result]))
     
