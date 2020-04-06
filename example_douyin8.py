@@ -27,6 +27,12 @@ class XGorgen(metaclass=JavaClassDef, jvm_name='com/ss/sys/ces/a'):
     @java_method_def(name='leviathan', signature='(I[B)[B', native=True)
     def leviathan(self, mu):
         pass
+    #
+
+    @java_method_def(name='meta', signature='(ILandroid/content/Context;Ljava/lang/Object;)Ljava/lang/Object;', native=True)
+    def meta(self, mu, optype, ctx, obj):
+        pass
+    #
 
     @staticmethod
     @java_method_def(name='Francies', signature='()V', native=False)
@@ -254,6 +260,12 @@ try:
     emulator.memory.map(0xab006000, sz, UC_PROT_WRITE | UC_PROT_READ, vf, 0)
 
     x = XGorgen()
+    print("begin meta")
+    r = x.meta(emulator, 101, 0, String("0"))
+    r = x.meta(emulator, 102, 0, String("1128"))
+    r = x.meta(emulator, 1020, 0, String(""))
+    print("meta return 0x%08X"%r)
+    
     data = 'acde74a94e6b493a3399fac83c7c08b35D58B21D9582AF77647FC9902E36AE70f9c001e9334e6e94916682224fbe4e5f00000000000000000000000000000000'
     data = bytearray(bytes.fromhex(data))
     arr = Array("B", data)
@@ -263,6 +275,7 @@ try:
     result = x.leviathan(emulator, 1562848170, arr)
 
     print(''.join(['%02x' % b for b in result]))
+    
 
     # 037d560d0000903e34fb093f1d21e78f3bdf3fbebe00b124becc
     # 036d2a7b000010f4d05395b7df8b0ec2b5ec085b938a473a6a51

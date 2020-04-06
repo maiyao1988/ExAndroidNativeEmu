@@ -238,17 +238,16 @@ class VirtualFileSystem:
     #
 
     def _handle_writev(self, mu, fd, vec, vlen):
-        if fd == 2:
-            for i in range(0, vlen):
-                addr = memory_helpers.read_ptr(mu, (i * 8) + vec)
-                size = memory_helpers.read_ptr(mu, (i * 8) + vec + 4)
-                data = bytes(mu.mem_read(addr, size)).decode(encoding='UTF-8')
+        n = 0
+        for i in range(0, vlen):
+            addr = memory_helpers.read_ptr(mu, (i * 8) + vec)
+            size = memory_helpers.read_ptr(mu, (i * 8) + vec + 4)
+            data = bytes(mu.mem_read(addr, size))
+            n += os.write(fd, data)
+            logger.info('Writev %r' % data)
+        #
+        return n
 
-                logger.error('Writev %s' % data)
-
-            return 0
-
-        raise NotImplementedError()
 
     def _handle_fstat64(self, mu, fd, buf_ptr):
         """

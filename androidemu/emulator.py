@@ -26,6 +26,7 @@ from androidemu.native.memory_map import MemoryMap
 from androidemu.vfs.file_system import VirtualFileSystem
 
 from androidemu.java.java_class_def import JavaClassDef
+from androidemu.java.constant_values import JAVA_RET_NULL
 
 sys.stdout = sys.stderr
 #由于这里的stream只能改一次，为避免与fork之后的子进程写到stdout混合，将这些log写到stderr
@@ -184,7 +185,7 @@ class Emulator:
                 result_idx = res
                 result = self.java_vm.jni_env.get_local_reference(result_idx)
                 if result is None:
-                    return result
+                    return JAVA_RET_NULL
                 return result.value
             #
             else:
