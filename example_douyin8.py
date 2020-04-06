@@ -261,13 +261,22 @@ try:
     r = x.meta(emulator, 101, 0, String("0"))
     r = x.meta(emulator, 102, 0, String("1128"))
     r = x.meta(emulator, 1020, 0, String(""))
+    r = x.meta(emulator, 105, 0, String("850"))
+    
+    r = x.meta(emulator, 106, 0, String("com.ss.android.ugc.aweme"))
+    
+    r = x.meta(emulator, 107, 0, String("/data/user/0/com.ss.android.ugc.aweme/files"))
+    r = x.meta(emulator, 108, 0, String("/data/app/com.ss.android.ugc.aweme-1.apk"))
+    r = x.meta(emulator, 109, 0, String("/sdcard"))
+    r = x.meta(emulator, 110, 0, String("/data"))
+    
     print("meta return 0x%08X"%r)
     
     #data = 'acde74a94e6b493a3399fac83c7c08b35D58B21D9582AF77647FC9902E36AE70f9c001e9334e6e94916682224fbe4e5f00000000000000000000000000000000'
     #data = bytearray(bytes.fromhex(data))
     #n2 = 1562848170
     #arr = Array("B", data)
-
+    
     l = [71,57,-52,16,-33,-74,56,-78,88,-1,81,113,90,-56,-109,-114,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,7,-89,102,-14,26,-10,-97,-18,-41,27,113,-106,-61,36,106,-12,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
     l2 = []
     for item in l:
