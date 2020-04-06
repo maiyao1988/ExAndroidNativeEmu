@@ -354,7 +354,7 @@ class SyscallHooks:
 
     def _handle_tgkill(self, mu, tgid, tid, sig):
         if (tgid ==  self._getpid(mu) and sig == 6):
-            logger.warn("tgkill abort self, skip!!!")
+            raise RuntimeError("tgkill abort self,...")
             return 0
         #
         if (tgid == self._getpid(mu) and tid == self._gettid(mu)):

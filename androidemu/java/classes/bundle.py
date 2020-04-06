@@ -16,8 +16,8 @@ class Bundle(metaclass=JavaClassDef, jvm_name='android/os/Bundle'):
         if (pykey in self.__pymap):
             return String(self.__pymap[pykey])
         else:
-            #attention do not return None, return None means no return value in function, return JAVA_RET_NULL means the return value is NULL
-            return JAVA_RET_NULL
+            #attention do not return None, return None means no return value in function, return JAVA_NULL means the return value is NULL
+            return JAVA_NULL
         #
         raise NotImplementedError()
     #

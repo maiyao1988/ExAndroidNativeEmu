@@ -25,7 +25,7 @@ class List(metaclass=JavaClassDef, jvm_name='java/util/List'):
     def get(self, emu, index):
         if (index < len(self.__pylist)):
             return self.__pylist[index]
-        return JAVA_RET_NULL
+        return JAVA_NULL
     #
 
 

@@ -24,13 +24,15 @@ class XGorgen(metaclass=JavaClassDef, jvm_name='com/ss/sys/ces/a'):
     def __init__(self):
         pass
 
+    @staticmethod
     @java_method_def(name='leviathan', signature='(I[B)[B', native=True)
-    def leviathan(self, mu):
+    def leviathan(mu):
         pass
     #
 
+    @staticmethod
     @java_method_def(name='meta', signature='(ILandroid/content/Context;Ljava/lang/Object;)Ljava/lang/Object;', native=True)
-    def meta(self, mu, optype, ctx, obj):
+    def meta(mu, optype, ctx, obj):
         pass
     #
 
@@ -90,23 +92,8 @@ class XGorgen(metaclass=JavaClassDef, jvm_name='com/ss/sys/ces/a'):
         elif i1 == 133:
             return String('{}')
 
-        return JAVA_RET_NULL
-
-    def test(self):
-        pass
-
-
-class secuni_b(metaclass=JavaClassDef, jvm_name='com/ss/sys/secuni/b/c'):
-    def __init__(self):
-        pass
-
-    @java_method_def(name='n0', signature='(Landroid/content/Context;)[B', native=True)
-    def n0(self, mu):
-        pass
-
-    @java_method_def(name='n1', signature='(Landroid/content/Context;Ljava/lang/String;)I', native=True)
-    def n1(self, mu):
-        pass
+        return JAVA_NULL
+#
 
 
 class UserInfo(metaclass=JavaClassDef, jvm_name='com/ss/android/common/applog/UserInfo'):
@@ -226,7 +213,6 @@ emulator.mu.hook_add(UC_HOOK_MEM_READ, hook_mem_read)
 # Register Java class.
 # emulator.java_classloader.add_class(MainActivity)
 emulator.java_classloader.add_class(XGorgen)
-emulator.java_classloader.add_class(secuni_b)
 emulator.java_classloader.add_class(UserInfo)
 emulator.java_classloader.add_class(java_lang_System)
 emulator.java_classloader.add_class(java_lang_Thread)
@@ -256,27 +242,26 @@ try:
     vf = VirtualFile("/system/bin/app_process32", misc_utils.my_open(path, os.O_RDONLY), path)
     emulator.memory.map(0xab006000, sz, UC_PROT_WRITE | UC_PROT_READ, vf, 0)
 
-    x = XGorgen()
     print("begin meta")
-    r = x.meta(emulator, 101, 0, String("0"))
-    r = x.meta(emulator, 102, 0, String("1128"))
-    r = x.meta(emulator, 1020, 0, String(""))
-    r = x.meta(emulator, 105, 0, String("850"))
     
-    r = x.meta(emulator, 106, 0, String("com.ss.android.ugc.aweme"))
+    XGorgen.meta(emulator, 101, 0, String("0"))
+    XGorgen.meta(emulator, 102, 0, String("1128"))
+    XGorgen.meta(emulator, 1020, 0, String(""))
+    XGorgen.meta(emulator, 105, 0, String("850"))
     
-    r = x.meta(emulator, 107, 0, String("/data/user/0/com.ss.android.ugc.aweme/files"))
-    r = x.meta(emulator, 108, 0, String("/data/app/com.ss.android.ugc.aweme-1.apk"))
-    r = x.meta(emulator, 109, 0, String("/sdcard"))
-    r = x.meta(emulator, 110, 0, String("/data"))
+    XGorgen.meta(emulator, 106, 0, String("com.ss.android.ugc.aweme"))
     
-    print("meta return 0x%08X"%r)
+    XGorgen.meta(emulator, 107, 0, String("/data/user/0/com.ss.android.ugc.aweme/files"))
+    XGorgen.meta(emulator, 108, 0, String("/data/app/com.ss.android.ugc.aweme-1.apk"))
+    XGorgen.meta(emulator, 109, 0, String("/sdcard"))
+    XGorgen.meta(emulator, 110, 0, String("/data"))
     
-    #data = 'acde74a94e6b493a3399fac83c7c08b35D58B21D9582AF77647FC9902E36AE70f9c001e9334e6e94916682224fbe4e5f00000000000000000000000000000000'
-    #data = bytearray(bytes.fromhex(data))
-    #n2 = 1562848170
-    #arr = Array("B", data)
     
+    data = 'acde74a94e6b493a3399fac83c7c08b35D58B21D9582AF77647FC9902E36AE70f9c001e9334e6e94916682224fbe4e5f00000000000000000000000000000000'
+    data = bytearray(bytes.fromhex(data))
+    n = 1562848170
+    arr = Array("B", data)
+    '''
     l = [71,57,-52,16,-33,-74,56,-78,88,-1,81,113,90,-56,-109,-114,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,7,-89,102,-14,26,-10,-97,-18,-41,27,113,-106,-61,36,106,-12,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
     l2 = []
     for item in l:
@@ -288,11 +273,11 @@ try:
     data2 = bytearray(l2)
     n2 = 1585841725
     arr2 = Array("B", data2)
+    '''
     
     #emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
 
-    result = x.leviathan(emulator, n2, arr2)
-
+    result = XGorgen.leviathan(emulator, n, arr)
     print(''.join(['%02x' % b for b in result]))
     
 
