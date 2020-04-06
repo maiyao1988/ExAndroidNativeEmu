@@ -242,8 +242,9 @@ try:
     vf = VirtualFile("/system/bin/app_process32", misc_utils.my_open(path, os.O_RDONLY), path)
     emulator.memory.map(0xab006000, sz, UC_PROT_WRITE | UC_PROT_READ, vf, 0)
 
+    #8.5 xg基本检测流程
+    #1.调用meta,传入以下参数，如果不调用meta，leviathan将会返回null，meta的参数直接影响leviathan的结果
     print("begin meta")
-    
     XGorgen.meta(emulator, 101, 0, String("0"))
     XGorgen.meta(emulator, 102, 0, String("1128"))
     XGorgen.meta(emulator, 1020, 0, String(""))
@@ -256,6 +257,8 @@ try:
     XGorgen.meta(emulator, 109, 0, String("/sdcard"))
     XGorgen.meta(emulator, 110, 0, String("/data"))
     
+    #2.leviathan 会以jni 调用getStackTraceElement检测调用堆栈，如果调用堆栈不对，将执行大量垃圾检测代码，而且会随机崩溃
+    #实测，如果流程正确，leviathan只会调用两个系统调用，一个是sysinfo，一个prctl
     
     data = 'acde74a94e6b493a3399fac83c7c08b35D58B21D9582AF77647FC9902E36AE70f9c001e9334e6e94916682224fbe4e5f00000000000000000000000000000000'
     data = bytearray(bytes.fromhex(data))
@@ -276,11 +279,11 @@ try:
     '''
     
     #emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
-
+    #3.leviathan 会调用prctl获取线程名字，但从目前来看，线程名字并不影响结果
+    
     result = XGorgen.leviathan(emulator, n, arr)
     print(''.join(['%02x' % b for b in result]))
     
-
     # 037d560d0000903e34fb093f1d21e78f3bdf3fbebe00b124becc
     # 036d2a7b000010f4d05395b7df8b0ec2b5ec085b938a473a6a51
     # 036d2a7b000010f4d05395b7df8b0ec2b5ec085b938a473a6a51
