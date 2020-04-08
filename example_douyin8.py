@@ -130,6 +130,7 @@ class java_lang_Thread(metaclass=JavaClassDef, jvm_name='java/lang/Thread'):
 
     @java_method_def(name="getStackTrace", signature='()[Ljava/lang/StackTraceElement;', native=False)
     def getStackTrace(self, *args, **kwargs):
+        #堆栈345行包名要对。其他没所谓
         l = [java_lang_StackTraceElement(String("dalvik.system.VMStack.getThreadStackTrace(Native Method)")),
                 java_lang_StackTraceElement(String("java.lang.Thread.getStackTrace(Thread.java:580)")),
                 java_lang_StackTraceElement(String("com.ss.sys.ces.a.leviathan(Native Method)")),
@@ -166,18 +167,6 @@ def hook_mem_write(uc, access, address, size, value, user_data):
     pc = uc.reg_read(UC_ARM_REG_PC)
     base = address
     end = address+size
-    '''
-    if (base <=  0x30001645 and end >= 0x30001645):
-        print("write!!! base=0x%08X end=0x%08X pc=0x%08X"%(base, end, pc))
-    #
-    if (base <=  0x30001646 and end >= 0x30001646):
-        print("write!!! base=0x%08X end=0x%08X pc=0x%08X"%(base, end, pc))
-    #
-    if (base <=  0x3000166B and end >= 0x3000166B):
-        print("write!!! base=0x%08X end=0x%08X pc=0x%08X"%(base, end, pc))
-    #
-    '''
-
 #
 g_cfd = ChainLogger(sys.stdout, "./ins-douyin.txt")
 
@@ -256,6 +245,12 @@ try:
     XGorgen.meta(emulator, 108, 0, String("/data/app/com.ss.android.ugc.aweme-1.apk"))
     XGorgen.meta(emulator, 109, 0, String("/sdcard"))
     XGorgen.meta(emulator, 110, 0, String("/data"))
+
+
+    #my_meta call tid 4470 [CZL-MRT] 222 0x1d200005 AchillesHell!!!
+    #该调用会触发检测，真机开启一个叫CZL-MRT的线程做，不会影响leviathan的运行，但是如果堆栈不对，leviathan也会触发这个检测流程
+    #这是xlog？
+    #XGorgen.meta(emulator, 222, 0, String("AchillesHell"))
     
     #2.leviathan 会以jni 调用getStackTraceElement检测调用堆栈，如果调用堆栈不对，将执行大量垃圾检测代码，而且会随机崩溃
     #实测，如果流程正确，leviathan只会调用两个系统调用，一个是sysinfo，一个prctl
