@@ -210,6 +210,7 @@ emulator.java_classloader.add_class(java_lang_StackTraceElement)
 # Load all libraries.
 libdvm = emulator.load_library("vfs/system/lib/libdvm.so")
 lib_module = emulator.load_library("tests/bin/libcms8.so")
+#lib_module = emulator.load_library("tests/bin/libcms1050.so")
 # lib_module = emulator.load_library("../deobf/tests/bin/libcms2.so")
 # lib_module = emulator.load_library("../deobf/cms.so")
 
@@ -220,16 +221,16 @@ for module in emulator.modules:
     logger.info("=> 0x%08x - %s" % (module.base, module.filename))
 
 try:
-    # Run JNI_OnLoad.
-    #   JNI_OnLoad will call 'RegisterNatives'.
-    emulator.call_symbol(lib_module, 'JNI_OnLoad', emulator.java_vm.address_ptr, 0x00)
-
     # bypass douyin checks
-
     path = "vfs/system/bin/app_process32"
     sz = os.path.getsize(path)
     vf = VirtualFile("/system/bin/app_process32", misc_utils.my_open(path, os.O_RDONLY), path)
     emulator.memory.map(0xab006000, sz, UC_PROT_WRITE | UC_PROT_READ, vf, 0)
+
+    # Run JNI_OnLoad.
+    #   JNI_OnLoad will call 'RegisterNatives'.
+    emulator.call_symbol(lib_module, 'JNI_OnLoad', emulator.java_vm.address_ptr, 0x00)
+
 
     #8.5 xg基本检测流程
     #1.调用meta,传入以下参数，如果不调用meta，leviathan将会返回null，meta的参数直接影响leviathan的结果
@@ -251,7 +252,7 @@ try:
     #该调用会触发检测，真机开启一个叫CZL-MRT的线程做，不会影响leviathan的运行，但是如果堆栈不对，leviathan也会触发这个检测流程
     #这是xlog？
     #XGorgen.meta(emulator, 222, 0, String("AchillesHell"))
-    
+
     #2.leviathan 会以jni 调用getStackTraceElement检测调用堆栈，如果调用堆栈不对，将执行大量垃圾检测代码，而且会随机崩溃
     #实测，如果流程正确，leviathan只会调用两个系统调用，一个是sysinfo，一个prctl
     

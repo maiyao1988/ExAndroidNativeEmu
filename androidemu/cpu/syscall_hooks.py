@@ -304,6 +304,9 @@ class SyscallHooks:
         elif option == PR_GET_NAME:
             memory_helpers.write_utf8(mu, arg2, self._process_name)
             return 0
+        elif option == PR_GET_DUMPABLE:
+            mu.mem_write(arg2, int(0).to_bytes(4, byteorder='little'))
+            return 0
         elif option == PR_SET_NAME:
             self._process_name = memory_helpers.read_utf8(mu, arg2)
             return 0
