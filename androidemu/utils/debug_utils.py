@@ -71,11 +71,21 @@ g_md_thumb.detail = True
 g_md_arm = capstone.Cs(capstone.CS_ARCH_ARM, capstone.CS_MODE_ARM)
 g_md_arm.detail = True
 
+def get_module_by_addr(emu, addr):
+    ms = emu.modules
+    module = None
+    for m in ms:
+        if (addr >= m.base and addr <= m.base+m.size):
+            module = m
+            break
+        #
+    #
+    return module
+#
 
 # print code and its moudle in a line
 def dump_code(emu, address, size, fd):
 
-    ms = emu.modules
     #判断是否arm，用不同的decoder
     mu = emu.mu
     cpsr = mu.reg_read(UC_ARM_REG_CPSR)
@@ -95,12 +105,7 @@ def dump_code(emu, address, size, fd):
         module = None
         base = 0
         funName = None
-        for m in ms:
-            if (addr >= m.base and addr <= m.base+m.size):
-                module = m
-                break
-            #
-        #
+        module = get_module_by_addr(addr)
         if (module != None):
             name = os.path.basename(module.filename)
             base = module.base
