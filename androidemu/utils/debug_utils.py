@@ -105,7 +105,7 @@ def dump_code(emu, address, size, fd):
         module = None
         base = 0
         funName = None
-        module = get_module_by_addr(addr)
+        module = get_module_by_addr(emu, addr)
         if (module != None):
             name = os.path.basename(module.filename)
             base = module.base
