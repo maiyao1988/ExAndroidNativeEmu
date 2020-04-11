@@ -70,7 +70,7 @@ class SyscallHooks:
         self._syscall_handler.set_handler(0x178, "process_vm_readv", 6, self.__process_vm_readv)
         self._syscall_handler.set_handler(0x180, "getrandom", 3, self._getrandom)
         self._clock_start = time.time()
-        self._clock_offset = randint(1000, 2000)
+        self._clock_offset = randint(50000, 100000)
         self._sig_maps = {}
         self.__pcb = pcb.get_pcb()
         self._process_name = config.global_config_get("pkg_name")
@@ -231,7 +231,7 @@ class SyscallHooks:
         mu.mem_write(wstatus, int(t[1]).to_bytes(4, "little"))
         return t[0]
     #
-
+    
     def __sysinfo(self, mu, info_ptr):
         '''
         si = {sysinfo} 
@@ -253,7 +253,8 @@ class SyscallHooks:
         mem_unit = {__u32} 1
         f = 0 char[8]
         '''
-        mu.mem_write(info_ptr + 0, int(91942).to_bytes(4, byteorder='little'))
+        uptime = int(self._clock_offset + time.time() - self._clock_start)
+        mu.mem_write(info_ptr + 0, int(uptime).to_bytes(4, byteorder='little'))
         mu.mem_write(info_ptr + 4, int(503328).to_bytes(4, byteorder='little'))
         mu.mem_write(info_ptr + 8, int(504576).to_bytes(4, byteorder='little'))
         mu.mem_write(info_ptr + 12, int(537280).to_bytes(4, byteorder='little'))
