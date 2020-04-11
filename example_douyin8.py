@@ -18,6 +18,7 @@ from androidemu.java.classes.string import String
 from androidemu.java.classes.list import List
 from androidemu.java.classes.array import Array
 from androidemu.java.constant_values import *
+from androidemu.utils.mem_monitor import MemoryMonitor
 
 
 class XGorgen(metaclass=JavaClassDef, jvm_name='com/ss/sys/ces/a'):
@@ -147,29 +148,22 @@ class java_lang_Thread(metaclass=JavaClassDef, jvm_name='java/lang/Thread'):
                 java_lang_StackTraceElement(String("com.ttnet.org.chromium.net.impl.CronetUrlRequest.addSecurityFactor(SourceFile:33882142)")),
                 ]
         return List(l)
-            
-
-
+    #
+#
 
 def hook_mem_read(uc, access, address, size, value, user_data):
+    mnt = user_data
     pc = uc.reg_read(UC_ARM_REG_PC)
-
-    if (address == 3419067861):
-        data = uc.mem_read(address, size)
-        v = int.from_bytes(data, byteorder='little', signed=False)
-        print("read")
-    #
-
-
+    mnt.feed_read(pc, address, size)
 #
 
 def hook_mem_write(uc, access, address, size, value, user_data):
+    mnt = user_data
     pc = uc.reg_read(UC_ARM_REG_PC)
-    base = address
-    end = address+size
+    mnt.feed_write(pc, address, size)
 #
-g_cfd = ChainLogger(sys.stdout, "./ins-douyin.txt")
 
+g_cfd = ChainLogger(sys.stdout, "./ins-douyin.txt")
 
 # Add debugging.
 def hook_code(mu, address, size, user_data):
@@ -196,9 +190,8 @@ logger = logging.getLogger(__name__)
 emulator = Emulator(
     vfs_root=posixpath.join(posixpath.dirname(__file__), "vfs")
 )
+mnt = MemoryMonitor(emulator)
 
-emulator.mu.hook_add(UC_HOOK_MEM_WRITE, hook_mem_write)
-emulator.mu.hook_add(UC_HOOK_MEM_READ, hook_mem_read)
 # Register Java class.
 # emulator.java_classloader.add_class(MainActivity)
 emulator.java_classloader.add_class(XGorgen)
@@ -209,6 +202,8 @@ emulator.java_classloader.add_class(java_lang_StackTraceElement)
 
 # Load all libraries.
 libdvm = emulator.load_library("vfs/system/lib/libdvm.so")
+
+emulator.mu.hook_add(UC_HOOK_MEM_WRITE, hook_mem_write, mnt)
 lib_module = emulator.load_library("tests/bin/libcms8.so")
 #lib_module = emulator.load_library("tests/bin/libcms1050.so")
 # lib_module = emulator.load_library("../deobf/tests/bin/libcms2.so")
@@ -222,6 +217,7 @@ for module in emulator.modules:
 
 try:
     # bypass douyin checks
+
     path = "vfs/system/bin/app_process32"
     sz = os.path.getsize(path)
     vf = VirtualFile("/system/bin/app_process32", misc_utils.my_open(path, os.O_RDONLY), path)
@@ -246,7 +242,6 @@ try:
     XGorgen.meta(emulator, 108, 0, String("/data/app/com.ss.android.ugc.aweme-1.apk"))
     XGorgen.meta(emulator, 109, 0, String("/sdcard"))
     XGorgen.meta(emulator, 110, 0, String("/data"))
-
 
     #my_meta call tid 4470 [CZL-MRT] 222 0x1d200005 AchillesHell!!!
     #该调用会触发检测，真机开启一个叫CZL-MRT的线程做，不会影响leviathan的运行，但是如果堆栈不对，leviathan也会触发这个检测流程
@@ -277,8 +272,14 @@ try:
     #emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
     #3.leviathan 会调用prctl获取线程名字，但从目前来看，线程名字并不影响结果
     
+    emulator.mu.hook_add(UC_HOOK_MEM_READ, hook_mem_read, mnt)
+
     result = XGorgen.leviathan(emulator, n, arr)
     print(''.join(['%02x' % b for b in result]))
+    
+    with open("./mem-mnt-dy8.txt", "w") as f:
+        mnt.dump_read_no_write(f)
+    #
     
     # 037d560d0000903e34fb093f1d21e78f3bdf3fbebe00b124becc
     # 036d2a7b000010f4d05395b7df8b0ec2b5ec085b938a473a6a51
