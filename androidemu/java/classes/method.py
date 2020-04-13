@@ -1,6 +1,5 @@
 import logging
 
-from androidemu.emulator_error import EmulatorError
 from androidemu.java.classes.executable import Executable
 from androidemu.java.java_class_def import JavaClassDef
 from androidemu.java.java_field_def import JavaFieldDef
@@ -39,6 +38,6 @@ class Method(metaclass=JavaClassDef,
         logger.debug('get_method_modifiers(%s, %s)' % (clazz.jvm_name, method.name))
 
         if method.modifier is None:
-            raise EmulatorError('No modifier was given to class %s method %s' % (clazz.jvm_name, method.name))
+            raise RuntimeError('No modifier was given to class %s method %s' % (clazz.jvm_name, method.name))
 
         return method.modifier

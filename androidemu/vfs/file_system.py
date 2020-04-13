@@ -108,17 +108,23 @@ class VirtualFileSystem:
             #
             
         #
-
+        virtual_file = ["/dev/log/main", "/dev/log/events", "/dev/log/radio", "/dev/log/system"]
+        if (filename in virtual_file):
+            d = os.path.dirname(file_path)
+            if (not os.path.exists(d)):
+                os.makedirs(d)
+            #
+            with open(file_path, "w") as f:
+                pass
+            #
+        #
         if os.path.isfile(file_path):
-            logger.info("File opened '%s'" %filename)
             flags = os.O_RDWR
-            if hasattr(os, "O_BINARY"):
-                flags |= os.O_BINARY
             if (mode & 100):
-                flags | os.O_CREAT
+                flags |= os.O_CREAT
             #
             if (mode & 2000):
-                flags | os.O_APPEND
+                flags |= os.O_APPEND
             #
             fd = androidemu.utils.misc_utils.my_open(file_path, flags)
             self.__pcb.add_fd(filename, file_path, fd)
