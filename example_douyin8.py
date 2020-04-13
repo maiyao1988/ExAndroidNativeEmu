@@ -132,32 +132,57 @@ class java_lang_Thread(metaclass=JavaClassDef, jvm_name='java/lang/Thread'):
     @java_method_def(name="getStackTrace", signature='()[Ljava/lang/StackTraceElement;', native=False)
     def getStackTrace(self, *args, **kwargs):
         #堆栈345行包名要对。其他没所谓
-        l = [java_lang_StackTraceElement(String("dalvik.system.VMStack.getThreadStackTrace(Native Method)")),
-                java_lang_StackTraceElement(String("java.lang.Thread.getStackTrace(Thread.java:580)")),
-                java_lang_StackTraceElement(String("com.ss.sys.ces.a.leviathan(Native Method)")),
-                java_lang_StackTraceElement(String("com.ss.sys.ces.gg.tt$1.a(Unknown Source)")),
-                java_lang_StackTraceElement(String("com.bytedance.frameworks.baselib.network.http.e.a(SourceFile:33947656)")),
-                java_lang_StackTraceElement(String("com.bytedance.ttnet.a.a.onCallToAddSecurityFactor(SourceFile:33816621)")),
+        l = [java_lang_StackTraceElement(String("dalvik.system.VMStack")),
+                java_lang_StackTraceElement(String("java.lang.Thread")),
+                java_lang_StackTraceElement(String("com.ss.sys.ces.a")),
+                java_lang_StackTraceElement(String("com.ss.sys.ces.gg.tt$1")),
+                java_lang_StackTraceElement(String("com.bytedance.frameworks.baselib.network.http.e.a")),
+                java_lang_StackTraceElement(String("com.bytedance.ttnet.a.a.onCallToAddSecurityFactor")),
                 java_lang_StackTraceElement(String("android.support.v7.app.AppCompatViewInflater$DeclaredOnClickListener")),
-                java_lang_StackTraceElement(String("java.lang.reflect.Method.invoke(Native Method)")),
-                java_lang_StackTraceElement(String("com.ttnet.org.chromium.base.Reflect.on(SourceFile:50659347)")),
-                java_lang_StackTraceElement(String("com.ttnet.org.chromium.base.Reflect.call(SourceFile:50528262)")),
-                java_lang_StackTraceElement(String("org.chromium.c.a(SourceFile:33882174)")),
-                java_lang_StackTraceElement(String("org.chromium.e.onCallToAddSecurityFactor(SourceFile:33685508)")),
-                java_lang_StackTraceElement(String("com.ttnet.org.chromium.net.impl.CronetUrlRequestContext.onCallToAddSecurityFactor(SourceFile:33685512)")),
-                java_lang_StackTraceElement(String("com.ttnet.org.chromium.net.impl.CronetUrlRequest.addSecurityFactor(SourceFile:33882142)")),
+                java_lang_StackTraceElement(String("java.lang.reflect.Method")),
+                java_lang_StackTraceElement(String("com.ttnet.org.chromium.base.Reflect.on")),
+                java_lang_StackTraceElement(String("com.ttnet.org.chromium.base.Reflect.call")),
+                java_lang_StackTraceElement(String("org.chromium.c.a")),
+                java_lang_StackTraceElement(String("org.chromium.e.onCallToAddSecurityFactor")),
+                java_lang_StackTraceElement(String("com.ttnet.org.chromium.net.impl.CronetUrlRequestContext")),
+                java_lang_StackTraceElement(String("com.ttnet.org.chromium.net.impl.CronetUrlRequest")),
                 ]
         return List(l)
     #
 #
 
 def hook_mem_read(uc, access, address, size, value, user_data):
+    '''
+    if (address == 0x00095FE4+0xcbd6a000 and size == 4):
+        b = uc.mem_read(address, size)
+        print("here")
+        
+    #
+    '''
+    '''
+    if address >= 0x100FF840 and address < 0x100FF840+64:
+        m = uc.mem_read(address, size)
+        i = int.from_bytes(m, byteorder='little', signed = False)
+        pc = uc.reg_read(UC_ARM_REG_PC)
+        hpc = hex(pc)
+        print ("%s"%hex(pc))
+    #
+    '''
+    
+    
     mnt = user_data
     pc = uc.reg_read(UC_ARM_REG_PC)
     mnt.feed_read(pc, address, size)
 #
 
-def hook_mem_write(uc, access, address, size, value, user_data):
+def hook_mem_write(uc, access, address, size, value, user_data):   
+    ''' 
+    if (address == 0x00095FE4+0xcbd6a000 and size == 4):
+        #sysinfo uptime
+        print("here")
+        
+    #
+    '''
     mnt = user_data
     pc = uc.reg_read(UC_ARM_REG_PC)
     mnt.feed_write(pc, address, size)
@@ -175,7 +200,7 @@ def hook_code(mu, address, size, user_data):
         #
         # androidemu.utils.debug_utils.dump_registers(mu, sys.stdout)
         # androidemu.utils.debug_utils.dump_code(emu, address, size, sys.stdout)
-        androidemu.utils.debug_utils.dump_code(emu, address, size, g_cfd)
+        androidemu.utils.debug_utils.dump_code(emu, address, size, sys.stdout)
     except Exception as e:
         logger.exception("exception in hook_code")
         sys.exit(-1)
@@ -202,6 +227,8 @@ emulator.java_classloader.add_class(java_lang_StackTraceElement)
 
 # Load all libraries.
 libdvm = emulator.load_library("vfs/system/lib/libdvm.so")
+
+libcm = emulator.load_library("vfs/system/lib/libc.so")
 
 emulator.mu.hook_add(UC_HOOK_MEM_WRITE, hook_mem_write, mnt)
 lib_module = emulator.load_library("tests/bin/libcms8.so")
@@ -231,16 +258,21 @@ try:
     #8.5 xg基本检测流程
     #1.调用meta,传入以下参数，如果不调用meta，leviathan将会返回null，meta的参数直接影响leviathan的结果
     print("begin meta")
+    
     XGorgen.meta(emulator, 101, 0, String("0"))
     XGorgen.meta(emulator, 102, 0, String("1128"))
     XGorgen.meta(emulator, 1020, 0, String(""))
+
+    #XGorgen.meta(emulator, 103, 0, String("5179025446"))
+    #XGorgen.meta(emulator, 104, 0, String("110943176729"))
+
     XGorgen.meta(emulator, 105, 0, String("850"))
     
     XGorgen.meta(emulator, 106, 0, String("com.ss.android.ugc.aweme"))
     
     XGorgen.meta(emulator, 107, 0, String("/data/user/0/com.ss.android.ugc.aweme/files"))
     XGorgen.meta(emulator, 108, 0, String("/data/app/com.ss.android.ugc.aweme-1.apk"))
-    XGorgen.meta(emulator, 109, 0, String("/sdcard"))
+    XGorgen.meta(emulator, 109, 0, String("/storage/emulated/0"))
     XGorgen.meta(emulator, 110, 0, String("/data"))
 
     #my_meta call tid 4470 [CZL-MRT] 222 0x1d200005 AchillesHell!!!
@@ -255,6 +287,7 @@ try:
     data = bytearray(bytes.fromhex(data))
     n = 1562848170
     arr = Array("B", data)
+    
     '''
     l = [71,57,-52,16,-33,-74,56,-78,88,-1,81,113,90,-56,-109,-114,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,7,-89,102,-14,26,-10,-97,-18,-41,27,113,-106,-61,36,106,-12,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
     l2 = []
@@ -264,19 +297,55 @@ try:
             r = item+256
         l2.append(r)
     #
-    data2 = bytearray(l2)
-    n2 = 1585841725
-    arr2 = Array("B", data2)
+    data = bytearray(l2)
+    n = 1585841725
+    arr = Array("B", data)
     '''
+    
     
     #emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
     #3.leviathan 会调用prctl获取线程名字，但从目前来看，线程名字并不影响结果
     
+
+    #运行地址
+    #0x00094614-0x00094623
+    #0x00095618-0x0009561D
+    
+    
     emulator.mu.hook_add(UC_HOOK_MEM_READ, hook_mem_read, mnt)
+    print("before lev")
+    '''
+    a = 0x00095FE4+0xcbd6a000
+    b = bytearray([0xff,0x17, 00, 00])
+    emulator.mu.mem_write(a, bytes(b))
+    '''
+    '''
+    #0x00095F64 thread name
+    #0x00095FE4 sysinfo time
+
+    #0x00095620+0x001540 .bss
+    '''
+    '''
+    import minit
+    
+    with open("cms-1.so", "rb") as f1:
+        m = f1.read()
+        for item in minit.init:
+            b = bytes(m[item])
+            emulator.mu.mem_write(lib_module.base+item, b)
+        #
+    #
+    '''
+    '''
+    for i in range(0, 300):
+        result = XGorgen.leviathan(emulator, n, arr)
+        print(''.join(['%02x' % b for b in result]))
+    #
+    '''
 
     result = XGorgen.leviathan(emulator, n, arr)
     print(''.join(['%02x' % b for b in result]))
-    
+
     with open("./mem-mnt-dy8.txt", "w") as f:
         mnt.dump_read_no_write(f)
     #

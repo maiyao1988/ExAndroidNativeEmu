@@ -73,7 +73,7 @@ class SyscallHooks:
         self._clock_offset = randint(50000, 100000)
         self._sig_maps = {}
         self.__pcb = pcb.get_pcb()
-        self._process_name = config.global_config_get("pkg_name")
+        self._process_name = config.global_config_get("pkg_name") #"ChromiumNet10"
         
     #
 
