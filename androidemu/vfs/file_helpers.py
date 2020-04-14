@@ -38,8 +38,8 @@ def stat_to_memory2(uc, buf_ptr, stat, uid):
     uc.mem_write(buf_ptr + 32, int(st_rdev).to_bytes(8, byteorder='little'))
     uc.mem_write(buf_ptr + 40, int(0).to_bytes(4, byteorder='little'))  # PAD 4
     uc.mem_write(buf_ptr + 48, int(stat.st_size).to_bytes(8, byteorder='little'))
-    uc.mem_write(buf_ptr + 56, int(stat.st_blksize).to_bytes(4, byteorder='little'))
-    uc.mem_write(buf_ptr + 64, int(stat.st_blocks).to_bytes(8, byteorder='little'))
+    uc.mem_write(buf_ptr + 56, int(0).to_bytes(4, byteorder='little'))
+    uc.mem_write(buf_ptr + 64, int(0).to_bytes(8, byteorder='little'))
 
     uc.mem_write(buf_ptr + 72, int(stat.st_atime).to_bytes(8, byteorder='little'))
     uc.mem_write(buf_ptr + 80, int(stat.st_mtime).to_bytes(8, byteorder='little'))
