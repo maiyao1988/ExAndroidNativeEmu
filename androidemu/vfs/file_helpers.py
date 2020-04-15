@@ -28,9 +28,11 @@ def stat_to_memory2(uc, buf_ptr, stat, uid):
     if (hasattr(stat, "st_rdev")):
         st_rdev = stat.st_rdev
     #
+    st_blksize = 0
     if (hasattr(stat, "st_blksize")):
         st_blksize = stat.st_blksize
     #
+    st_blocks = 0
     if (hasattr(stat, "st_blocks")):
         st_blocks = stat.st_blocks
     #
