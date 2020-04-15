@@ -11,6 +11,8 @@ from androidemu.vfs import file_helpers
 from androidemu import pcb
 import androidemu.utils.misc_utils
 import platform
+import shutil
+
 g_isWin = platform.system() == "Windows"
 if not g_isWin:
     import fcntl
@@ -24,6 +26,22 @@ OVERRIDE_URANDOM_BYTE = b"\x00"
 
 class VirtualFileSystem:
 
+    def translate_path(self, filename):
+        return androidemu.utils.misc_utils.vfs_path_to_system_path(self._root_path, filename)
+    #
+
+    def __clear_proc_dir(self):
+        proc = "/proc"
+        proc = self.translate_path(proc)
+        dirs = os.listdir(proc)
+        for d in dirs:
+            if (d.isdigit()):
+                fp = "%s/%s/"%(proc, d)
+                shutil.rmtree(fp)
+            #
+        #
+    #
+
     """
     :type syscall_handler SyscallHandlers
     """
@@ -31,7 +49,8 @@ class VirtualFileSystem:
         self._root_path = root_path
         self.__memory_map = memory_map
         self.__pcb = pcb.get_pcb()
-
+        self.__clear_proc_dir()
+        
         syscall_handler.set_handler(0x3, "read", 3, self._handle_read)
         syscall_handler.set_handler(0x4, "write", 3, self._handle_write)
         syscall_handler.set_handler(0x5, "open", 3, self._handle_open)
@@ -50,10 +69,44 @@ class VirtualFileSystem:
         syscall_handler.set_handler(0x147, "fstatat64", 4, self._handle_fstatat64)
         syscall_handler.set_handler(0x14c, "readlinkat", 4, self.__readlinkat)
         syscall_handler.set_handler(0x14e, "faccessat", 4, self._faccessat)
+
     #
 
-    def translate_path(self, filename):
-        return androidemu.utils.misc_utils.vfs_path_to_system_path(self._root_path, filename)
+    def __create_fd_link(self, fd, target):
+        global g_isWin
+        if (g_isWin):
+            return
+        #
+        if (fd >= 0):
+            pid = self.__pcb.get_pid()
+            fdbase = "/proc/%d/fd/"%pid
+            fdbase = self.translate_path(fdbase)
+            if (not os.path.exists(fdbase)):
+                os.makedirs(fdbase)
+            #
+            p = "%s/%d"%(fdbase, fd)
+            if (os.path.exists(p)):
+                os.remove(p)
+            #
+            full_target = os.path.abspath(target)
+            os.symlink(full_target, p, False)
+        #
+    #
+
+    def __del_fd_link(self, fd):
+        global g_isWin
+        if (g_isWin):
+            return
+        #
+        if (fd >= 0):
+            pid = self.__pcb.get_pid()
+            fdbase = "/proc/%d/fd/"%pid
+            fdbase = self.translate_path(fdbase)
+            p = "%s/%d"%(fdbase, fd)
+            if (os.path.exists(p)):
+                os.remove(p)
+            #
+        #
     #
 
     def _open_file(self, filename, mode):
@@ -108,7 +161,7 @@ class VirtualFileSystem:
             #
             
         #
-        virtual_file = ["/dev/log/main", "/dev/log/events", "/dev/log/radio", "/dev/log/system"]
+        virtual_file = ["/dev/log/main", "/dev/log/events", "/dev/log/radio", "/dev/log/system",  "/dev/input/event0"]
         if (filename in virtual_file):
             d = os.path.dirname(file_path)
             if (not os.path.exists(d)):
@@ -129,11 +182,13 @@ class VirtualFileSystem:
             fd = androidemu.utils.misc_utils.my_open(file_path, flags)
             self.__pcb.add_fd(filename, file_path, fd)
             logger.info("openat return fd %d"%fd)
+            self.__create_fd_link(fd, file_path)
             return fd
         else:
             logger.warning("File does not exist '%s'" % filename)
             return -1
         #
+    #
 
     def _handle_read(self, mu, fd, buf_addr, count):
         """
@@ -210,6 +265,7 @@ class VirtualFileSystem:
         try:
             self.__pcb.remove_fd(fd)
             os.close(fd)
+            self.__del_fd_link(fd)
         except OSError as e:
             logger.warning("fd %d close error."%fd)
             return -1

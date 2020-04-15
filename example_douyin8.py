@@ -2,6 +2,7 @@ import logging
 import posixpath
 import sys
 import os.path
+import random
 
 from unicorn import *
 from unicorn.arm_const import *
@@ -151,38 +152,13 @@ class java_lang_Thread(metaclass=JavaClassDef, jvm_name='java/lang/Thread'):
     #
 #
 
-def hook_mem_read(uc, access, address, size, value, user_data):
-    '''
-    if (address == 0x00095FE4+0xcbd6a000 and size == 4):
-        b = uc.mem_read(address, size)
-        print("here")
-        
-    #
-    '''
-    '''
-    if address >= 0x100FF840 and address < 0x100FF840+64:
-        m = uc.mem_read(address, size)
-        i = int.from_bytes(m, byteorder='little', signed = False)
-        pc = uc.reg_read(UC_ARM_REG_PC)
-        hpc = hex(pc)
-        print ("%s"%hex(pc))
-    #
-    '''
-    
-    
+def hook_mem_read(uc, access, address, size, value, user_data):  
     mnt = user_data
     pc = uc.reg_read(UC_ARM_REG_PC)
     mnt.feed_read(pc, address, size)
 #
 
-def hook_mem_write(uc, access, address, size, value, user_data):   
-    ''' 
-    if (address == 0x00095FE4+0xcbd6a000 and size == 4):
-        #sysinfo uptime
-        print("here")
-        
-    #
-    '''
+def hook_mem_write(uc, access, address, size, value, user_data):
     mnt = user_data
     pc = uc.reg_read(UC_ARM_REG_PC)
     mnt.feed_write(pc, address, size)
@@ -205,8 +181,6 @@ def hook_code(mu, address, size, user_data):
         logger.exception("exception in hook_code")
         sys.exit(-1)
     #
-
-
 #
 
 logger = logging.getLogger(__name__)
@@ -263,8 +237,8 @@ try:
     XGorgen.meta(emulator, 102, 0, String("1128"))
     XGorgen.meta(emulator, 1020, 0, String(""))
 
-    #XGorgen.meta(emulator, 103, 0, String("5179025446"))
-    #XGorgen.meta(emulator, 104, 0, String("110943176729"))
+    XGorgen.meta(emulator, 103, 0, String("5179025446"))
+    XGorgen.meta(emulator, 104, 0, String("110943176729"))
 
     XGorgen.meta(emulator, 105, 0, String("850"))
     
@@ -314,37 +288,12 @@ try:
     
     emulator.mu.hook_add(UC_HOOK_MEM_READ, hook_mem_read, mnt)
     print("before lev")
-    '''
-    a = 0x00095FE4+0xcbd6a000
-    b = bytearray([0xff,0x17, 00, 00])
-    emulator.mu.mem_write(a, bytes(b))
-    '''
-    '''
-    #0x00095F64 thread name
-    #0x00095FE4 sysinfo time
-
-    #0x00095620+0x001540 .bss
-    '''
-    '''
-    import minit
     
-    with open("cms-1.so", "rb") as f1:
-        m = f1.read()
-        for item in minit.init:
-            b = bytes(m[item])
-            emulator.mu.mem_write(lib_module.base+item, b)
-        #
-    #
-    '''
-    '''
-    for i in range(0, 300):
-        result = XGorgen.leviathan(emulator, n, arr)
-        print(''.join(['%02x' % b for b in result]))
-    #
-    '''
-
+    sz = random.randint(200, 433)
+    alloc_addr = emulator.call_symbol(libcm, 'malloc', sz)
     result = XGorgen.leviathan(emulator, n, arr)
     print(''.join(['%02x' % b for b in result]))
+    emulator.call_symbol(libcm, 'free', alloc_addr)
 
     with open("./mem-mnt-dy8.txt", "w") as f:
         mnt.dump_read_no_write(f)
