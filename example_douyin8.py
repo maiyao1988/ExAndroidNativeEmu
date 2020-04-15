@@ -289,11 +289,8 @@ try:
     emulator.mu.hook_add(UC_HOOK_MEM_READ, hook_mem_read, mnt)
     print("before lev")
     
-    sz = random.randint(200, 433)
-    alloc_addr = emulator.call_symbol(libcm, 'malloc', sz)
     result = XGorgen.leviathan(emulator, n, arr)
     print(''.join(['%02x' % b for b in result]))
-    emulator.call_symbol(libcm, 'free', alloc_addr)
 
     with open("./mem-mnt-dy8.txt", "w") as f:
         mnt.dump_read_no_write(f)
