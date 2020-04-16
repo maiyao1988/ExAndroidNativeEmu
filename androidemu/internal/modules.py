@@ -259,7 +259,7 @@ class Modules:
                 #
             #
             if (init_offset != 0):
-                init_array.appen(load_base+init_offset)
+                init_array.append(load_base+init_offset)
             #
             for _ in range(int(init_array_size / 4)):
                 b = self.emu.mu.mem_read(load_base+init_array_offset, 4)
