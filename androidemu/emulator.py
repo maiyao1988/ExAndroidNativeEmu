@@ -165,6 +165,7 @@ class Emulator:
     #
 
     def call_native(self, addr, *argv):
+        assert addr != None, "call addr is None"
         # Detect JNI call
         is_jni = False
 

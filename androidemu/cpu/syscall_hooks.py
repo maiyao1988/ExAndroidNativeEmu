@@ -361,6 +361,7 @@ class SyscallHooks:
             raise RuntimeError("tgkill abort self,...")
             return 0
         #
+        return 0
         if (tgid == self._getpid(mu) and tid == self._gettid(mu)):
             if (sig in self._sig_maps):
                 sigact = self._sig_maps[sig]
