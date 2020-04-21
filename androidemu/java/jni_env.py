@@ -11,6 +11,7 @@ from androidemu.java.reference_table import ReferenceTable
 from androidemu.utils import memory_helpers
 from androidemu.java.classes.string import String
 from androidemu.java.classes.array import Array
+from unicorn import *
 
 logger = logging.getLogger(__name__)
 
@@ -1399,6 +1400,7 @@ class JNIEnv:
     @native_method
     def get_string_utf_length(self, mu, env):
         raise NotImplementedError()
+    #
 
     @native_method
     def get_string_utf_chars(self, mu, env, string, is_copy_ptr):
@@ -1410,17 +1412,23 @@ class JNIEnv:
         str_ref = self.get_reference(string)
         str_obj = str_ref.value
         str_val = str_obj.get_py_string()
-        str_ptr = self._emu.native_memory.allocate(len(str_val) + 1)
+        #FIXME use malloc
+        str_ptr = self._emu.memory.map(0, len(str_val)+1, UC_PROT_READ | UC_PROT_WRITE)
 
         logger.debug("=> %s" % str_val)
 
         memory_helpers.write_utf8(mu, str_ptr, str_val)
 
         return str_ptr
+    #
 
     @native_method
-    def release_string_utf_chars(self, mu, env, string, utf_ptr):
-        logger.debug("JNIEnv->ReleaseStringUtfChars(%u, 0x%08X) was called" % (string, utf_ptr))
+    def release_string_utf_chars(self, mu, env, string, utf8_ptr):
+        
+        pystr = memory_helpers.read_utf8(mu, utf8_ptr)
+        logger.debug("JNIEnv->ReleaseStringUtfChars(%u, %s) was called" % (string, pystr))
+
+        self._emu.memory.unmap(utf8_ptr, len(pystr)+1)
     #
 
     @native_method

@@ -86,11 +86,10 @@ class NativeHooks:
         infos = memory_helpers.read_uints(uc, info, 4)
         Dl_info = {}
 
-        nm = self._emu.native_memory
         isfind = False
         for mod in self._modules.modules:
             if mod.base <= addr < mod.base + mod.size:
-                dli_fname = nm.allocate(len(mod.filename) + 1)
+                dli_fname = self._emu.memory.map(0, len(mod.filename) + 1, uc.UC_PROT_READ | uc.UC_PROT_WRITE)
                 memory_helpers.write_utf8(uc, dli_fname, mod.filename + '\x00')
                 memory_helpers.write_uints(uc, addr, [dli_fname, mod.base, 0, 0])
                 return 1

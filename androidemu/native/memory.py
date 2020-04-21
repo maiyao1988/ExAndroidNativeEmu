@@ -18,10 +18,8 @@ class NativeMemory:
         self._syscall_handler.set_handler(0x7D, "mprotect", 3, self._handle_mprotect)
         self._syscall_handler.set_handler(0xC0, "mmap2", 6, self._handle_mmap2)
         self._syscall_handler.set_handler(0xDC, "madvise", 3, self._handle_madvise)
-
-    def allocate(self, length, prot=UC_PROT_READ | UC_PROT_WRITE):
-        return self._memory.map(0, length, prot)
-
+    #
+    
     def _handle_brk(self, uc, brk):
         #TODO: set errno
         #TODO: implement 

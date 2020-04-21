@@ -262,29 +262,12 @@ try:
     n = 1562848170
     arr = Array("B", data)
     
-    '''
-    l = [71,57,-52,16,-33,-74,56,-78,88,-1,81,113,90,-56,-109,-114,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,7,-89,102,-14,26,-10,-97,-18,-41,27,113,-106,-61,36,106,-12,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-    l2 = []
-    for item in l:
-        r = item
-        if (item < 0):
-            r = item+256
-        l2.append(r)
-    #
-    data = bytearray(l2)
-    n = 1585841725
-    arr = Array("B", data)
-    '''
-    
-    
     #emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
     #3.leviathan 会调用prctl获取线程名字，但从目前来看，线程名字并不影响结果
-    
 
     #运行地址
     #0x00094614-0x00094623
     #0x00095618-0x0009561D
-    
     
     emulator.mu.hook_add(UC_HOOK_MEM_READ, hook_mem_read, mnt)
     print("before lev")
@@ -295,19 +278,6 @@ try:
     with open("./mem-mnt-dy8.txt", "w") as f:
         mnt.dump_read_no_write(f)
     #
-    
-    # 037d560d0000903e34fb093f1d21e78f3bdf3fbebe00b124becc
-    # 036d2a7b000010f4d05395b7df8b0ec2b5ec085b938a473a6a51
-    # 036d2a7b000010f4d05395b7df8b0ec2b5ec085b938a473a6a51
-
-    # 0300000000002034d288fe8d6b95b778105cc36eade709d2b500
-    # 0300000000002034d288fe8d6b95b778105cc36eade709d2b500
-    # 0300000000002034d288fe8d6b95b778105cc36eade709d2b500
-    # Dump natives found.
-
-#  for method in MainActivity.jvm_methods.values():
-#      if method.native:
-#         logger.info("- [0x%08x] %s - %s" % (method.native_addr, method.name, method.signature))
 except UcError as e:
     print("Exit at 0x%08X" % emulator.mu.reg_read(UC_ARM_REG_PC))
     emulator.memory.dump_maps(sys.stdout)

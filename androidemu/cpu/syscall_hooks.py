@@ -78,7 +78,7 @@ class SyscallHooks:
     #
 
     def __do_fork(self, mu):
-        logger.info("vfork called")
+        logger.info("fork called")
         r = os.fork()
         if (r == 0):
             pass
@@ -368,11 +368,14 @@ class SyscallHooks:
                 addr = sigact[0]
 
                 ctx = memory_helpers.reg_context_save(mu)
-                mu.reg_write(UC_ARM_REG_R0, sig)
                 logging.info("_handle_tgkill calling proc 0x%08X sig:0x%X"%(addr, sig))
-                mu.emu_start(addr, 0xFFFFFFFF)
+                mu.reg_write(UC_ARM_REG_R0, sig)
+                stop_pos = randint(config.HOOK_MEMORY_BASE, config.HOOK_MEMORY_BASE + config.HOOK_MEMORY_SIZE) | 1
+                mu.reg_write(UC_ARM_REG_LR, stop_pos)
+                mu.emu_start(addr, stop_pos-1)
                 logging.info("_handle_tgkill calling sigal call return")
                 memory_helpers.reg_context_restore(mu, ctx)
+                print (123)
                 return 0
             #
         #
