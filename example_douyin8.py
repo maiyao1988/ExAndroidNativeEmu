@@ -132,7 +132,6 @@ class java_lang_Thread(metaclass=JavaClassDef, jvm_name='java/lang/Thread'):
 
     @java_method_def(name="getStackTrace", signature='()[Ljava/lang/StackTraceElement;', native=False)
     def getStackTrace(self, *args, **kwargs):
-        #堆栈345行包名要对。其他没所谓
         l = [java_lang_StackTraceElement(String("dalvik.system.VMStack")),
                 java_lang_StackTraceElement(String("java.lang.Thread")),
                 java_lang_StackTraceElement(String("com.ss.sys.ces.a")),
@@ -206,9 +205,6 @@ libcm = emulator.load_library("vfs/system/lib/libc.so")
 
 emulator.mu.hook_add(UC_HOOK_MEM_WRITE, hook_mem_write, mnt)
 lib_module = emulator.load_library("tests/bin/libcms8.so")
-#lib_module = emulator.load_library("tests/bin/libcms1050.so")
-# lib_module = emulator.load_library("../deobf/tests/bin/libcms2.so")
-# lib_module = emulator.load_library("../deobf/cms.so")
 
 # Show loaded modules.
 logger.info("Loaded modules:")
@@ -229,8 +225,6 @@ try:
     emulator.call_symbol(lib_module, 'JNI_OnLoad', emulator.java_vm.address_ptr, 0x00)
 
 
-    #8.5 xg基本检测流程
-    #1.调用meta,传入以下参数，如果不调用meta，leviathan将会返回null，meta的参数直接影响leviathan的结果
     print("begin meta")
     
     XGorgen.meta(emulator, 101, 0, String("0"))
@@ -248,26 +242,11 @@ try:
     XGorgen.meta(emulator, 108, 0, String("/data/app/com.ss.android.ugc.aweme-1.apk"))
     XGorgen.meta(emulator, 109, 0, String("/storage/emulated/0"))
     XGorgen.meta(emulator, 110, 0, String("/data"))
-
-    #my_meta call tid 4470 [CZL-MRT] 222 0x1d200005 AchillesHell!!!
-    #该调用会触发检测，真机开启一个叫CZL-MRT的线程做，不会影响leviathan的运行，但是如果堆栈不对，leviathan也会触发这个检测流程
-    #这是xlog？
-    #XGorgen.meta(emulator, 222, 0, String("AchillesHell"))
-
-    #2.leviathan 会以jni 调用getStackTraceElement检测调用堆栈，如果调用堆栈不对，将执行大量垃圾检测代码，而且会随机崩溃
-    #实测，如果流程正确，leviathan只会调用两个系统调用，一个是sysinfo，一个prctl
     
     data = 'acde74a94e6b493a3399fac83c7c08b35D58B21D9582AF77647FC9902E36AE70f9c001e9334e6e94916682224fbe4e5f00000000000000000000000000000000'
     data = bytearray(bytes.fromhex(data))
     n = 1562848170
     arr = Array("B", data)
-    
-    #emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
-    #3.leviathan 会调用prctl获取线程名字，但从目前来看，线程名字并不影响结果
-
-    #运行地址
-    #0x00094614-0x00094623
-    #0x00095618-0x0009561D
     
     emulator.mu.hook_add(UC_HOOK_MEM_READ, hook_mem_read, mnt)
     print("before lev")
