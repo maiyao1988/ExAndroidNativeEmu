@@ -1,23 +1,16 @@
 import logging
 import os
 import sys
-from androidemu.hooker import Hooker
-from androidemu.internal.modules import Modules
-from androidemu.native.memory import NativeMemory
+from ..hooker import Hooker
+from ..internal.modules import Modules
 
-from androidemu.java.helpers.native_method import native_method
-from androidemu.utils import memory_helpers
-import androidemu.utils.misc_utils
+from ..java.helpers.native_method import native_method
+from ..utils import memory_helpers,misc_utils
 
 logger = logging.getLogger(__name__)
 
 
 class NativeHooks:
-    """
-    :type memory NativeMemory
-    :type modules Modules
-    :type hooker Hooker
-    """
 
     def __init__(self, emu, memory, modules, hooker, vfs_root):
         self._emu = emu
@@ -59,7 +52,7 @@ class NativeHooks:
         logger.debug("Called dlopen(%s)" % path)
 
         #redirect path on matter what path in vm runing
-        fullpath = androidemu.utils.misc_utils.vfs_path_to_system_path(self.__vfs_root, path)
+        fullpath = misc_utils.vfs_path_to_system_path(self.__vfs_root, path)
         if (os.path.exists(fullpath)):
             mod = self._emu.load_library(fullpath)
             return mod.base

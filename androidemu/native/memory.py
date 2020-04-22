@@ -1,6 +1,6 @@
 from unicorn import Uc, UC_PROT_READ, UC_PROT_WRITE
-from androidemu.cpu.syscall_handlers import SyscallHandlers
-from androidemu.native.memory_map import MemoryMap
+from ..cpu.syscall_handlers import SyscallHandlers
+from .memory_map import MemoryMap
 import os
 
 class NativeMemory:

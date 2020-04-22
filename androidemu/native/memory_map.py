@@ -1,7 +1,7 @@
 import traceback
 import os
 from unicorn import *
-from androidemu.utils.misc_utils import page_end, page_start
+from ..utils.misc_utils import page_end, page_start
 
 PAGE_SIZE = 0x1000
 

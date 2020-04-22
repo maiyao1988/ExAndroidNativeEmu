@@ -1,5 +1,5 @@
-from androidemu.java.jvm_id_conter import *
-from androidemu.java.java_class_def import JavaClassDef
+from .jvm_id_conter import *
+from .java_class_def import JavaClassDef
 
 class JavaMethodDef:
 

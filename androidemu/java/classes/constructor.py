@@ -1,7 +1,7 @@
-from androidemu.java.classes.executable import Executable
-from androidemu.java.java_class_def import JavaClassDef
-from androidemu.java.java_field_def import JavaFieldDef
-from androidemu.java.java_method_def import JavaMethodDef
+from .executable import Executable
+from ..java_class_def import JavaClassDef
+from ..java_field_def import JavaFieldDef
+from ..java_method_def import JavaMethodDef
 
 
 class Constructor(metaclass=JavaClassDef,

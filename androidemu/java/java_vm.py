@@ -1,10 +1,10 @@
 import logging
 import traceback
 
-from androidemu.hooker import Hooker
-from androidemu.java.helpers.native_method import native_method
-from androidemu.java.jni_const import *
-from androidemu.java.jni_env import JNIEnv
+from ..hooker import Hooker
+from .helpers.native_method import native_method
+from .jni_const import *
+from .jni_env import JNIEnv
 
 logger = logging.getLogger(__name__)
 

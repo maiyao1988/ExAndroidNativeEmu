@@ -1,16 +1,16 @@
 import logging
 
-from androidemu.hooker import Hooker
-from androidemu.java.classes.constructor import Constructor
-from androidemu.java.classes.method import Method
-from androidemu.java.constant_values import MODIFIER_STATIC
-from androidemu.java.helpers.native_method import native_method
-from androidemu.java.jni_const import *
-from androidemu.java.jni_ref import *
-from androidemu.java.reference_table import ReferenceTable
-from androidemu.utils import memory_helpers
-from androidemu.java.classes.string import String
-from androidemu.java.classes.array import Array
+from ..hooker import Hooker
+from .classes.constructor import Constructor
+from .classes.method import Method
+from .constant_values import MODIFIER_STATIC
+from .helpers.native_method import native_method
+from .jni_const import *
+from .jni_ref import *
+from .reference_table import ReferenceTable
+from .classes.string import String
+from .classes.array import Array
+from ..utils import memory_helpers
 from unicorn import *
 
 logger = logging.getLogger(__name__)

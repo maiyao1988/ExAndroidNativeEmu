@@ -2,14 +2,13 @@ import logging
 import os
 import posixpath
 import sys
-from androidemu.const.linux import *
-from androidemu import config
-from androidemu.config import WRITE_FSTAT_TIMES
-from androidemu.cpu.syscall_handlers import SyscallHandlers
-from androidemu.utils import memory_helpers
-from androidemu.vfs import file_helpers
-from androidemu import pcb
-import androidemu.utils.misc_utils
+from ..const.linux import *
+from .. import config
+from ..config import WRITE_FSTAT_TIMES
+from ..cpu.syscall_handlers import SyscallHandlers
+from ..utils import memory_helpers,misc_utils
+from . import file_helpers
+from .. import pcb
 import platform
 import shutil
 
@@ -27,7 +26,7 @@ OVERRIDE_URANDOM_BYTE = b"\x00"
 class VirtualFileSystem:
 
     def translate_path(self, filename):
-        return androidemu.utils.misc_utils.vfs_path_to_system_path(self._root_path, filename)
+        return misc_utils.vfs_path_to_system_path(self._root_path, filename)
     #
 
     def __clear_proc_dir(self):
@@ -179,7 +178,7 @@ class VirtualFileSystem:
             if (mode & 2000):
                 flags |= os.O_APPEND
             #
-            fd = androidemu.utils.misc_utils.my_open(file_path, flags)
+            fd = misc_utils.my_open(file_path, flags)
             self.__pcb.add_fd(filename, file_path, fd)
             logger.info("openat return fd %d"%fd)
             self.__create_fd_link(fd, file_path)

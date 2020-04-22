@@ -1,4 +1,4 @@
-from androidemu.java.jni_ref import *
+from .jni_ref import *
 
 
 class ReferenceTable:
