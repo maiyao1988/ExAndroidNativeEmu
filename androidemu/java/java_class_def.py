@@ -1,7 +1,7 @@
 import inspect
 import itertools
 import logging
-from androidemu.java.jvm_id_conter import *
+from .jvm_id_conter import *
 
 logger = logging.getLogger(__name__)
 

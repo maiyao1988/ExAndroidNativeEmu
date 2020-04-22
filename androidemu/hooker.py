@@ -1,4 +1,4 @@
-from keystone_in import Ks, KS_ARCH_ARM, KS_MODE_THUMB
+from .keystone_in import Ks, KS_ARCH_ARM, KS_MODE_THUMB
 from unicorn import *
 from unicorn.arm_const import *
 import sys

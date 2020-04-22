@@ -3,9 +3,9 @@ import logging
 from unicorn import *
 from unicorn.arm_const import *
 
-from androidemu.cpu.interrupt_handler import InterruptHandler
-from androidemu.cpu.syscall_handler import SyscallHandler
-from androidemu.utils import memory_helpers
+from .interrupt_handler import InterruptHandler
+from .syscall_handler import SyscallHandler
+from ..utils import memory_helpers
 import unicorn
 import traceback
 import sys

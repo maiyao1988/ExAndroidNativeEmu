@@ -1,8 +1,8 @@
-from androidemu.java.java_class_def import JavaClassDef
-from androidemu.java.java_field_def import JavaFieldDef
-from androidemu.java.java_method_def import java_method_def,JavaMethodDef
-from androidemu.java.classes.string import String
-from androidemu import config
+from ..java_class_def import JavaClassDef
+from ..java_field_def import JavaFieldDef
+from ..java_method_def import java_method_def,JavaMethodDef
+from .string import String
+from ... import config
 
 
 class Secure(metaclass=JavaClassDef, jvm_name='android/provider/Settings$Secure'):

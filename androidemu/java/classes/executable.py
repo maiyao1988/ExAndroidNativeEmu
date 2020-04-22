@@ -1,5 +1,5 @@
-from androidemu.java.java_class_def import JavaClassDef
-from androidemu.java.java_field_def import JavaFieldDef
+from ..java_class_def import JavaClassDef
+from ..java_field_def import JavaFieldDef
 
 
 class Executable(metaclass=JavaClassDef,

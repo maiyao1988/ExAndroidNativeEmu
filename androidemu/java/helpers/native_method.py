@@ -3,10 +3,10 @@ import inspect
 from unicorn import Uc
 from unicorn.arm_const import *
 
-from androidemu.hooker import STACK_OFFSET
-from androidemu.java.java_class_def import JavaClassDef
-from androidemu.java.jni_const import JNI_ERR
-from androidemu.java.jni_ref import jobject
+from ...hooker import STACK_OFFSET
+from ..java_class_def import JavaClassDef
+from ..jni_const import JNI_ERR
+from ..jni_ref import jobject
 
 
 def native_write_args(emu, *argv):

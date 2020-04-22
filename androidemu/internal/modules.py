@@ -2,13 +2,13 @@ import logging
 
 from unicorn import UC_PROT_ALL
 
-from androidemu.internal import arm
-from androidemu.utils.misc_utils import get_segment_protection,page_end, page_start
-from androidemu.internal.module import Module
-from androidemu.utils import memory_helpers,misc_utils
-from androidemu.vfs.virtual_file import VirtualFile
-from androidemu import config
-from androidemu.internal import elf_reader
+from . import arm
+from ..utils.misc_utils import get_segment_protection,page_end, page_start
+from .module import Module
+from ..utils import memory_helpers,misc_utils
+from ..vfs.virtual_file import VirtualFile
+from .. import config
+from . import elf_reader
 import os
 
 logger = logging.getLogger(__name__)

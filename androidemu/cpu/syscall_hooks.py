@@ -11,13 +11,13 @@ from random import randint
 from unicorn import Uc
 from unicorn.arm_const import *
 
-from androidemu.const.android import *
-from androidemu.const.linux import *
-from androidemu.cpu.syscall_handlers import SyscallHandlers
-from androidemu.utils import memory_helpers
-from androidemu import config
-from androidemu import pcb
-from androidemu.utils import debug_utils
+from ..const.android import *
+from ..const.linux import *
+from.syscall_handlers import SyscallHandlers
+from ..utils import memory_helpers
+from .. import config
+from .. import pcb
+from ..utils import debug_utils
 
 OVERRIDE_TIMEOFDAY = False
 OVERRIDE_TIMEOFDAY_SEC = 0

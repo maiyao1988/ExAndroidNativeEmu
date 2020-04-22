@@ -5,7 +5,7 @@ import importlib
 import inspect
 import pkgutil
 from random import randint
-from androidemu.vfs.virtual_file import VirtualFile
+from .vfs.virtual_file import VirtualFile
 import sys
 
 #模仿进程控制块信息

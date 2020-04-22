@@ -10,23 +10,23 @@ from random import randint
 
 from unicorn import *
 from unicorn.arm_const import *
-from androidemu import config
-from androidemu import pcb
-from androidemu.cpu.interrupt_handler import InterruptHandler
-from androidemu.cpu.syscall_handlers import SyscallHandlers
-from androidemu.cpu.syscall_hooks import SyscallHooks
-from androidemu.hooker import Hooker
-from androidemu.internal.modules import Modules
-from androidemu.java.helpers.native_method import native_write_args
-from androidemu.java.java_classloader import JavaClassLoader
-from androidemu.java.java_vm import JavaVM
-from androidemu.native.hooks import NativeHooks
-from androidemu.native.memory import NativeMemory
-from androidemu.native.memory_map import MemoryMap
-from androidemu.vfs.file_system import VirtualFileSystem
+from . import config
+from . import pcb
+from .cpu.interrupt_handler import InterruptHandler
+from .cpu.syscall_handlers import SyscallHandlers
+from .cpu.syscall_hooks import SyscallHooks
+from .hooker import Hooker
+from .internal.modules import Modules
+from .java.helpers.native_method import native_write_args
+from .java.java_classloader import JavaClassLoader
+from .java.java_vm import JavaVM
+from .native.hooks import NativeHooks
+from .native.memory import NativeMemory
+from .native.memory_map import MemoryMap
+from .vfs.file_system import VirtualFileSystem
 
-from androidemu.java.java_class_def import JavaClassDef
-from androidemu.java.constant_values import JAVA_NULL
+from .java.java_class_def import JavaClassDef
+from .java.constant_values import JAVA_NULL
 
 sys.stdout = sys.stderr
 #由于这里的stream只能改一次，为避免与fork之后的子进程写到stdout混合，将这些log写到stderr
