@@ -4,7 +4,8 @@ import os
 from unicorn import *
 from unicorn.arm_const import *
 
-def dump_memory(mu, fd, min_addr=0, max_addr=0xFFFFFFFF):
+def dump_memory(emu, fd, min_addr=0, max_addr=0xFFFFFFFF):
+    mu = emu.mu
     line_connt = 16
     offset = 0
     regions = []
@@ -127,4 +128,18 @@ def dump_code(emu, address, size, fd):
             line = "%s\t;(%s)"%(line, regs)
         #
         fd.write(line+"\n")
+#
+
+def dump_stack(emu, fd, max_deep=512):
+    mu = emu.mu
+    sp =  mu.reg_read(UC_ARM_REG_SP)
+    stop = sp + max_deep
+    fd.wirte("stack dumps:\n")
+    for ptr in range(sp, stop, 4):
+        valb = mu.mem_read(ptr, 4)
+        val = int.from_bytes(valb, byteorder='little', signed=False)
+        line = "0x%08X: 0x%08X\n"%(ptr, val)
+        fd.write(line)
+    #
+    
 #
