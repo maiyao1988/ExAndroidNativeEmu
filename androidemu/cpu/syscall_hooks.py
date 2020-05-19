@@ -69,6 +69,7 @@ class SyscallHooks:
         self._syscall_handler.set_handler(0x167, "pipe2", 2, self.__pipe2)
         self._syscall_handler.set_handler(0x178, "process_vm_readv", 6, self.__process_vm_readv)
         self._syscall_handler.set_handler(0x180, "getrandom", 3, self._getrandom)
+        self._syscall_handler.set_handler(0xf0002, "ARM_cacheflush", 0, self._ARM_cacheflush)
         self._clock_start = time.time()
         self._clock_offset = randint(50000, 100000)
         self._sig_maps = {}
@@ -484,6 +485,12 @@ class SyscallHooks:
             has_read += len(tmp)
             off_l += 8
         #
-        print(b)
+        #print(b)
         return has_read
     #
+
+    def _ARM_cacheflush(self, mu):
+        logging.warning("syscall _ARM_cacheflush skip.")
+        return 0
+    #
+#

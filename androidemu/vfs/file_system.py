@@ -21,6 +21,46 @@ logger = logging.getLogger(__name__)
 OVERRIDE_URANDOM = False
 OVERRIDE_URANDOM_BYTE = b"\x00"
 
+#status
+s_status = '''
+Name:   {pkg_name}
+State:  R (running)
+Tgid:   1434
+Pid:    1434
+PPid:   197
+TracerPid:      0
+Uid:    10054   10054   10054   10054
+Gid:    10054   10054   10054   10054
+FDSize: 512
+Groups: 1015 1028 3003 50054 
+VmPeak:  1229168 kB
+VmSize:  1115232 kB
+VmLck:         0 kB
+VmPin:         0 kB
+VmHWM:    179992 kB
+VmRSS:    179836 kB
+VmData:   191904 kB
+VmStk:       136 kB
+VmExe:         8 kB
+VmLib:     48448 kB
+VmPTE:       536 kB
+VmSwap:        0 kB
+Threads:        105
+SigQ:   0/12272
+SigPnd: 0000000000000000
+ShdPnd: 0000000000000000
+SigBlk: 0000000000001204
+SigIgn: 0000000000000000
+SigCgt: 00000002000094f8
+CapInh: 0000000000000000
+CapPrm: 0000000000000000
+CapEff: 0000000000000000
+CapBnd: fffffff000000000
+Cpus_allowed:   f
+Cpus_allowed_list:      0-3
+voluntary_ctxt_switches:        5225
+nonvoluntary_ctxt_switches:     11520
+'''
 
 
 class VirtualFileSystem:
@@ -158,6 +198,16 @@ class VirtualFileSystem:
                     f.write(content)
                 #
             #
+            status_path = "/proc/self/status"
+            if (filename2 == status_path):
+                with open(file_path, "w") as f:
+                    #TODO put to config
+                    name = config.global_config_get("pkg_name")
+                    content = s_status.format(pkg_name=name)
+                    f.write(content)
+                #
+            #
+            
             
         #
         virtual_file = ["/dev/log/main", "/dev/log/events", "/dev/log/radio", "/dev/log/system",  "/dev/input/event0"]

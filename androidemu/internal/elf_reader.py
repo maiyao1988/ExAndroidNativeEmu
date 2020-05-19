@@ -134,7 +134,8 @@ class ELFReader:
         assert st_name < self.__dyn_str_sz, "__st_name_to_name st_name %d out of range %d"%(st_name, self.__dyn_str_sz)
         endId=self.__dyn_str_buf.find(b"\x00", st_name)
         r = self.__dyn_str_buf[st_name:endId]
-        return r.decode("utf-8")
+        name = r.decode("utf-8")
+        return name
     #
 
     def __init__(self, f):
@@ -249,7 +250,12 @@ class ELFReader:
             int_st_info = int.from_bytes(st_info, byteorder='little', signed = False)
             st_info_bind = ELFReader.__elf_st_bind(int_st_info)
             st_info_type = ELFReader.__elf_st_type(int_st_info)
-            name = self.__st_name_to_name(st_name)
+            name = ""
+            try:
+                name = self.__st_name_to_name(st_name)
+            except UnicodeDecodeError as e:
+                print("warning can not decode sym index %d at off 0x%08x skip"%(i, st_name))
+            #
             d = {"name":name, "st_name":st_name, "st_value":st_value, "st_size":st_size, "st_info":st_info, "st_other":st_other, 
             "st_shndx":st_shndx, "st_info_bind":st_info_bind, "st_info_type":st_info_type}
             self.__dynsymols.append(d)
