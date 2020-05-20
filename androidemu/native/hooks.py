@@ -118,13 +118,14 @@ class NativeHooks:
             if module is None:
                 raise Exception('Module not found for address 0x%x' % symbol)
             #
-            sym = module.find_symbol(symbol)
+            sym = module.find_symbol(symbol_str)
         #
-
-        if sym is None:
-            return 0
-
-        raise NotImplementedError
+        r = 0
+        if sym is not None:
+            r = sym
+        #
+        logger.debug("Called dlsym(0x%x, %s) return 0x%08X" % (handle, symbol_str, r))
+        return r
     #
 
     @native_method
