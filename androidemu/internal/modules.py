@@ -133,7 +133,7 @@ class Modules:
             for segment in load_segments:
                 p_flags = segment["p_flags"]
                 prot = get_segment_protection(p_flags)
-                prot = prot if prot is not 0 else UC_PROT_ALL
+                prot = prot if prot != 0 else UC_PROT_ALL
                 
                 p_vaddr = segment["p_vaddr"]
                 seg_start = load_base + p_vaddr

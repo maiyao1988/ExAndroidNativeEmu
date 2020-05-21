@@ -257,7 +257,7 @@ class MemoryMap:
         output.append((start,)+last_attr[1:])
 
         for item in output:
-            line = "0x%08x-0x%08x %s %08x 00:00 0 \t\t %s\n"%(item[0], item[1], item[2], item[3], item[4])
+            line = "%08x-%08x %s %08x 00:00 0 \t\t %s\n"%(item[0], item[1], item[2], item[3], item[4])
             stream.write(line)
         #
         
