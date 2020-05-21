@@ -2,6 +2,8 @@ import struct
 import os
 import sys
 
+from ..utils import memory_helpers,misc_utils
+
 PT_NULL   = 0
 PT_LOAD   = 1
 PT_DYNAMIC =2
@@ -161,9 +163,12 @@ class ELFReader:
             _, _ , _, _, _, phoff, _, _, _, _, phdr_num, _, _, _ = struct.unpack("<16sHHIIIIIHHHHHH", ehdr_bytes)
 
             #print(phoff)
+            self.__phoff = phoff
+            self.__phdr_num = phdr_num
             f.seek(phoff, 0)
 
             dyn_off = 0
+            self.__sz = 0
             for i in range(0, phdr_num):
                 phdr_bytes = f.read(phdr32_sz)
                 p_type, p_offset, p_vaddr, p_paddr, p_filesz, p_memsz, p_flags, p_align = struct.unpack("<IIIIIIII", phdr_bytes)
@@ -176,8 +181,11 @@ class ELFReader:
                 elif(p_type == PT_LOAD):
                     self.__loads.append(phdr)
                 #
+                self.__sz += p_memsz
             #
-            assert dyn_off > 0, "error no dynamic for this elf."
+            assert dyn_off > 0, "error no dynamic in this elf."
+            self.__dyn_off = dyn_off
+
             f.seek(dyn_off, 0)
             dyn_str_off = 0
             dyn_str_sz = 0
@@ -219,15 +227,19 @@ class ELFReader:
                 #
                 elif(d_tag == DT_HASH):
                     '''
-                    memcpy(&nbucket, buffer + g_shdr[HASH].sh_offset, 4);
-                    memcpy(&nchain, buffer + g_shdr[HASH].sh_offset + 4, 4)
+                    si->nbucket = ((unsigned *) (base + d->d_un.d_ptr))[0];
+                    si->nchain = ((unsigned *) (base + d->d_un.d_ptr))[1];
+                    si->bucket = (unsigned *) (base + d->d_un.d_ptr + 8);
+                    si->chain = (unsigned *) (base + d->d_un.d_ptr + 8 + si->nbucket * 4);
                     '''
                     n = f.tell()
                     f.seek(d_val_ptr, 0)
                     hash_heads = f.read(8)
                     f.seek(n, 0)
-                    nbucket, nchain = struct.unpack("<II", hash_heads)
-                    nsymbol = nchain
+                    self.__nbucket, self.__nchain = struct.unpack("<II", hash_heads)
+                    self.__bucket = d_val_ptr + 8
+                    self.__chain = d_val_ptr + 8 + self.__nbucket * 4
+                    nsymbol = self.__nchain
                 #
                 elif (d_tag == DT_INIT):
                     self.__init_off = d_val_ptr
@@ -239,13 +251,25 @@ class ELFReader:
                 elif (d_tag == DT_NEEDED):
                     dt_needed.append(d_val_ptr)
                 #
+                elif (d_tag == DT_PLTGOT):
+                    self.__plt_got = d_val_ptr
+                #
             #
             assert nsymbol > -1, "can not detect nsymbol by DT_HASH, DT_GNUHASH, not support now"
+            self.__dyn_str_off = dyn_str_off
+            self.__dym_sym_off = dyn_sym_off
+
+            self.__dyn_str_sz = dyn_str_sz
+
+            self.__pltrel = relplt_off
+            self.__pltrel_count = relplt_count
+
+            self.__rel = rel_off
+            self.__rel_count = rel_count
 
             f.seek(dyn_str_off)
             self.__dyn_str_buf = f.read(dyn_str_sz)
-            self.__dyn_str_sz = dyn_str_sz
-
+            
             f.seek(dyn_sym_off, 0)
             for i in range(0, nsymbol):
                 sym_bytes = f.read(elf32_sym_sz)
@@ -388,17 +412,100 @@ class ELFReader:
         Elf32_Addr load_bias;
     };
     '''
-    def write_soinfo(self, base, mu):
+    def write_soinfo(self, mu, load_base, info_base):
 
-        '''
         #在虚拟机中构造一个soinfo结构
-        info_base = self.__soinfo_area_base
-        assert(len(filename)<128)
-        #self.emu.mu.mem_write()
-        mu = self.emu.mu
-        memory_helpers.write_utf8(mu, info_base+0, filename)
-        mu.mem_write(info_base+128, int().to_bytes(8, byteorder='little'))
-        '''
-        pass
+        assert len(self.__filename)<128
+        
+        #name
+        memory_helpers.write_utf8(mu, info_base+0, self.__filename)
+        #phdr
+        mu.mem_write(info_base+128, int(load_base+self.__phoff).to_bytes(4, byteorder='little'))
+        #phnum
+        mu.mem_write(info_base+132, int(self.__phdr_num).to_bytes(4, byteorder='little'))
+        #entry
+        mu.mem_write(info_base+136, int(0).to_bytes(4, byteorder='little'))
+        #base
+        mu.mem_write(info_base+140, int(load_base).to_bytes(4, byteorder='little'))
+        #size
+        mu.mem_write(info_base+144, int(self.__sz).to_bytes(4, byteorder='little'))
+        #unused1
+        mu.mem_write(info_base+148, int(0).to_bytes(4, byteorder='little'))
+        #dynamic
+        mu.mem_write(info_base+152, int(load_base+self.__dyn_off).to_bytes(4, byteorder='little'))
+        #unused2
+        mu.mem_write(info_base+156, int(0).to_bytes(4, byteorder='little'))
+        #unused3
+        mu.mem_write(info_base+160, int(0).to_bytes(4, byteorder='little'))
+        #next
+        mu.mem_write(info_base+164, int(0).to_bytes(4, byteorder='little'))
+        #flags
+        mu.mem_write(info_base+168, int(0).to_bytes(4, byteorder='little'))
+        #strtab
+        mu.mem_write(info_base+172, int(load_base+self.__dyn_str_off).to_bytes(4, byteorder='little'))
+        #symtab    
+        mu.mem_write(info_base+176, int(load_base+self.__dym_sym_off).to_bytes(4, byteorder='little'))
+        #nbucket
+        mu.mem_write(info_base+180, int(self.__nbucket).to_bytes(4, byteorder='little'))
+        #nchain
+        mu.mem_write(info_base+184, int(self.__nchain).to_bytes(4, byteorder='little'))
+
+        #bucket
+        mu.mem_write(info_base+188, int(load_base+self.__bucket).to_bytes(4, byteorder='little'))
+        #nchain
+        mu.mem_write(info_base+192, int(load_base+self.__chain).to_bytes(4, byteorder='little'))
+
+        #plt_got
+        mu.mem_write(info_base+196, int(load_base+self.__plt_got).to_bytes(4, byteorder='little'))
+
+        #plt_rel
+        mu.mem_write(info_base+200, int(load_base+self.__pltrel).to_bytes(4, byteorder='little'))
+        #plt_rel_count
+        mu.mem_write(info_base+204, int(self.__pltrel_count).to_bytes(4, byteorder='little'))
+
+        #rel
+        mu.mem_write(info_base+208, int(load_base+self.__rel).to_bytes(4, byteorder='little'))
+        #rel_count
+        mu.mem_write(info_base+212, int(self.__rel_count).to_bytes(4, byteorder='little'))
+
+        #preinit_array
+        mu.mem_write(info_base+216, int(0).to_bytes(4, byteorder='little'))
+        #preinit_array_count
+        mu.mem_write(info_base+220, int(0).to_bytes(4, byteorder='little'))
+
+        #init_array
+        mu.mem_write(info_base+224, int(load_base+self.__init_array_off).to_bytes(4, byteorder='little'))
+        #init_array_count
+        mu.mem_write(info_base+228, int(self.__init_array_size/4).to_bytes(4, byteorder='little'))
+
+        #finit_array
+        mu.mem_write(info_base+232, int(0).to_bytes(4, byteorder='little'))
+        #finit_array_count
+        mu.mem_write(info_base+236, int(0).to_bytes(4, byteorder='little'))
+
+        #init_func
+        mu.mem_write(info_base+240, int(load_base+self.__init_off).to_bytes(4, byteorder='little'))
+        #fini_func
+        mu.mem_write(info_base+244, int(0).to_bytes(4, byteorder='little'))
+
+        #ARM_exidx
+        mu.mem_write(info_base+248, int(0).to_bytes(4, byteorder='little'))
+        #ARM_exidx_count
+        mu.mem_write(info_base+252, int(0).to_bytes(4, byteorder='little'))
+
+        #ref_count
+        mu.mem_write(info_base+256, int(1).to_bytes(4, byteorder='little'))
+
+        #link_map
+        mu.mem_write(info_base+260, int(0).to_bytes(20, byteorder='little'))
+
+        #constructors_called
+        mu.mem_write(info_base+280, int(1).to_bytes(4, byteorder='little'))
+        
+        #Elf32_Addr load_bias
+        mu.mem_write(info_base+284, int(1).to_bytes(4, byteorder='little'))
+        
+        soinfo_sz = 288
+        return soinfo_sz
     #
 #

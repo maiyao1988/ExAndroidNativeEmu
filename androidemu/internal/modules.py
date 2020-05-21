@@ -24,10 +24,8 @@ class Modules:
         self.symbol_hooks = dict()
         self.counter_memory = config.BASE_ADDR
         self.__vfs_root = vfs_root
-        self.__soinfo_area_sz = 0x40000; 
-        self.__soinfo_area_base = emu.memory.map(0, self.__soinfo_area_sz, UC_PROT_WRITE | UC_PROT_READ)
-        self.__soinfo_off = 0
-        self.__soinfo_sz = 288
+        soinfo_area_sz = 0x40000; 
+        self.__soinfo_area_base = emu.memory.map(0, soinfo_area_sz, UC_PROT_WRITE | UC_PROT_READ)
         
     #
 
@@ -271,12 +269,14 @@ class Modules:
             #
             init_array_offset += 4
         #
+        print (self.__soinfo_area_base)
+        write_sz = reader.write_soinfo(self.emu.mu, load_base, self.__soinfo_area_base)
 
+        self.__soinfo_area_base += write_sz
         # Store information about loaded module.
         module = Module(filename, load_base, bound_high - bound_low, symbols_resolved, init_array)
         self.modules.append(module)
         
-        self.__soinfo_off+=4
         #TODO init tls like linker
         '''
         void __libc_init_tls(KernelArgumentBlock& args) {
