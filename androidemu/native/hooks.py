@@ -114,6 +114,7 @@ class NativeHooks:
             sym = self._modules.find_symbol_str(symbol_str)
         else:
             soinfo = handle
+            #soinfo+140 offset of load base in soinfo on android 4.4
             base = memory_helpers.read_ptr(uc, soinfo+140)
 
             module = self._modules.find_module(base)
