@@ -1,6 +1,6 @@
 import logging
 
-from unicorn import UC_PROT_ALL
+from unicorn import UC_PROT_ALL,UC_PROT_WRITE,UC_PROT_READ
 
 from . import arm
 from ..utils.misc_utils import get_segment_protection,page_end, page_start
@@ -13,7 +13,6 @@ import os
 
 logger = logging.getLogger(__name__)
 
-
 class Modules:
     """
     :type emu androidemu.emulator.Emulator
@@ -25,6 +24,9 @@ class Modules:
         self.symbol_hooks = dict()
         self.counter_memory = config.BASE_ADDR
         self.__vfs_root = vfs_root
+        soinfo_area_sz = 0x40000; 
+        self.__soinfo_area_base = emu.memory.map(0, soinfo_area_sz, UC_PROT_WRITE | UC_PROT_READ)
+        
     #
 
     def add_symbol_hook(self, symbol_name, addr):
@@ -74,233 +76,236 @@ class Modules:
         #
         logger.debug("Loading module '%s'." % filename)
         #do sth like linker
-        with open(filename, 'rb') as fstream:
-            #TODO: load elf without Section Header,pyelftools do not support.
-            reader = elf_reader.ELFReader(fstream)
+        reader = elf_reader.ELFReader(filename)
 
-            # Parse program header (Execution view).
+        # Parse program header (Execution view).
 
-            # - LOAD (determinate what parts of the ELF file get mapped into memory)
-            load_segments = reader.get_load()
+        # - LOAD (determinate what parts of the ELF file get mapped into memory)
+        load_segments = reader.get_load()
 
-            # Find bounds of the load segments.
-            bound_low = 0
-            bound_high = 0
+        # Find bounds of the load segments.
+        bound_low = 0
+        bound_high = 0
 
-            for segment in load_segments:
-                p_memsz = segment["p_memsz"]
-                if p_memsz == 0:
-                    continue
-                p_vaddr = segment["p_vaddr"]
-                if bound_low > p_vaddr:
-                    bound_low = p_vaddr
+        for segment in load_segments:
+            p_memsz = segment["p_memsz"]
+            if p_memsz == 0:
+                continue
+            p_vaddr = segment["p_vaddr"]
+            if bound_low > p_vaddr:
+                bound_low = p_vaddr
 
-                high = p_vaddr + p_memsz
+            high = p_vaddr + p_memsz
 
-                if bound_high < high:
-                    bound_high = high
-                #
+            if bound_high < high:
+                bound_high = high
             #
+        #
 
+        '''
+        // Segment addresses in memory.
+        Elf32_Addr seg_start = phdr->p_vaddr + load_bias_;
+        Elf32_Addr seg_end   = seg_start + phdr->p_memsz;
+
+        Elf32_Addr seg_page_start = PAGE_START(seg_start);
+        Elf32_Addr seg_page_end   = PAGE_END(seg_end);
+
+        // File offsets.
+        Elf32_Addr file_start = phdr->p_offset;
+        Elf32_Addr file_end   = file_start + phdr->p_filesz;
+
+        Elf32_Addr seg_file_end   = seg_start + phdr->p_filesz;
+        Elf32_Addr file_page_start = PAGE_START(file_start);
+        Elf32_Addr file_length = file_end - file_page_start;
+
+        if (file_length != 0) {
+        void* seg_addr = mmap((void*)seg_page_start,
+                                file_length,
+                                PFLAGS_TO_PROT(phdr->p_flags),
+                                MAP_FIXED|MAP_PRIVATE,
+                                fd_,
+                                file_page_start);
+        '''
+        # Retrieve a base address for this module.
+        load_base = self.mem_reserve(bound_low, bound_high)
+
+        vf = VirtualFile(misc_utils.system_path_to_vfs_path(self.__vfs_root, filename), misc_utils.my_open(filename, os.O_RDONLY), filename)
+        for segment in load_segments:
+            p_flags = segment["p_flags"]
+            prot = get_segment_protection(p_flags)
+            prot = prot if prot != 0 else UC_PROT_ALL
+            
+            p_vaddr = segment["p_vaddr"]
+            seg_start = load_base + p_vaddr
+            seg_page_start = page_start(seg_start)
+            p_offset = segment["p_offset"]
+            file_start = p_offset
+            p_filesz = segment["p_filesz"]
+            file_end = file_start + p_filesz
+            file_page_start = page_start(file_start)
+            file_length = file_end - file_page_start
+            assert(file_length>0)
+            if (file_length > 0):
+                self.emu.memory.map(seg_page_start, file_length, prot, vf, file_page_start)
+            #
+            p_memsz = segment["p_memsz"]
+            seg_end   = seg_start + p_memsz
+            seg_page_end = page_end(seg_end)
+
+            seg_file_end = seg_start+p_filesz
+
+            seg_file_end = page_end(seg_file_end)
             '''
-            // Segment addresses in memory.
-            Elf32_Addr seg_start = phdr->p_vaddr + load_bias_;
-            Elf32_Addr seg_end   = seg_start + phdr->p_memsz;
-
-            Elf32_Addr seg_page_start = PAGE_START(seg_start);
-            Elf32_Addr seg_page_end   = PAGE_END(seg_end);
-
-            // File offsets.
-            Elf32_Addr file_start = phdr->p_offset;
-            Elf32_Addr file_end   = file_start + phdr->p_filesz;
-
-            Elf32_Addr seg_file_end   = seg_start + phdr->p_filesz;
-            Elf32_Addr file_page_start = PAGE_START(file_start);
-            Elf32_Addr file_length = file_end - file_page_start;
-
-            if (file_length != 0) {
-            void* seg_addr = mmap((void*)seg_page_start,
-                                    file_length,
-                                    PFLAGS_TO_PROT(phdr->p_flags),
-                                    MAP_FIXED|MAP_PRIVATE,
-                                    fd_,
-                                    file_page_start);
+                    void* zeromap = mmap((void*)seg_file_end,
+                        seg_page_end - seg_file_end,
+                        PFLAGS_TO_PROT(phdr->p_flags),
+                        MAP_FIXED|MAP_ANONYMOUS|MAP_PRIVATE,
+                        -1,
+                        0);
             '''
-            # Retrieve a base address for this module.
-            load_base = self.mem_reserve(bound_low, bound_high)
+            self.emu.memory.map(seg_file_end, seg_page_end-seg_file_end, prot)
+        #
 
-            vf = VirtualFile(misc_utils.system_path_to_vfs_path(self.__vfs_root, filename), misc_utils.my_open(filename, os.O_RDONLY), filename)
-            for segment in load_segments:
-                p_flags = segment["p_flags"]
-                prot = get_segment_protection(p_flags)
-                prot = prot if prot != 0 else UC_PROT_ALL
-                
-                p_vaddr = segment["p_vaddr"]
-                seg_start = load_base + p_vaddr
-                seg_page_start = page_start(seg_start)
-                p_offset = segment["p_offset"]
-                file_start = p_offset
-                p_filesz = segment["p_filesz"]
-                file_end = file_start + p_filesz
-                file_page_start = page_start(file_start)
-                file_length = file_end - file_page_start
-                assert(file_length>0)
-                if (file_length > 0):
-                    self.emu.memory.map(seg_page_start, file_length, prot, vf, file_page_start)
-                #
-                p_memsz = segment["p_memsz"]
-                seg_end   = seg_start + p_memsz
-                seg_page_end = page_end(seg_end)
+        # Find init array.
+        init_array_offset, init_array_size = reader.get_init_array()
+        init_array = []
+        init_offset = reader.get_init()
 
-                seg_file_end = seg_start+p_filesz
-
-                seg_file_end = page_end(seg_file_end)
-                '''
-                      void* zeromap = mmap((void*)seg_file_end,
-                           seg_page_end - seg_file_end,
-                           PFLAGS_TO_PROT(phdr->p_flags),
-                           MAP_FIXED|MAP_ANONYMOUS|MAP_PRIVATE,
-                           -1,
-                           0);
-                '''
-                self.emu.memory.map(seg_file_end, seg_page_end-seg_file_end, prot)
+        so_needed = reader.get_so_need()
+        for so_name in so_needed:
+            path = misc_utils.vfs_path_to_system_path(self.__vfs_root, so_name)
+            if (not os.path.exists(path)):
+                logger.warn("%s needed by %s do not exist in vfs %s"%(so_name, filename, self.__vfs_root))
+                continue
             #
+            libmod = self.load_module(path)
+        #
 
-            # Find init array.
-            init_array_offset, init_array_size = reader.get_init_array()
-            init_array = []
-            init_offset = reader.get_init()
+        rels = reader.get_rels()
+        symbols = reader.get_symbols()
+        # Resolve all symbols.
+        symbols_resolved = dict()
 
-            so_needed = reader.get_so_need()
-            for so_name in so_needed:
-                path = misc_utils.vfs_path_to_system_path(self.__vfs_root, so_name)
-                if (not os.path.exists(path)):
-                    logger.warn("%s needed by %s do not exist in vfs %s"%(so_name, filename, self.__vfs_root))
-                    continue
-                #
-                libmod = self.load_module(path)
+        for symbol in symbols:
+            symbol_address = self._elf_get_symval(load_base, symbol)
+            if symbol_address is not None:
+                name = symbol["name"]
+                symbols_resolved[name] = symbol_address
             #
+        #
 
-            rels = reader.get_rels()
-            symbols = reader.get_symbols()
-            # Resolve all symbols.
-            symbols_resolved = dict()
+        # Relocate.
+        for rel_name in rels:
+            rel_tbl = rels[rel_name]
 
-            for symbol in symbols:
-                symbol_address = self._elf_get_symval(load_base, symbol)
-                if symbol_address is not None:
-                    name = symbol["name"]
-                    symbols_resolved[name] = symbol_address
-                #
-            #
+            for rel in rel_tbl:
+                r_info_sym = rel["r_info_sym"]
+                sym = symbols[r_info_sym]
+                sym_value = sym['st_value']
 
-            # Relocate.
-            for rel_name in rels:
-                rel_tbl = rels[rel_name]
+                rel_addr = load_base + rel['r_offset']  # Location where relocation should happen
+                rel_info_type = rel['r_info_type']
 
-                for rel in rel_tbl:
-                    r_info_sym = rel["r_info_sym"]
-                    sym = symbols[r_info_sym]
-                    sym_value = sym['st_value']
+                #print(filename)
+                #print("%x"%rel_addr)
+                # Relocation table for ARM
 
-                    rel_addr = load_base + rel['r_offset']  # Location where relocation should happen
-                    rel_info_type = rel['r_info_type']
+                sym_name = reader.get_dyn_string_by_rel_sym(r_info_sym)
+                if rel_info_type == arm.R_ARM_ABS32:
+                    if sym_name in symbols_resolved:
+                        sym_addr = symbols_resolved[sym_name]
 
-                    #print(filename)
-                    #print("%x"%rel_addr)
-                    # Relocation table for ARM
+                        value_orig_bytes = self.emu.mu.mem_read(rel_addr, 4)
+                        value_orig = int.from_bytes(value_orig_bytes, byteorder='little')
 
-                    sym_name = reader.get_dyn_string_by_rel_sym(r_info_sym)
-                    if rel_info_type == arm.R_ARM_ABS32:
-                        if sym_name in symbols_resolved:
-                            sym_addr = symbols_resolved[sym_name]
-
-                            value_orig_bytes = self.emu.mu.mem_read(rel_addr, 4)
-                            value_orig = int.from_bytes(value_orig_bytes, byteorder='little')
-
-                            #R_ARM_ABS32 how to relocate see android linker source code
-                            #*reinterpret_cast<Elf32_Addr*>(reloc) += sym_addr;
-                            value = sym_addr + value_orig
-                            # Write the new value
-                            #print(value)
-                            self.emu.mu.mem_write(rel_addr, value.to_bytes(4, byteorder='little'))
-                        #
+                        #R_ARM_ABS32 how to relocate see android linker source code
+                        #*reinterpret_cast<Elf32_Addr*>(reloc) += sym_addr;
+                        value = sym_addr + value_orig
+                        # Write the new value
+                        #print(value)
+                        self.emu.mu.mem_write(rel_addr, value.to_bytes(4, byteorder='little'))
                     #
-                    elif rel_info_type in (arm.R_ARM_GLOB_DAT, arm.R_ARM_JUMP_SLOT, 
-                                                    arm.R_AARCH64_GLOB_DAT, arm.R_AARCH64_JUMP_SLOT):
-                        # Resolve the symbol.
-                        #R_ARM_GLOB_DAT，R_ARM_JUMP_SLOT how to relocate see android linker source code
-                        #*reinterpret_cast<Elf32_Addr*>(reloc) = sym_addr;
-                        if sym_name in symbols_resolved:
-                            value = symbols_resolved[sym_name]
+                #
+                elif rel_info_type in (arm.R_ARM_GLOB_DAT, arm.R_ARM_JUMP_SLOT, 
+                                                arm.R_AARCH64_GLOB_DAT, arm.R_AARCH64_JUMP_SLOT):
+                    # Resolve the symbol.
+                    #R_ARM_GLOB_DAT，R_ARM_JUMP_SLOT how to relocate see android linker source code
+                    #*reinterpret_cast<Elf32_Addr*>(reloc) = sym_addr;
+                    if sym_name in symbols_resolved:
+                        value = symbols_resolved[sym_name]
 
-                            # Write the new value
-                            #print(value)
-                            self.emu.mu.mem_write(rel_addr, value.to_bytes(4, byteorder='little'))
-                        #
+                        # Write the new value
+                        #print(value)
+                        self.emu.mu.mem_write(rel_addr, value.to_bytes(4, byteorder='little'))
                     #
-                    elif rel_info_type in (arm.R_ARM_RELATIVE, arm.R_AARCH64_RELATIVE):
-                        if sym_value == 0:
-                            # Load address at which it was linked originally.
-                            value_orig_bytes = self.emu.mu.mem_read(rel_addr, 4)
-                            value_orig = int.from_bytes(value_orig_bytes, byteorder='little')
+                #
+                elif rel_info_type in (arm.R_ARM_RELATIVE, arm.R_AARCH64_RELATIVE):
+                    if sym_value == 0:
+                        # Load address at which it was linked originally.
+                        value_orig_bytes = self.emu.mu.mem_read(rel_addr, 4)
+                        value_orig = int.from_bytes(value_orig_bytes, byteorder='little')
 
-                            # Create the new value
-                            value = load_base + value_orig
+                        # Create the new value
+                        value = load_base + value_orig
 
-                            #print(value)
-                            # Write the new value
-                            self.emu.mu.mem_write(rel_addr, value.to_bytes(4, byteorder='little'))
-                        else:
-                            raise NotImplementedError()
+                        #print(value)
+                        # Write the new value
+                        self.emu.mu.mem_write(rel_addr, value.to_bytes(4, byteorder='little'))
                     else:
-                        logger.error("Unhandled relocation type %i." % rel_info_type)
-                    #
+                        raise NotImplementedError()
+                else:
+                    logger.error("Unhandled relocation type %i." % rel_info_type)
                 #
             #
-            if (init_offset != 0):
-                init_array.append(load_base+init_offset)
+        #
+        if (init_offset != 0):
+            init_array.append(load_base+init_offset)
+        #
+        for _ in range(int(init_array_size / 4)):
+            b = self.emu.mu.mem_read(load_base+init_array_offset, 4)
+            fun_ptr = int.from_bytes(b, byteorder='little', signed = False)
+            if (fun_ptr != 0):
+                init_array.append(fun_ptr)
             #
-            for _ in range(int(init_array_size / 4)):
-                b = self.emu.mu.mem_read(load_base+init_array_offset, 4)
-                fun_ptr = int.from_bytes(b, byteorder='little', signed = False)
-                if (fun_ptr != 0):
-                    init_array.append(fun_ptr)
-                #
-                init_array_offset += 4
-            #
+            init_array_offset += 4
+        #
+        
+        write_sz = reader.write_soinfo(self.emu.mu, load_base, self.__soinfo_area_base)
 
-            # Store information about loaded module.
-            module = Module(filename, load_base, bound_high - bound_low, symbols_resolved, init_array)
-            self.modules.append(module)
-            #TODO init tls like linker
+        # Store information about loaded module.
+        module = Module(filename, load_base, bound_high - bound_low, symbols_resolved, init_array, self.__soinfo_area_base)
+        self.modules.append(module)
+        
+        self.__soinfo_area_base += write_sz
+        #TODO init tls like linker
+        '''
+        void __libc_init_tls(KernelArgumentBlock& args) {
+            __libc_auxv = args.auxv;
+            unsigned stack_top = (__get_sp() & ~(PAGE_SIZE - 1)) + PAGE_SIZE;
+            unsigned stack_size = 128 * 1024;
+            unsigned stack_bottom = stack_top - stack_size;
+            static void* tls[BIONIC_TLS_SLOTS];
+            static pthread_internal_t thread;
+            thread.tid = gettid();
+            thread.tls = tls;
+            pthread_attr_init(&thread.attr);
+            pthread_attr_setstack(&thread.attr, (void*) stack_bottom, stack_size);
+            _init_thread(&thread, false);
+            __init_tls(&thread);
+            tls[TLS_SLOT_BIONIC_PREINIT] = &args;
+        }
+        '''
+        if do_init:
             '''
-            void __libc_init_tls(KernelArgumentBlock& args) {
-                __libc_auxv = args.auxv;
-                unsigned stack_top = (__get_sp() & ~(PAGE_SIZE - 1)) + PAGE_SIZE;
-                unsigned stack_size = 128 * 1024;
-                unsigned stack_bottom = stack_top - stack_size;
-                static void* tls[BIONIC_TLS_SLOTS];
-                static pthread_internal_t thread;
-                thread.tid = gettid();
-                thread.tls = tls;
-                pthread_attr_init(&thread.attr);
-                pthread_attr_setstack(&thread.attr, (void*) stack_bottom, stack_size);
-                _init_thread(&thread, false);
-                __init_tls(&thread);
-                tls[TLS_SLOT_BIONIC_PREINIT] = &args;
-            }
-            '''
-            if do_init:
-                '''
-                for r in self.emu.mu.mem_regions():
-                    print("region begin :0x%08X end:0x%08X, prot:%d"%(r[0], r[1], r[2]))
-                #
-                '''
-                module.call_init(self.emu)
+            for r in self.emu.mu.mem_regions():
+                print("region begin :0x%08X end:0x%08X, prot:%d"%(r[0], r[1], r[2]))
             #
-            logger.info("finish load lib %s base 0x%08X"%(filename, load_base))
-            return module
+            '''
+            module.call_init(self.emu)
+        #
+        logger.info("finish load lib %s base 0x%08X"%(filename, load_base))
+        return module
+    #
 
     def _elf_get_symval(self, elf_base, symbol):
         name = symbol["name"]
@@ -338,9 +343,11 @@ class Modules:
                 #
             #
         #
-
         return None
+    #
 
     def __iter__(self):
         for x in self.modules:
             yield x
+        #
+    #
