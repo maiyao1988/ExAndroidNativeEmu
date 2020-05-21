@@ -1,5 +1,6 @@
 import traceback
 import os
+import sys
 from unicorn import *
 from ..utils.misc_utils import page_end, page_start
 
@@ -155,18 +156,18 @@ class MemoryMap:
         return res_addr
     #
 
-    def protect(self, addr, len_in, prot):
+    def protect(self, addr, len, prot):
         if not self.__is_multiple(addr):
             raise Exception('addr was not multiple of page size (%d, %d).' % (addr, PAGE_SIZE))
+        #
 
-        if not self.__is_multiple(len_in):
-            raise Exception('len_in was not multiple of page size (%d, %d).' % (addr, PAGE_SIZE))
-
+        len_in = page_end(addr+len) - addr
         try:
             self.__mu.mem_protect(addr, len_in, prot)
         except unicorn.UcError as e:
             #TODO:just for debug
-            raise
+            #self.dump_maps(sys.stdout)
+            #raise
             return -1
         #
         return 0

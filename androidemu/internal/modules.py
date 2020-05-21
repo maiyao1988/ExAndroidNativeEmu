@@ -269,14 +269,14 @@ class Modules:
             #
             init_array_offset += 4
         #
-        print (self.__soinfo_area_base)
+        
         write_sz = reader.write_soinfo(self.emu.mu, load_base, self.__soinfo_area_base)
 
-        self.__soinfo_area_base += write_sz
         # Store information about loaded module.
-        module = Module(filename, load_base, bound_high - bound_low, symbols_resolved, init_array)
+        module = Module(filename, load_base, bound_high - bound_low, symbols_resolved, init_array, self.__soinfo_area_base)
         self.modules.append(module)
         
+        self.__soinfo_area_base += write_sz
         #TODO init tls like linker
         '''
         void __libc_init_tls(KernelArgumentBlock& args) {

@@ -57,7 +57,7 @@ class NativeHooks:
             #如果是libxxx.so这种字符串，则直接从
             for mod in self._modules.modules:
                 if (mod.filename.find(path)>-1):
-                    r = mod.base
+                    r = mod.soinfo_ptr
                     logger.debug("Called dlopen(%s) return 0x%08x" %(path, r))
                     return r
                 #
@@ -67,7 +67,7 @@ class NativeHooks:
         fullpath = misc_utils.vfs_path_to_system_path(self.__vfs_root, path)
         if (os.path.exists(fullpath)):
             mod = self._emu.load_library(fullpath)
-            r = mod.base
+            r = mod.soinfo_ptr
         else:
             #raise RuntimeError("dlopen %s not found!!!"%fullpath)
             r = 0
@@ -113,7 +113,10 @@ class NativeHooks:
         if handle == 0xffffffff:
             sym = self._modules.find_symbol_str(symbol_str)
         else:
-            module = self._modules.find_module(handle)
+            soinfo = handle
+            base = memory_helpers.read_ptr(uc, soinfo+140)
+
+            module = self._modules.find_module(base)
 
             if module is None:
                 raise Exception('Module not found for address 0x%x' % symbol)
