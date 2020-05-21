@@ -138,159 +138,163 @@ class ELFReader:
         return name
     #
 
-    def __init__(self, f):
-        ehdr32_sz = 52
-        phdr32_sz = 32
-        elf32_dyn_sz = 8
-        elf32_sym_sz = 16
-        elf32_rel_sz = 8
+    def __init__(self, filename):
 
-        self.__init_array_off = 0
-        self.__init_array_size = 0
-        self.__init_off = 0
+        with open(filename, 'rb') as f:
+            ehdr32_sz = 52
+            phdr32_sz = 32
+            elf32_dyn_sz = 8
+            elf32_sym_sz = 16
+            elf32_rel_sz = 8
 
-        self.__phdrs = []
-        self.__loads = []
-        self.__dynsymols = []
-        self.__rels = {}
-        self.__file = f
-        ehdr_bytes = f.read(ehdr32_sz)
-        _, _ , _, _, _, phoff, _, _, _, _, phdr_num, _, _, _ = struct.unpack("<16sHHIIIIIHHHHHH", ehdr_bytes)
+            self.__filename = filename
+            self.__init_array_off = 0
+            self.__init_array_size = 0
+            self.__init_off = 0
 
-        #print(phoff)
-        f.seek(phoff, 0)
+            self.__phdrs = []
+            self.__loads = []
+            self.__dynsymols = []
+            self.__rels = {}
+            self.__file = f
+            ehdr_bytes = f.read(ehdr32_sz)
+            _, _ , _, _, _, phoff, _, _, _, _, phdr_num, _, _, _ = struct.unpack("<16sHHIIIIIHHHHHH", ehdr_bytes)
 
-        dyn_off = 0
-        for i in range(0, phdr_num):
-            phdr_bytes = f.read(phdr32_sz)
-            p_type, p_offset, p_vaddr, p_paddr, p_filesz, p_memsz, p_flags, p_align = struct.unpack("<IIIIIIII", phdr_bytes)
-            phdr = {"p_type":p_type, "p_offset":p_offset, "p_vaddr":p_vaddr, "p_paddr":p_paddr, \
-                                            "p_filesz":p_filesz, "p_memsz":p_memsz, "p_flags":p_flags, "p_align":p_align}
-            self.__phdrs.append(phdr)
-            if (p_type == PT_DYNAMIC):
-                dyn_off = p_offset
-            #
-            elif(p_type == PT_LOAD):
-                self.__loads.append(phdr)
-            #
-        #
-        assert dyn_off > 0, "error no dynamic for this elf."
-        f.seek(dyn_off, 0)
-        dyn_str_off = 0
-        dyn_str_sz = 0
-        self.__dyn_str_buf = b""
-        dyn_sym_off = -0
-        nsymbol = -1
-        rel_off = 0
-        rel_count = 0
-        relplt_off = 0
-        relplt_count = 0
-        dt_needed = []
-        while True:
-            dyn_item_bytes = f.read(elf32_dyn_sz)
-            d_tag, d_val_ptr = struct.unpack("<II", dyn_item_bytes)
-            if (d_tag == DT_NULL):
-                break
-            if (d_tag == DT_RELA):
-                assert False, "64bit not support now"
-            elif (d_tag == DT_REL):
-                rel_off = d_val_ptr
-            #
-            elif (d_tag == DT_RELSZ):
-                rel_count = int(d_val_ptr / elf32_rel_sz)
-            #
-            elif (d_tag == DT_JMPREL):
-                relplt_off = d_val_ptr
-            #
-            elif(d_tag == DT_PLTRELSZ):
-                relplt_count = int(d_val_ptr / elf32_rel_sz)
-            #
-            elif (d_tag == DT_SYMTAB):
-                dyn_sym_off = d_val_ptr
-            #
-            elif(d_tag == DT_STRTAB):
-                dyn_str_off = d_val_ptr
-            #
-            elif(d_tag == DT_STRSZ):
-                dyn_str_sz = d_val_ptr
-            #
-            elif(d_tag == DT_HASH):
-                '''
-                memcpy(&nbucket, buffer + g_shdr[HASH].sh_offset, 4);
-				memcpy(&nchain, buffer + g_shdr[HASH].sh_offset + 4, 4)
-                '''
-                n = f.tell()
-                f.seek(d_val_ptr, 0)
-                hash_heads = f.read(8)
-                f.seek(n, 0)
-                nbucket, nchain = struct.unpack("<II", hash_heads)
-                nsymbol = nchain
-            #
-            elif (d_tag == DT_INIT):
-                self.__init_off = d_val_ptr
-            elif(d_tag == DT_INIT_ARRAY):
-                self.__init_array_off = d_val_ptr
-            elif(d_tag == DT_INIT_ARRAYSZ):
-                self.__init_array_size = d_val_ptr
-            #
-            elif (d_tag == DT_NEEDED):
-                dt_needed.append(d_val_ptr)
-            #
-        #
-        assert nsymbol > -1, "can not detect nsymbol by DT_HASH, DT_GNUHASH, not support now"
+            #print(phoff)
+            f.seek(phoff, 0)
 
-        f.seek(dyn_str_off)
-        self.__dyn_str_buf = f.read(dyn_str_sz)
-        self.__dyn_str_sz = dyn_str_sz
-
-        f.seek(dyn_sym_off, 0)
-        for i in range(0, nsymbol):
-            sym_bytes = f.read(elf32_sym_sz)
-            st_name, st_value, st_size, st_info, st_other, st_shndx = struct.unpack("<IIIccH", sym_bytes)
-            int_st_info = int.from_bytes(st_info, byteorder='little', signed = False)
-            st_info_bind = ELFReader.__elf_st_bind(int_st_info)
-            st_info_type = ELFReader.__elf_st_type(int_st_info)
-            name = ""
-            try:
-                name = self.__st_name_to_name(st_name)
-            except UnicodeDecodeError as e:
-                print("warning can not decode sym index %d at off 0x%08x skip"%(i, st_name))
+            dyn_off = 0
+            for i in range(0, phdr_num):
+                phdr_bytes = f.read(phdr32_sz)
+                p_type, p_offset, p_vaddr, p_paddr, p_filesz, p_memsz, p_flags, p_align = struct.unpack("<IIIIIIII", phdr_bytes)
+                phdr = {"p_type":p_type, "p_offset":p_offset, "p_vaddr":p_vaddr, "p_paddr":p_paddr, \
+                                                "p_filesz":p_filesz, "p_memsz":p_memsz, "p_flags":p_flags, "p_align":p_align}
+                self.__phdrs.append(phdr)
+                if (p_type == PT_DYNAMIC):
+                    dyn_off = p_offset
+                #
+                elif(p_type == PT_LOAD):
+                    self.__loads.append(phdr)
+                #
             #
-            d = {"name":name, "st_name":st_name, "st_value":st_value, "st_size":st_size, "st_info":st_info, "st_other":st_other, 
-            "st_shndx":st_shndx, "st_info_bind":st_info_bind, "st_info_type":st_info_type}
-            self.__dynsymols.append(d)
-        #
+            assert dyn_off > 0, "error no dynamic for this elf."
+            f.seek(dyn_off, 0)
+            dyn_str_off = 0
+            dyn_str_sz = 0
+            self.__dyn_str_buf = b""
+            dyn_sym_off = -0
+            nsymbol = -1
+            rel_off = 0
+            rel_count = 0
+            relplt_off = 0
+            relplt_count = 0
+            dt_needed = []
+            while True:
+                dyn_item_bytes = f.read(elf32_dyn_sz)
+                d_tag, d_val_ptr = struct.unpack("<II", dyn_item_bytes)
+                if (d_tag == DT_NULL):
+                    break
+                if (d_tag == DT_RELA):
+                    assert False, "64bit not support now"
+                elif (d_tag == DT_REL):
+                    rel_off = d_val_ptr
+                #
+                elif (d_tag == DT_RELSZ):
+                    rel_count = int(d_val_ptr / elf32_rel_sz)
+                #
+                elif (d_tag == DT_JMPREL):
+                    relplt_off = d_val_ptr
+                #
+                elif(d_tag == DT_PLTRELSZ):
+                    relplt_count = int(d_val_ptr / elf32_rel_sz)
+                #
+                elif (d_tag == DT_SYMTAB):
+                    dyn_sym_off = d_val_ptr
+                #
+                elif(d_tag == DT_STRTAB):
+                    dyn_str_off = d_val_ptr
+                #
+                elif(d_tag == DT_STRSZ):
+                    dyn_str_sz = d_val_ptr
+                #
+                elif(d_tag == DT_HASH):
+                    '''
+                    memcpy(&nbucket, buffer + g_shdr[HASH].sh_offset, 4);
+                    memcpy(&nchain, buffer + g_shdr[HASH].sh_offset + 4, 4)
+                    '''
+                    n = f.tell()
+                    f.seek(d_val_ptr, 0)
+                    hash_heads = f.read(8)
+                    f.seek(n, 0)
+                    nbucket, nchain = struct.unpack("<II", hash_heads)
+                    nsymbol = nchain
+                #
+                elif (d_tag == DT_INIT):
+                    self.__init_off = d_val_ptr
+                elif(d_tag == DT_INIT_ARRAY):
+                    self.__init_array_off = d_val_ptr
+                elif(d_tag == DT_INIT_ARRAYSZ):
+                    self.__init_array_size = d_val_ptr
+                #
+                elif (d_tag == DT_NEEDED):
+                    dt_needed.append(d_val_ptr)
+                #
+            #
+            assert nsymbol > -1, "can not detect nsymbol by DT_HASH, DT_GNUHASH, not support now"
 
-        f.seek(rel_off, 0)
-        rel_table = []
-        for i in range(0, rel_count):
-            rel_item_bytes = f.read(elf32_rel_sz)
-            r_offset, r_info = struct.unpack("<II", rel_item_bytes)
-            d = {"r_offset":r_offset, "r_info":r_info}
-            r_info_sym = ELFReader.__elf32_r_sym(r_info)
-            r_info_type = ELFReader.__elf32_r_type(r_info)
-            d = {"r_offset":r_offset, "r_info":r_info, "r_info_type":r_info_type, "r_info_sym":r_info_sym}
-            rel_table.append(d)
-        #
-        self.__rels["dynrel"] = rel_table
+            f.seek(dyn_str_off)
+            self.__dyn_str_buf = f.read(dyn_str_sz)
+            self.__dyn_str_sz = dyn_str_sz
 
-        f.seek(relplt_off, 0)
-        relplt_table = []
-        for i in range(0, relplt_count):
-            rel_item_bytes = f.read(elf32_rel_sz)
-            r_offset, r_info = struct.unpack("<II", rel_item_bytes)
-            r_info_sym = ELFReader.__elf32_r_sym(r_info)
-            r_info_type = ELFReader.__elf32_r_type(r_info)
-            d = {"r_offset":r_offset, "r_info":r_info, "r_info_type":r_info_type, "r_info_sym":r_info_sym}
-            relplt_table.append(d)
-        #
-        self.__rels["relplt"] = relplt_table
-        print("ok")
-        self.__so_needed = []
-        for str_off in dt_needed:
-            endId=self.__dyn_str_buf.find(b"\x00", str_off)
-            so_name = self.__dyn_str_buf[str_off:endId]
-            self.__so_needed.append(so_name.decode("utf-8"))
+            f.seek(dyn_sym_off, 0)
+            for i in range(0, nsymbol):
+                sym_bytes = f.read(elf32_sym_sz)
+                st_name, st_value, st_size, st_info, st_other, st_shndx = struct.unpack("<IIIccH", sym_bytes)
+                int_st_info = int.from_bytes(st_info, byteorder='little', signed = False)
+                st_info_bind = ELFReader.__elf_st_bind(int_st_info)
+                st_info_type = ELFReader.__elf_st_type(int_st_info)
+                name = ""
+                try:
+                    name = self.__st_name_to_name(st_name)
+                except UnicodeDecodeError as e:
+                    print("warning can not decode sym index %d at off 0x%08x skip"%(i, st_name))
+                #
+                d = {"name":name, "st_name":st_name, "st_value":st_value, "st_size":st_size, "st_info":st_info, "st_other":st_other, 
+                "st_shndx":st_shndx, "st_info_bind":st_info_bind, "st_info_type":st_info_type}
+                self.__dynsymols.append(d)
+            #
+
+            f.seek(rel_off, 0)
+            rel_table = []
+            for i in range(0, rel_count):
+                rel_item_bytes = f.read(elf32_rel_sz)
+                r_offset, r_info = struct.unpack("<II", rel_item_bytes)
+                d = {"r_offset":r_offset, "r_info":r_info}
+                r_info_sym = ELFReader.__elf32_r_sym(r_info)
+                r_info_type = ELFReader.__elf32_r_type(r_info)
+                d = {"r_offset":r_offset, "r_info":r_info, "r_info_type":r_info_type, "r_info_sym":r_info_sym}
+                rel_table.append(d)
+            #
+            self.__rels["dynrel"] = rel_table
+
+            f.seek(relplt_off, 0)
+            relplt_table = []
+            for i in range(0, relplt_count):
+                rel_item_bytes = f.read(elf32_rel_sz)
+                r_offset, r_info = struct.unpack("<II", rel_item_bytes)
+                r_info_sym = ELFReader.__elf32_r_sym(r_info)
+                r_info_type = ELFReader.__elf32_r_type(r_info)
+                d = {"r_offset":r_offset, "r_info":r_info, "r_info_type":r_info_type, "r_info_sym":r_info_sym}
+                relplt_table.append(d)
+            #
+            self.__rels["relplt"] = relplt_table
+            print("ok")
+            self.__so_needed = []
+            for str_off in dt_needed:
+                endId=self.__dyn_str_buf.find(b"\x00", str_off)
+                so_name = self.__dyn_str_buf[str_off:endId]
+                self.__so_needed.append(so_name.decode("utf-8"))
+            #
         #
     #
 
@@ -325,5 +329,76 @@ class ELFReader:
 
     def get_so_need(self):
         return self.__so_needed
+    #
+
+    #android 4.4.4 soinfo
+    '''
+    struct link_map_t {
+        uintptr_t l_addr;
+        char*  l_name;
+        uintptr_t l_ld;
+        link_map_t* l_next;
+        link_map_t* l_prev;
+    };
+
+    #define SOINFO_NAME_LEN 128
+    struct soinfo {
+    public:
+        char name[SOINFO_NAME_LEN];
+        const Elf32_Phdr* phdr;
+        size_t phnum;
+        Elf32_Addr entry;
+        Elf32_Addr base;
+        unsigned size;
+        uint32_t unused1;  // DO NOT USE, maintained for compatibility.
+        Elf32_Dyn* dynamic;
+        uint32_t unused2; // DO NOT USE, maintained for compatibility
+        uint32_t unused3; // DO NOT USE, maintained for compatibility
+        soinfo* next;
+        unsigned flags;
+        const char* strtab;
+        Elf32_Sym* symtab;
+        size_t nbucket;
+        size_t nchain;
+        unsigned* bucket;
+        unsigned* chain;
+        unsigned* plt_got;
+        Elf32_Rel* plt_rel;
+        size_t plt_rel_count;
+        Elf32_Rel* rel;
+        size_t rel_count;
+        linker_function_t* preinit_array;
+        size_t preinit_array_count;
+        linker_function_t* init_array;
+        size_t init_array_count;
+        linker_function_t* fini_array;
+        size_t fini_array_count;
+        linker_function_t init_func;
+        linker_function_t fini_func;
+        
+        // ARM EABI section used for stack unwinding.
+        unsigned* ARM_exidx;
+        size_t ARM_exidx_count;
+        
+        size_t ref_count;
+        link_map_t link_map;
+        bool constructors_called;
+        // When you read a virtual address from the ELF file, add this
+        // value to get the corresponding address in the process' address space.
+        Elf32_Addr load_bias;
+    };
+    '''
+    def write_soinfo(self, base, mu):
+
+        '''
+        #在虚拟机中构造一个soinfo结构
+        info_base = self.__soinfo_area_base
+        assert(len(filename)<128)
+        #self.emu.mu.mem_write()
+        mu = self.emu.mu
+        memory_helpers.write_utf8(mu, info_base+0, filename)
+        mu.mem_write(info_base+128, int().to_bytes(8, byteorder='little'))
+        '''
+        pass
     #
 #
