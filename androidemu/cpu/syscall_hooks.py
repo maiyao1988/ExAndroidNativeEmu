@@ -70,6 +70,7 @@ class SyscallHooks:
         self._syscall_handler.set_handler(0x178, "process_vm_readv", 6, self.__process_vm_readv)
         self._syscall_handler.set_handler(0x180, "getrandom", 3, self._getrandom)
         self._syscall_handler.set_handler(0xf0002, "ARM_cacheflush", 0, self._ARM_cacheflush)
+        self._syscall_handler.set_handler(0xa2, "nanosleep", 2, self._nanosleep)
         self._clock_start = time.time()
         self._clock_offset = randint(50000, 100000)
         self._sig_maps = {}
@@ -491,6 +492,20 @@ class SyscallHooks:
 
     def _ARM_cacheflush(self, mu):
         logging.warning("syscall _ARM_cacheflush skip.")
+        return 0
+    #
+    
+    def _nanosleep(self, mu, req, rem):
+        '''
+        int nanosleep(const struct timespec *req,struct timespec *rem);
+        struct timespec{
+              time_t  tv_sec;         /* seconds */
+              long    tv_nsec;        /* nanoseconds */
+        };
+        '''
+        req_tv_sec = memory_helpers.read_ptr(mu, req)
+        req_tv_nsec = memory_helpers.read_ptr(mu, req + 4)
+        time.sleep((req_tv_sec * 1000 + req_tv_nsec / 1000000) / 1000)
         return 0
     #
 #
