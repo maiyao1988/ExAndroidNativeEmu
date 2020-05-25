@@ -1501,12 +1501,25 @@ class JNIEnv:
         raise NotImplementedError()
 
     @native_method
-    def get_byte_array_elements(self, mu, env ,array_idx, item_idx):
-        logger.debug("JNIEnv->get_byte_array_elements(%u, %u) was called" % (array_idx, item_idx))
+    def get_byte_array_elements(self, mu, env, array_idx, is_copy_ptr):
+        logger.debug("JNIEnv->get_byte_array_elements(%u, %u) was called" % (array_idx, is_copy_ptr))
+
+        if is_copy_ptr != 0:
+            raise NotImplementedError()
+        #
 
         obj = self.get_reference(array_idx)
         pyobj = JNIEnv.jobject_to_pyobject(obj)
-        return pyobj[item_idx]
+        items = pyobj.get_py_items()
+        #FIXME use malloc
+        buf = self._emu.memory.map(0, len(items), UC_PROT_READ | UC_PROT_WRITE)
+
+        logger.debug("=> %r" % items)
+
+        b = bytes(items)
+        mu.mem_write(buf, b)
+        return buf
+    #
 
 
     @native_method
@@ -1538,10 +1551,13 @@ class JNIEnv:
         raise NotImplementedError()
 
     @native_method
-    def release_byte_array_elements(self, mu, env,array_idx, item_idx):
-        logger.debug("JNIEnv->release_byte_array_elements(%u, %u) was called" % (array_idx, item_idx))
+    def release_byte_array_elements(self, mu, env,array_idx, elems, mode):
+        logger.debug("JNIEnv->ReleaseStringUtfChars(%u, %s) was called" % (string, pystr))
+
+        self._emu.memory.unmap(utf8_ptr, len(pystr)+1)
         return 0
         #raise NotImplementedError()
+    #
 
     @native_method
     def release_char_array_elements(self, mu, env):
