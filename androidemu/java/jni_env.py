@@ -1511,14 +1511,18 @@ class JNIEnv:
         obj = self.get_reference(array_idx)
         pyobj = JNIEnv.jobject_to_pyobject(obj)
         items = pyobj.get_py_items()
+        items_len = len(items)
+        extra_n = 4
         #FIXME use malloc
-        buf = self._emu.memory.map(0, len(items), UC_PROT_READ | UC_PROT_WRITE)
+        buf = self._emu.memory.map(0, extra_n+items_len, UC_PROT_READ | UC_PROT_WRITE)
 
         logger.debug("=> %r" % items)
 
+        #协议约定前四个字节必定是长度
+        mu.mem_write(buf, items_len.to_bytes(extra_n, 'little'))
         b = bytes(items)
-        mu.mem_write(buf, b)
-        return buf
+        mu.mem_write(buf+extra_n, b)
+        return buf+extra_n
     #
 
 
@@ -1552,11 +1556,13 @@ class JNIEnv:
 
     @native_method
     def release_byte_array_elements(self, mu, env,array_idx, elems, mode):
-        logger.debug("JNIEnv->ReleaseStringUtfChars(%u, %s) was called" % (string, pystr))
-
-        self._emu.memory.unmap(utf8_ptr, len(pystr)+1)
+        #前四个字节必为长度
+        logger.debug("JNIEnv->ReleaseByteArrayElements(%u, %u, %u) was called" % (array_idx, elems, mode))
+        true_buf = elems - 4
+        b = mu.mem_read(true_buf, 4)
+        elems_sz =  int.from_bytes(b, byteorder='little', signed = False)
+        self._emu.memory.unmap(true_buf, elems_sz+4)
         return 0
-        #raise NotImplementedError()
     #
 
     @native_method
