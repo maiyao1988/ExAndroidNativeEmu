@@ -32,4 +32,5 @@ class String(metaclass=JavaClassDef, jvm_name='java/lang/String'):
 
     def __repr__(self):
         return "JavaString(%s)"%self.get_py_string()
+    #
 #

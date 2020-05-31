@@ -25,6 +25,10 @@ class Array(metaclass=JavaClassDef, jvm_name='java/lang/reflect/Array'):
         self.__pyitems[index] = value
     #
 
+    def __repr__(self):
+        return "JavaArray(%r)"%self.get_py_items()
+    #
+
     @staticmethod
     @java_method_def(name='set', signature='(Ljava/lang/Object;I)Ljava/lang/Object;', native=False)
     def set(emu, obj, index):
