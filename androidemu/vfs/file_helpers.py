@@ -36,7 +36,12 @@ def stat_to_memory2(uc, buf_ptr, stat, uid):
     if (hasattr(stat, "st_blocks")):
         st_blocks = stat.st_blocks
     #
-    uc.mem_write(buf_ptr, int(stat.st_dev).to_bytes(8, byteorder='little'))
+    stdev = stat.st_dev
+    if (stdev < 0):
+        #随便给个数值就行了
+        stdev = stdev * -1
+    #
+    uc.mem_write(buf_ptr, int(stdev).to_bytes(8, byteorder='little'))
     uc.mem_write(buf_ptr + 8, int(0).to_bytes(4, byteorder='little'))  # PAD 4
     uc.mem_write(buf_ptr + 12, int(stat.st_ino).to_bytes(4, byteorder='little'))
     uc.mem_write(buf_ptr + 16, int(stat.st_mode).to_bytes(4, byteorder='little'))
