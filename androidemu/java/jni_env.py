@@ -1455,7 +1455,7 @@ class JNIEnv:
         array_pyobj = JNIEnv.jobject_to_pyobject(array_obj)
         pyobj_item = array_pyobj[item_idx]
         #FIXME 考虑pyobj_item是Class的情况，应该用jclass包裹
-        return add_local_reference(jobject(pyobj_item))
+        return self.add_local_reference(jobject(pyobj_item))
     #
 
     @native_method
