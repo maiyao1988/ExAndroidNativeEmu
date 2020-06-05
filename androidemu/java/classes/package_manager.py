@@ -14,7 +14,7 @@ jvm_fields=[
                  ]):
     
     def __init__(self, pyPkgName):
-        self.sourceDir = String("/data/app/%s/"%pyPkgName)
+        self.sourceDir = String("/data/app/%s/base.apk"%pyPkgName)
         self.dataDir = String("/data/data/%s"%pyPkgName)
         self.nativeLibraryDir = String("/data/data/%s"%pyPkgName)
         self.flags = 0x30e8bf46
