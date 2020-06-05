@@ -12,4 +12,11 @@ class File(metaclass=JavaClassDef, jvm_name='java/io/File'):
     def getPath(self, emu):
         return self.__path
     #
+
+
+    @java_method_def(name='getAbsolutePath', signature='()Ljava/lang/String;', native=False)
+    def getPath(self, emu):
+        raise NotImplementedError()
+        return self.__path
+    #
 #

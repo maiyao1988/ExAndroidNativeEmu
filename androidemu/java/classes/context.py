@@ -33,6 +33,18 @@ class Context(metaclass=JavaClassDef, jvm_name='android/content/Context',
     def getApplicationInfo(self, emu):
         pass
     #
+
+    @java_method_def(name='checkSelfPermission', signature='(Ljava/lang/String;)I', native=False)
+    def checkSelfPermission(self, emu):
+        #return -1 #PERMISSION_DENIED
+        return 0 #PERMISSION_GRANTED
+    #
+
+    @java_method_def(name='checkCallingOrSelfPermission', signature='(Ljava/lang/String;)I', native=False)
+    def checkCallingOrSelfPermission(self, emu):
+        #return -1 #PERMISSION_DENIED
+        return 0 #PERMISSION_GRANTED
+    #
 #
 
 class ContextImpl(Context, metaclass=JavaClassDef, jvm_name='android/app/ContextImpl', jvm_super=Context):

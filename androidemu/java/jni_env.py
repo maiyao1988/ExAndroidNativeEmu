@@ -407,7 +407,9 @@ class JNIEnv:
             raise RuntimeError('Could not find class \'%s\' for JNIEnv.' % name)
 
         if clazz.jvm_ignore:
+            logger.debug("FindClass %s return 0 because of ignored")
             return 0
+        #
 
         return self.add_local_reference(jclass(clazz))
 
@@ -472,8 +474,8 @@ class JNIEnv:
 
     @native_method
     def exception_occurred(self, mu, env):
-        raise NotImplementedError()
-
+        logger.info("exception_occurred called skip")
+    #
     @native_method
     def exception_describe(self, mu, env):
         raise NotImplementedError()

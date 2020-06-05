@@ -18,3 +18,13 @@ class Integer(metaclass=JavaClassDef, jvm_name='java/lang/Integer'):
     #
 
 #
+
+
+class Float(metaclass=JavaClassDef, jvm_name='java/lang/Float'):
+    
+    def __init__(self, value):
+        self.__value = value
+    #
+
+#
+

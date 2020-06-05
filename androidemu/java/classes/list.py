@@ -21,7 +21,7 @@ class List(metaclass=JavaClassDef, jvm_name='java/util/List'):
         self.__pylist[index] = value
     #
 
-    @java_method_def(name='get', signature='(I)Ljava/lang/Object;', native=False)
+    @java_method_def(name='get', args_list=["jint"], signature='(I)Ljava/lang/Object;', native=False)
     def get(self, emu, index):
         if (index < len(self.__pylist)):
             return self.__pylist[index]
