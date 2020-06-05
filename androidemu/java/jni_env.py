@@ -398,10 +398,12 @@ class JNIEnv:
         logger.debug("JNIEnv->FindClass(%s) was called" % name)
 
         if name.startswith('['):
-            raise NotImplementedError('Array type not implemented.')
+            #raise NotImplementedError('Array type not implemented.')
+            #treat as class Array
+            name = "java/lang/reflect/Array"
+        #
 
         clazz = self._class_loader.find_class_by_name(name)
-
         if clazz is None:
             # TODO: Proper Java error?
             raise RuntimeError('Could not find class \'%s\' for JNIEnv.' % name)
@@ -475,10 +477,13 @@ class JNIEnv:
     @native_method
     def exception_occurred(self, mu, env):
         logger.info("exception_occurred called skip")
+        return 0
     #
+
     @native_method
     def exception_describe(self, mu, env):
         raise NotImplementedError()
+    #
 
     @native_method
     def exception_clear(self, mu, env):
@@ -489,6 +494,7 @@ class JNIEnv:
         logger.debug("JNIEnv->ExceptionClear() was called")
         # TODO: Implement
         return None
+    #
 
     @native_method
     def fatal_error(self, mu, env):
