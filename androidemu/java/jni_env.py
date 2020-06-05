@@ -1442,7 +1442,7 @@ class JNIEnv:
     #
 
     @native_method
-    def new_object_array(self, mu, env):
+    def new_object_array(self, mu, env, class_id, obj_init):
         raise NotImplementedError()
     #
 
@@ -1450,10 +1450,12 @@ class JNIEnv:
     def get_object_array_element(self, mu, env, array_idx, item_idx):
         logger.debug("JNIEnv->GetObjectArrayElement(%u, %u) was called" % (array_idx, item_idx))
 
-        obj = self.get_reference(array_idx)
+        array_obj = self.get_reference(array_idx)
 
-        pyobj = JNIEnv.jobject_to_pyobject(obj)
-        return pyobj[item_idx]
+        array_pyobj = JNIEnv.jobject_to_pyobject(array_obj)
+        pyobj_item = array_pyobj[item_idx]
+        #FIXME 考虑pyobj_item是Class的情况，应该用jclass包裹
+        return self.add_local_reference(jobject(pyobj_item))
     #
 
     @native_method
@@ -1470,7 +1472,7 @@ class JNIEnv:
         barr = bytearray([0] * bytelen)
         arr = Array("B", barr)
         return self.add_local_reference(jobject(arr))
-        #raise NotImplementedError()
+    #
 
     @native_method
     def new_char_array(self, mu, env):
