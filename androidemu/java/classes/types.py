@@ -17,6 +17,11 @@ class Integer(metaclass=JavaClassDef, jvm_name='java/lang/Integer'):
         self.__value = value
     #
 
+    @java_method_def(name='intValue', signature='()I', native=False)
+    def intValue(self, emu):
+        return self.__value
+    #
+
 #
 
 
