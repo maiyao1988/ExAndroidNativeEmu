@@ -690,10 +690,6 @@ class JNIEnv:
             raise RuntimeError("Could not find method ('%s', '%s') in class %s." % (name, sig, clazz.value.jvm_name))
 
         return method.jvm_id
-
-    @native_method
-    def call_object_method(self, mu, env):
-        raise NotImplementedError()
     #
 
     def __call_xxx_method(self, mu, env, obj_idx, method_id, args, args_type):
@@ -717,6 +713,11 @@ class JNIEnv:
         constructor_args = self.read_args_common(mu, args, method.args_list, args_type)
 
         return method.func(pyobj, self._emu, *constructor_args)
+    #
+
+    @native_method
+    def call_object_method(self, mu, env, obj_idx, method_id, arg1, arg2, arg3, arg4):
+        return self.__call_xxx_method(mu, env, obj_idx, method_id, (arg1, arg2, arg3, arg4), 0)
     #
 
     @native_method
@@ -780,12 +781,14 @@ class JNIEnv:
     def call_short_method_a(self, mu, env):
         raise NotImplementedError()
 
+    #上层不知道个数，暂时读四个寄存器，不会错
     @native_method
-    def call_int_method(self, mu, env):
-        raise NotImplementedError()
+    def call_int_method(self, mu, env, obj_idx, method_id, arg1, arg2, arg3, arg4):
+        return self.__call_xxx_method(mu, env, obj_idx, method_id, (arg1, arg2, arg3, arg4), 0)
+    #
 
     @native_method
-    def call_int_method_v(self, mu, env,  obj_idx, method_id, args):
+    def call_int_method_v(self, mu, env, obj_idx, method_id, args):
         return self.__call_xxx_method(mu, env, obj_idx, method_id, args, 1)
     #
 

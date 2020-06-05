@@ -329,7 +329,7 @@ class ECMiscInfo(metaclass=JavaClassDef, jvm_name='com/alibaba/wireless/security
 #
 
 
-class MainApplication(metaclass=JavaClassDef, jvm_name='fm/xiami/mainXiami/MainApplication', jvm_super=ContextWrapper):
+class MainApplication(ContextWrapper, metaclass=JavaClassDef, jvm_name='fm/xiami/mainXiami/MainApplication', jvm_super=ContextWrapper):
     def __init__(self):
         pass
     #
@@ -447,10 +447,13 @@ for module in emulator.modules:
 try:
     # Run JNI_OnLoad.
     #   JNI_OnLoad will call 'RegisterNatives'.
+    impl = ContextImpl()
     emulator.call_symbol(lib_module, 'JNI_OnLoad', emulator.java_vm.address_ptr, 0x00)
 
     cmd = 10101
     app = MainApplication()
+    app.attachBaseContext(impl)
+
     o2 = Integer(3)
     o3 = String("")
     o4 = String("/data/user/0/fm.xiami.main/app_SGLib")

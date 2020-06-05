@@ -16,34 +16,44 @@ class Context(metaclass=JavaClassDef, jvm_name='android/content/Context',
 
     @java_method_def(name='getPackageManager', signature='()Landroid/content/pm/PackageManager;', native=False)
     def getPackageManager(self, emu):
+        raise NotImplementedError()
         pass
     #
 
     @java_method_def(name='getContentResolver', signature='()Landroid/content/ContentResolver;', native=False)
     def getContentResolver(self, emu):
+        raise NotImplementedError()
         pass
     #
 
     @java_method_def(name='getSystemService', signature='(Ljava/lang/String;)Ljava/lang/Object;', native=False)
     def getSystemService(self, emu, s1):
+        raise NotImplementedError()
         pass
     #
 
     @java_method_def(name='getApplicationInfo', signature='()Landroid/content/pm/ApplicationInfo;', native=False)
     def getApplicationInfo(self, emu):
+        raise NotImplementedError()
         pass
     #
 
     @java_method_def(name='checkSelfPermission', signature='(Ljava/lang/String;)I', native=False)
     def checkSelfPermission(self, emu):
-        #return -1 #PERMISSION_DENIED
-        return 0 #PERMISSION_GRANTED
+        raise NotImplementedError()
+        pass
     #
 
     @java_method_def(name='checkCallingOrSelfPermission', signature='(Ljava/lang/String;)I', native=False)
     def checkCallingOrSelfPermission(self, emu):
-        #return -1 #PERMISSION_DENIED
-        return 0 #PERMISSION_GRANTED
+        raise NotImplementedError()
+        pass
+    #
+
+    @java_method_def(name='getPackageCodePath', signature='()Ljava/lang/String;', native=False)
+    def getPackageCodePath(self, emu):
+        raise NotImplementedError()
+        pass
     #
 #
 
@@ -84,6 +94,23 @@ class ContextImpl(Context, metaclass=JavaClassDef, jvm_name='android/app/Context
     def getPackageName(self, emu):
         return self.__pkgName
     #
+
+    @java_method_def(name='checkSelfPermission', signature='(Ljava/lang/String;)I', native=False)
+    def checkSelfPermission(self, emu):
+        return 0 #PERMISSION_GRANTED
+    #
+
+    @java_method_def(name='checkCallingOrSelfPermission', signature='(Ljava/lang/String;)I', native=False)
+    def checkCallingOrSelfPermission(self, emu):
+        return 0 #PERMISSION_GRANTED
+    #
+
+    @java_method_def(name='getPackageCodePath', signature='()Ljava/lang/String;', native=False)
+    def getPackageCodePath(self, emu):
+        pkgName = config.global_config_get("pkg_name")
+        path = "/data/app/%s/base.apk"%(pkgName, )
+        return String(path)
+    #
 #
 
 class ContextWrapper(Context, metaclass=JavaClassDef, jvm_name='android/content/ContextWrapper', jvm_super=Context):
@@ -120,5 +147,20 @@ class ContextWrapper(Context, metaclass=JavaClassDef, jvm_name='android/content/
     @java_method_def(name='getPackageName', signature='()Ljava/lang/String;', native=False)
     def getPackageName(self, emu):
         return self.__impl.getPackageName(emu)
+    #
+
+    @java_method_def(name='checkSelfPermission', signature='(Ljava/lang/String;)I', native=False)
+    def checkSelfPermission(self, emu):
+        return self.__impl.checkSelfPermission(emu)
+    #
+
+    @java_method_def(name='checkCallingOrSelfPermission', signature='(Ljava/lang/String;)I', native=False)
+    def checkCallingOrSelfPermission(self, emu):
+        return self.__impl.checkCallingOrSelfPermission(emu)
+    #
+
+    @java_method_def(name='getPackageCodePath', signature='()Ljava/lang/String;', native=False)
+    def getPackageCodePath(self, emu):
+        return self.__impl.getPackageCodePath(emu)
     #
 #
