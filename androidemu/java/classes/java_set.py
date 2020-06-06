@@ -2,6 +2,7 @@ from ..java_class_def import JavaClassDef
 from ..java_field_def import JavaFieldDef
 from ..java_method_def import java_method_def,JavaMethodDef
 from ..constant_values import *
+from .array import *
 
 
 class Set(metaclass=JavaClassDef, jvm_name='java/util/Set'):
@@ -42,9 +43,9 @@ class Set(metaclass=JavaClassDef, jvm_name='java/util/Set'):
     #
     '''
 
-    @java_method_def(name='toArray', args_list=["jobject"], signature='()[Ljava/lang/Object;', native=False)
-    def toArray(self, emu, key):
-        raise NotImplementedError()
+    @java_method_def(name='toArray', signature='()[Ljava/lang/Object;', native=False)
+    def toArray(self, emu):
+        return Array("Ljava/lang/Object;", list(self.__pyset))
     #
 
 

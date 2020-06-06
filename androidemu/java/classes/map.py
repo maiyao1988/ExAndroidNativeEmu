@@ -6,7 +6,7 @@ from .java_set import Set
 
 
 class HashMap(metaclass=JavaClassDef, jvm_name='java/util/HashMap'):
-    def __init__(self, pydict):
+    def __init__(self, pydict={}):
         self.__pydict = pydict
     #
 
@@ -60,7 +60,7 @@ class HashMap(metaclass=JavaClassDef, jvm_name='java/util/HashMap'):
     @java_method_def(name='keySet', signature='()Ljava/util/Set;', native=False)
     def keySet(self, emu):
         #FIXME 由于不支持子类函数覆盖父类，所以暂时以Set返回
-        jset = Set(set(self.__pydict.keys))
+        jset = Set(set(self.__pydict.keys()))
         return jset
     #
 #

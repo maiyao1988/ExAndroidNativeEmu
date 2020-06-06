@@ -102,6 +102,7 @@ class VirtualFileSystem:
         syscall_handler.set_handler(0x37, "fcntl", 6, self.__fcntl64)
         syscall_handler.set_handler(0x92, "writev", 3, self._handle_writev)
         syscall_handler.set_handler(0xC3, "stat64", 2, self._handle_stat64)
+        syscall_handler.set_handler(0xC4, "lstat64", 2, self._handle_lstat64)
         syscall_handler.set_handler(0xC5, "fstat64", 2, self._handle_fstat64)
         syscall_handler.set_handler(0xD9, "getdents64", 3, self._handle_getdents64)
         syscall_handler.set_handler(0xDD, "fcntl64", 6, self.__fcntl64)
@@ -368,6 +369,20 @@ class VirtualFileSystem:
         file_path = self.translate_path(filename)
         if (os.path.exists(file_path)):
             stats = os.stat(file_path)
+            uid = config.global_config_get("uid")
+            file_helpers.stat_to_memory2(mu, buf_ptr, stats, uid)
+            return 0
+        else:
+            return -1
+        #
+    #
+
+    def _handle_lstat64(self, mu, filename_ptr, buf_ptr):
+        filename = memory_helpers.read_utf8(mu, filename_ptr)
+        logger.info("lstat64 %s"%filename)
+        file_path = self.translate_path(filename)
+        if (os.path.exists(file_path)):
+            stats = os.lstat(file_path)
             uid = config.global_config_get("uid")
             file_helpers.stat_to_memory2(mu, buf_ptr, stats, uid)
             return 0

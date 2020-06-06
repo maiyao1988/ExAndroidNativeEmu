@@ -566,9 +566,12 @@ class JNIEnv:
 
         obj1 = self.get_reference(ref1)
         obj2 = self.get_reference(ref2)
-
-        if obj1 is obj2:
+        pyobj1 = self.jobject_to_pyobject(obj1)
+        pyobj2 = self.jobject_to_pyobject(obj2)
+        
+        if pyobj1 is pyobj2:
             return JNI_TRUE
+        #
 
         return JNI_FALSE
 
@@ -731,8 +734,9 @@ class JNIEnv:
         raise NotImplementedError()
 
     @native_method
-    def call_boolean_method(self, mu, env):
-        raise NotImplementedError()
+    def call_boolean_method(self, mu, env, obj_idx, method_id, arg1, arg2, arg3, arg4):
+        return self.__call_xxx_method(mu, env, obj_idx, method_id, (arg1, arg2, arg3, arg4), 0)
+    #
 
     @native_method
     def call_boolean_method_v(self, mu, env, obj_idx, method_id, args):
@@ -744,8 +748,9 @@ class JNIEnv:
         raise NotImplementedError()
 
     @native_method
-    def call_byte_method(self, mu, env):
-        raise NotImplementedError()
+    def call_byte_method(self, mu, env, obj_idx, method_id, arg1, arg2, arg3, arg4):
+        return self.__call_xxx_method(mu, env, obj_idx, method_id, (arg1, arg2, arg3, arg4), 0)
+    #
 
     @native_method
     def call_byte_method_v(self, mu, env, obj_idx, method_id, args):
@@ -756,9 +761,11 @@ class JNIEnv:
     def call_byte_method_a(self, mu, env):
         raise NotImplementedError()
 
+
     @native_method
-    def call_char_method(self, mu, env):
-        raise NotImplementedError()
+    def call_char_method(self, mu, env, obj_idx, method_id, arg1, arg2, arg3, arg4):
+        return self.__call_xxx_method(mu, env, obj_idx, method_id, (arg1, arg2, arg3, arg4), 0)
+    #
 
     @native_method
     def call_char_method_v(self, mu, env, obj_idx, method_id, args):
@@ -770,8 +777,9 @@ class JNIEnv:
         raise NotImplementedError()
 
     @native_method
-    def call_short_method(self, mu, env):
-        raise NotImplementedError()
+    def call_short_method(self, mu, env, obj_idx, method_id, arg1, arg2, arg3, arg4):
+        return self.__call_xxx_method(mu, env, obj_idx, method_id, (arg1, arg2, arg3, arg4), 0)
+    #
 
     @native_method
     def call_short_method_v(self, mu, env, obj_idx, method_id, args):
@@ -798,8 +806,9 @@ class JNIEnv:
         raise NotImplementedError()
 
     @native_method
-    def call_long_method(self, mu, env):
-        raise NotImplementedError()
+    def call_long_method(self, mu, env, obj_idx, method_id, arg1, arg2, arg3, arg4):
+        return self.__call_xxx_method(mu, env, obj_idx, method_id, (arg1, arg2, arg3, arg4), 0)
+    #
 
     @native_method
     def call_long_method_v(self, mu, env, obj_idx, method_id, args):
@@ -809,10 +818,12 @@ class JNIEnv:
     @native_method
     def call_long_method_a(self, mu, env):
         raise NotImplementedError()
-
+    #
+    
     @native_method
-    def call_float_method(self, mu, env):
-        raise NotImplementedError()
+    def call_float_method(self, mu, env, obj_idx, method_id, arg1, arg2, arg3, arg4):
+        return self.__call_xxx_method(mu, env, obj_idx, method_id, (arg1, arg2, arg3, arg4), 0)
+    #
 
     @native_method
     def call_float_method_v(self, mu, env, obj_idx, method_id, args):
@@ -824,8 +835,9 @@ class JNIEnv:
         raise NotImplementedError()
 
     @native_method
-    def call_double_method(self, mu, env):
-        raise NotImplementedError()
+    def call_double_method(self, mu, env, obj_idx, method_id, arg1, arg2, arg3, arg4):
+        return self.__call_xxx_method(mu, env, obj_idx, method_id, (arg1, arg2, arg3, arg4), 0)
+    #
 
     @native_method
     def call_double_method_v(self, mu, env, obj_idx, method_id, args):
@@ -1428,9 +1440,11 @@ class JNIEnv:
 
         if is_copy_ptr != 0:
             raise NotImplementedError()
-
         str_ref = self.get_reference(string)
         str_obj = str_ref.value
+        if (str_obj == JAVA_NULL):
+            return 0
+        #
         str_val = str_obj.get_py_string()
         #FIXME use malloc
         str_ptr = self._emu.memory.map(0, len(str_val)+1, UC_PROT_READ | UC_PROT_WRITE)

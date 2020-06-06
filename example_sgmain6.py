@@ -2,6 +2,7 @@ import logging
 import posixpath
 import sys
 import os
+import json
 
 from unicorn import *
 from unicorn.arm_const import *
@@ -13,12 +14,14 @@ from androidemu.java.classes.string import String
 from androidemu.java.classes.types import *
 from androidemu.java.classes.context import *
 from androidemu.java.classes.array import Array
+from androidemu.java.classes.map import *
 import androidemu.utils.debug_utils
 from androidemu.utils.chain_log import ChainLogger
 from androidemu.java.constant_values import *
 
 from androidemu.vfs.virtual_file import VirtualFile
 from androidemu.utils import misc_utils
+
 
 import capstone
 import traceback
@@ -105,9 +108,19 @@ class SPUtility2(metaclass=JavaClassDef, jvm_name='com/taobao/wireless/security/
     @staticmethod
     @java_method_def(name='readFromSPUnified', args_list=["jstring", "jstring", "jstring"], signature='(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;', native=False)
     def readFromSPUnified(mu, s1, s2, s3):
-        logger.warning("readFromSPUnified %s %s %s"%(s1, s2, s3))
-        raise NotImplementedError()
-        return ""
+        #代码去找app_SGLib下面的SGMANAGER_DATA2文件，文件不存在
+        key = "%s_%s"%(s1.get_py_string(), s2.get_py_string())
+        path = "vfs/data/data/fm.xiami.main/files/SGMANAGER_DATA2"
+        with open(path) as f:
+            content = f.read()
+            js = json.loads(content)
+            if key in js:
+                print ("readFromSPUnified return %s"%js[key])
+                return String(js[key])
+            #
+        #
+        #raise NotImplementedError()
+        return s3
     #
 
     @staticmethod
@@ -357,6 +370,19 @@ class JNIBridge(metaclass=JavaClassDef, jvm_name='com/uc/crashsdk/JNIBridge'):
 #
 
 
+class SecException(metaclass=JavaClassDef, jvm_name='com/alibaba/wireless/security/open/SecException'):
+
+    def __init__(self):
+        pass
+    #
+
+    @java_method_def(name='<init>', args_list=["jstring", "jint"], signature='(Ljava/lang/String;I)V', native=False)
+    def ctor(self, mu, s1, i1):
+        logger.warning("SecException ctor %s %d ..."%(s1, i1))
+    #
+#
+
+
 #not exist in usual sdk!!!
 class MiuiAd(metaclass=JavaClassDef, jvm_name='android/provider/MiuiSettings$Ad', jvm_ignore=True):
 
@@ -446,6 +472,9 @@ emulator.java_classloader.add_class(CallbackHelper)
 emulator.java_classloader.add_class(UserTrackMethodJniBridge)
 emulator.java_classloader.add_class(UMIDComponent)
 emulator.java_classloader.add_class(ECMiscInfo)
+emulator.java_classloader.add_class(MainApplication)
+emulator.java_classloader.add_class(JNIBridge)
+emulator.java_classloader.add_class(SecException)
 
 emulator.java_classloader.add_class(MiuiAd)
 emulator.java_classloader.add_class(TelephonyManagerEx)
@@ -453,15 +482,13 @@ emulator.java_classloader.add_class(FtTelephonyAdapter)
 emulator.java_classloader.add_class(FtTelephony)
 emulator.java_classloader.add_class(FtDeviceInfo)
 emulator.java_classloader.add_class(ColorOSTelephonyManager)
-emulator.java_classloader.add_class(MainApplication)
-emulator.java_classloader.add_class(JNIBridge)
 
 path = "vfs/system/lib/vectors"
 vf = VirtualFile("[vectors]", misc_utils.my_open(path, os.O_RDONLY), path)
 emulator.memory.map(0xffff0000, 0x1000, UC_PROT_EXEC | UC_PROT_READ, vf, 0)
 
 # Load all libraries.
-lib_module = emulator.load_library("tests/bin/libsgmainso-6.4.163.so")
+lib_module = emulator.load_library("vfs/data/data/fm.xiami.main/lib/libsgmainso-6.4.163.so")
 
 #androidemu.utils.debug_utils.dump_symbols(emulator, sys.stdout)
 
@@ -477,7 +504,6 @@ try:
     impl = ContextImpl()
     emulator.call_symbol(lib_module, 'JNI_OnLoad', emulator.java_vm.address_ptr, 0x00)
 
-    cmd = 10101
     app = MainApplication()
     app.attachBaseContext(impl)
 
@@ -490,8 +516,36 @@ try:
     #print(arr)
 
     #emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
-    JNICLibrary.doCommandNative(emulator, cmd, arr)
+    JNICLibrary.doCommandNative(emulator, 10101, arr)
 
+    o1 = String("main")
+    o2 = String("6.4.163")
+    o3 = String("/data/data/fm.xiami.main/lib/libsgmainso-6.4.163.so")
+    
+    print("begin 10102")
+    arr = Array("Ljava/lang/Object;", [o1, o2, o3])
+    JNICLibrary.doCommandNative(emulator, 10102, arr)
+
+    '''
+    01-26 02:46:31.968  5752  6060 I librev-dj: param0 {INPUT=XtX3M1bJ69cDAFWqkBwQYXgY&&&21465214&a75c08d1bc5069534cd65d35372bede2&2169991&mtop.alimusic.common.menuservice.getdata&1.0&&701287@xiami_android_8.3.8&AohsPSPH-F7lQLJzyIvh_6geqxEqIetYwOxZ0laI9k_9&&&27} [class java.util.HashMap]
+    01-26 02:46:31.968  5752  6060 I librev-dj: param1 21465214 [class java.lang.String]
+    01-26 02:46:31.968  5752  6060 I librev-dj: param2 7 [class java.lang.Integer]
+    01-26 02:46:31.968  5752  6060 I librev-dj: param3 is null
+    01-26 02:46:31.968  5752  6060 I librev-dj: param4 true [class java.lang.Boolean]
+    01-26 02:46:31.976  5752  6060 I librev-dj: call my_doCommandNative return 0x200041
+    01-26 02:46:31.976  5752  6060 I librev-dj: cmd 10401 return ab210e00103f3622607853182fe77adf41d41e872523ccfda2
+    '''
+    s = "XtX3M1bJ69cDAFWqkBwQYXgY&&&21465214&a75c08d1bc5069534cd65d35372bede2&2169991&mtop.alimusic.common.menuservice.getdata&1.0&&701287@xiami_android_8.3.8&AohsPSPH-F7lQLJzyIvh_6geqxEqIetYwOxZ0laI9k_9&&&27"
+    o1 = HashMap({String("INPUT"):String(s)})
+    o2 = String("21465214")
+    o3 = Integer(7)
+    o4 = JAVA_NULL
+    o5 = Boolean(True)
+    arr = Array("Ljava/lang/Object;", [o1, o2, o3, o4, o5])
+    print("begin 10401")
+    emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
+    JNICLibrary.doCommandNative(emulator, 10401, arr)
+#
 
 except UcError as e:
     print("Exit at 0x%08X" % emulator.mu.reg_read(UC_ARM_REG_PC))
