@@ -17,6 +17,9 @@ import androidemu.utils.debug_utils
 from androidemu.utils.chain_log import ChainLogger
 from androidemu.java.constant_values import *
 
+from androidemu.vfs.virtual_file import VirtualFile
+from androidemu.utils import misc_utils
+
 import capstone
 import traceback
 
@@ -100,9 +103,11 @@ class SPUtility2(metaclass=JavaClassDef, jvm_name='com/taobao/wireless/security/
     #
 
     @staticmethod
-    @java_method_def(name='readFromSPUnified', signature='(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;', native=False)
+    @java_method_def(name='readFromSPUnified', args_list=["jstring", "jstring", "jstring"], signature='(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;', native=False)
     def readFromSPUnified(mu, s1, s2, s3):
-        return s3
+        logger.warning("readFromSPUnified %s %s %s"%(s1, s2, s3))
+        raise NotImplementedError()
+        return ""
     #
 
     @staticmethod
@@ -255,8 +260,10 @@ class UserTrackMethodJniBridge(metaclass=JavaClassDef, jvm_name='com/alibaba/wir
     @staticmethod
     @java_method_def(name='utAvaiable', signature='()I', native=False)
     def utAvaiable(mu):
-        raise NotImplementedError()
-        return 0
+        #raise NotImplementedError()
+        #1 means ok
+        logger.warn("utAvaiable just return 1")
+        return 1
     #
 
     @staticmethod
@@ -323,8 +330,7 @@ class ECMiscInfo(metaclass=JavaClassDef, jvm_name='com/alibaba/wireless/security
     @staticmethod
     @java_method_def(name='registerAppLifeCyCleCallBack', signature='()V', native=False)
     def registerAppLifeCyCleCallBack(mu):
-        raise NotImplementedError()
-        pass
+        logger.warning("registerAppLifeCyCleCallBack skip")
     #
 #
 
@@ -334,6 +340,22 @@ class MainApplication(ContextWrapper, metaclass=JavaClassDef, jvm_name='fm/xiami
         pass
     #
 #
+
+
+class JNIBridge(metaclass=JavaClassDef, jvm_name='com/uc/crashsdk/JNIBridge'):
+
+    def __init__(self):
+        pass
+    #
+
+    @staticmethod
+    @java_method_def(name='registerInfoCallback', args_list=["jstring", "jint", "jlong", "jint"], signature='(Ljava/lang/String;IJI)I', native=False)
+    def registerInfoCallback(mu, s1, i1, j1, i2):
+        logger.warning("registerInfoCallback %s skip..."%s1)
+        return 0
+    #
+#
+
 
 #not exist in usual sdk!!!
 class MiuiAd(metaclass=JavaClassDef, jvm_name='android/provider/MiuiSettings$Ad', jvm_ignore=True):
@@ -432,6 +454,11 @@ emulator.java_classloader.add_class(FtTelephony)
 emulator.java_classloader.add_class(FtDeviceInfo)
 emulator.java_classloader.add_class(ColorOSTelephonyManager)
 emulator.java_classloader.add_class(MainApplication)
+emulator.java_classloader.add_class(JNIBridge)
+
+path = "vfs/system/lib/vectors"
+vf = VirtualFile("[vectors]", misc_utils.my_open(path, os.O_RDONLY), path)
+emulator.memory.map(0xffff0000, 0x1000, UC_PROT_EXEC | UC_PROT_READ, vf, 0)
 
 # Load all libraries.
 lib_module = emulator.load_library("tests/bin/libsgmainso-6.4.163.so")
@@ -444,7 +471,6 @@ logger.info("Loaded modules:")
 for module in emulator.modules:
     logger.info("=> 0x%08x - %s" % (module.base, module.filename))
 
-#emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
 try:
     # Run JNI_OnLoad.
     #   JNI_OnLoad will call 'RegisterNatives'.
@@ -460,13 +486,17 @@ try:
     o4 = String("/data/data/fm.xiami.main/app_SGLib")
     o5 = String("")
     pyarr = [app, o2, o3, o4, o5]
-    arr = Array("[Ljava/lang/Object;", pyarr)
+    arr = Array("Ljava/lang/Object;", pyarr)
     #print(arr)
 
+    #emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
     JNICLibrary.doCommandNative(emulator, cmd, arr)
 
 
 except UcError as e:
-    print("Exit at %x" % emulator.mu.reg_read(UC_ARM_REG_PC))
+    print("Exit at 0x%08X" % emulator.mu.reg_read(UC_ARM_REG_PC))
+    androidemu.utils.debug_utils.dump_registers(emulator.mu, sys.stdout)
+    emulator.memory.dump_maps(sys.stdout)
     raise
+#
 

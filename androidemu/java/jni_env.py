@@ -10,6 +10,7 @@ from .jni_ref import *
 from .reference_table import ReferenceTable
 from .classes.string import String
 from .classes.array import Array
+from .constant_values import JAVA_NULL
 from ..utils import memory_helpers
 from unicorn import *
 
@@ -323,14 +324,14 @@ class JNIEnv:
         i = 0
         for arg_name in args_list:
             ref = args[i]
-            if arg_name == 'jint':
+            if arg_name in ('jint', "jlong", "jchar", "jbyte"):
                 result.append(ref)
             elif arg_name == 'jstring' or arg_name == "jobject":
                 jobj = self.get_reference(ref)
                 obj = None
                 if (jobj == None):
                     logging.warning("arg_name %s ref %d is not vaild maybe wrong arglist"%(arg_name, ref))
-                    obj = None
+                    obj = JAVA_NULL
                 else:
                     obj = jobj.value
                 result.append(obj)
@@ -1122,9 +1123,6 @@ class JNIEnv:
 
         return method.jvm_id
 
-    @native_method
-    def call_static_object_method(self, mu, env):
-        raise NotImplementedError()
 
     def __call_static_xxx_method(self, mu, env, clazz_idx, method_id, args, args_type):
         clazz = self.get_reference(clazz_idx)
@@ -1150,6 +1148,11 @@ class JNIEnv:
     #
 
     @native_method
+    def call_static_object_method(self, mu, env, clazz_idx, method_id, arg1, arg2, arg3, arg4):
+        return self.__call_static_xxx_method(mu, env, clazz_idx, method_id, (arg1, arg2, arg3, arg4), 0)
+    #
+
+    @native_method
     def call_static_object_method_v(self, mu, env, clazz_idx, method_id, args):
         return self.__call_static_xxx_method(mu, env, clazz_idx, method_id, args, 1)
     #
@@ -1159,8 +1162,9 @@ class JNIEnv:
         raise NotImplementedError()
 
     @native_method
-    def call_static_boolean_method(self, mu, env):
-        raise NotImplementedError()
+    def call_static_boolean_method(self, mu, env, clazz_idx, method_id, arg1, arg2, arg3, arg4):
+        return self.__call_static_xxx_method(mu, env, clazz_idx, method_id, (arg1, arg2, arg3, arg4), 0)
+    #
 
     @native_method
     def call_static_boolean_method_v(self, mu, env, clazz_idx, method_id, args):
@@ -1172,8 +1176,9 @@ class JNIEnv:
         raise NotImplementedError()
 
     @native_method
-    def call_static_byte_method(self, mu, env):
-        raise NotImplementedError()
+    def call_static_byte_method(self, mu, env, clazz_idx, method_id, arg1, arg2, arg3, arg4):
+        return self.__call_static_xxx_method(mu, env, clazz_idx, method_id, (arg1, arg2, arg3, arg4), 0)
+    #
 
     @native_method
     def call_static_byte_method_v(self, mu, env, clazz_idx, method_id, args):
@@ -1185,8 +1190,9 @@ class JNIEnv:
         raise NotImplementedError()
 
     @native_method
-    def call_static_char_method(self, mu, env):
-        raise NotImplementedError()
+    def call_static_char_method(self, mu, env, clazz_idx, method_id, arg1, arg2, arg3, arg4):
+        return self.__call_static_xxx_method(mu, env, clazz_idx, method_id, (arg1, arg2, arg3, arg4), 0)
+    #
 
     @native_method
     def call_static_char_method_v(self, mu, env, clazz_idx, method_id, args):
@@ -1198,11 +1204,10 @@ class JNIEnv:
         raise NotImplementedError()
 
     @native_method
-    def call_static_short_method(self, mu, env, clazz_idx, method_id, args):
-        return self.__call_static_xxx_method(mu, env, clazz_idx, method_id, args, 1)
+    def call_static_short_method(self, mu, env, clazz_idx, method_id, arg1, arg2, arg3, arg4):
+        return self.__call_static_xxx_method(mu, env, clazz_idx, method_id, (arg1, arg2, arg3, arg4), 0)
     #
         
-
     @native_method
     def call_static_short_method_v(self, mu, env, clazz_idx, method_id, args):
         return self.__call_static_xxx_method(mu, env, clazz_idx, method_id, args, 1)
@@ -1213,9 +1218,9 @@ class JNIEnv:
         raise NotImplementedError()
 
     @native_method
-    def call_static_int_method(self, mu, env):
-        raise NotImplementedError()
-
+    def call_static_int_method(self, mu, env, clazz_idx, method_id, arg1, arg2, arg3, arg4):
+        return self.__call_static_xxx_method(mu, env, clazz_idx, method_id, (arg1, arg2, arg3, arg4), 0)
+    #
 
     @native_method
     def call_static_int_method_v(self, mu, env, clazz_idx, method_id, args):
@@ -1227,8 +1232,9 @@ class JNIEnv:
         raise NotImplementedError()
 
     @native_method
-    def call_static_long_method(self, mu, env):
-        raise NotImplementedError()
+    def call_static_long_method(self, mu, env, clazz_idx, method_id, arg1, arg2, arg3, arg4):
+        return self.__call_static_xxx_method(mu, env, clazz_idx, method_id, (arg1, arg2, arg3, arg4), 0)
+    #
 
     @native_method
     def call_static_long_method_v(self, mu, env, clazz_idx, method_id, args):
@@ -1240,8 +1246,9 @@ class JNIEnv:
         raise NotImplementedError()
 
     @native_method
-    def call_static_float_method(self, mu, env):
-        raise NotImplementedError()
+    def call_static_float_method(self, mu, env, clazz_idx, method_id, arg1, arg2, arg3, arg4):
+        return self.__call_static_xxx_method(mu, env, clazz_idx, method_id, (arg1, arg2, arg3, arg4), 0)
+    #
 
     @native_method
     def call_static_float_method_v(self, mu, env, clazz_idx, method_id, args):
@@ -1253,8 +1260,9 @@ class JNIEnv:
         raise NotImplementedError()
 
     @native_method
-    def call_static_double_method(self, mu, env):
-        raise NotImplementedError()
+    def call_static_double_method(self, mu, env, clazz_idx, method_id, arg1, arg2, arg3, arg4):
+        return self.__call_static_xxx_method(mu, env, clazz_idx, method_id, (arg1, arg2, arg3, arg4), 0)
+    #
 
     @native_method
     def call_static_double_method_v(self, mu, env, clazz_idx, method_id, args):
@@ -1266,8 +1274,9 @@ class JNIEnv:
         raise NotImplementedError()
 
     @native_method
-    def call_static_void_method(self, mu, env):
-        raise NotImplementedError()
+    def call_static_void_method(self, mu, env, clazz_idx, method_id, arg1, arg2, arg3, arg4):
+        return self.__call_static_xxx_method(mu, env, clazz_idx, method_id, (arg1, arg2, arg3, arg4), 0)
+    #
 
     @native_method
     def call_static_void_method_v(self, mu, env, clazz_idx, method_id, args):

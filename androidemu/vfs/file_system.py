@@ -103,6 +103,7 @@ class VirtualFileSystem:
         syscall_handler.set_handler(0x92, "writev", 3, self._handle_writev)
         syscall_handler.set_handler(0xC3, "stat64", 2, self._handle_stat64)
         syscall_handler.set_handler(0xC5, "fstat64", 2, self._handle_fstat64)
+        syscall_handler.set_handler(0xD9, "getdents64", 3, self._handle_getdents64)
         syscall_handler.set_handler(0xDD, "fcntl64", 6, self.__fcntl64)
         syscall_handler.set_handler(0x10A, "statfs64", 3, self.__statfs64)
         syscall_handler.set_handler(0x142, "openat", 4, self._handle_openat)
@@ -365,11 +366,14 @@ class VirtualFileSystem:
         logger.info("stat64 %s"%filename)
 
         file_path = self.translate_path(filename)
-        stats = os.stat(file_path)
-        uid = config.global_config_get("uid")
-        file_helpers.stat_to_memory2(mu, buf_ptr, stats, uid)
-
-        return 0
+        if (os.path.exists(file_path)):
+            stats = os.stat(file_path)
+            uid = config.global_config_get("uid")
+            file_helpers.stat_to_memory2(mu, buf_ptr, stats, uid)
+            return 0
+        else:
+            return -1
+        #
     #
 
     def _handle_fstat64(self, mu, fd, buf_ptr):
@@ -385,6 +389,11 @@ class VirtualFileSystem:
         file_helpers.stat_to_memory2(mu, buf_ptr, stats, uid)
 
         return 0
+    #
+
+    def _handle_getdents64(self, mu, fd, linux_dirent64_ptr, count):
+        logger.warning("syscall _handle_getdents64 %u %u %u skip..."%(fd, linux_dirent64_ptr, count))
+        return -1
     #
 
     def __ioctl(self, mu, fd, cmd, arg1, arg2, arg3, arg4):

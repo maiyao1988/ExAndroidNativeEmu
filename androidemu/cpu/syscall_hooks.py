@@ -54,6 +54,7 @@ class SyscallHooks:
         self._syscall_handler.set_handler(0x78, "clone", 5, self.__clone)
         self._syscall_handler.set_handler(0xAC, "prctl", 5, self._handle_prctl)
         self._syscall_handler.set_handler(0xAF, "sigprocmask", 3, self._handle_sigprocmask)
+        self._syscall_handler.set_handler(0xBA, "sigaltstack", 2, self.__sigaltstack)
         self._syscall_handler.set_handler(0xBE, "vfork", 0, self.__vfork)
         self._syscall_handler.set_handler(0xC7, "getuid32", 0, self._get_uid)
         self._syscall_handler.set_handler(0xE0, "gettid", 0, self._gettid)
@@ -319,6 +320,10 @@ class SyscallHooks:
     #
 
     def _handle_sigprocmask(self, mu, how, set, oset):
+        return 0
+    #
+
+    def __sigaltstack(self, mu, uss, ouss):
         return 0
     #
 
