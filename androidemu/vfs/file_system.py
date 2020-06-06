@@ -101,6 +101,7 @@ class VirtualFileSystem:
         syscall_handler.set_handler(0x36, "ioctl", 6, self.__ioctl)
         syscall_handler.set_handler(0x37, "fcntl", 6, self.__fcntl64)
         syscall_handler.set_handler(0x92, "writev", 3, self._handle_writev)
+        syscall_handler.set_handler(0xC3, "stat64", 2, self._handle_stat64)
         syscall_handler.set_handler(0xC5, "fstat64", 2, self._handle_fstat64)
         syscall_handler.set_handler(0xDD, "fcntl64", 6, self.__fcntl64)
         syscall_handler.set_handler(0x10A, "statfs64", 3, self.__statfs64)
@@ -359,6 +360,17 @@ class VirtualFileSystem:
         #
         return n
 
+    def _handle_stat64(self, mu, filename_ptr, buf_ptr):
+        filename = memory_helpers.read_utf8(mu, filename_ptr)
+        logger.info("stat64 %s"%filename)
+
+        file_path = self.translate_path(filename)
+        stats = os.stat(file_path)
+        uid = config.global_config_get("uid")
+        file_helpers.stat_to_memory2(mu, buf_ptr, stats, uid)
+
+        return 0
+    #
 
     def _handle_fstat64(self, mu, fd, buf_ptr):
         """

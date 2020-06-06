@@ -404,7 +404,8 @@ logger = logging.getLogger(__name__)
 
 # Initialize emulator
 emulator = Emulator(
-    vfs_root=posixpath.join(posixpath.dirname(__file__), "vfs")
+    vfs_root=posixpath.join(posixpath.dirname(__file__), "vfs"),
+    config_path="xiami.json"
 )
 
 # Register Java class.
@@ -456,8 +457,9 @@ try:
 
     o2 = Integer(3)
     o3 = String("")
-    o4 = String("/data/user/0/fm.xiami.main/app_SGLib")
-    pyarr = [app, o2, o3, o4]
+    o4 = String("/data/data/fm.xiami.main/app_SGLib")
+    o5 = String("")
+    pyarr = [app, o2, o3, o4, o5]
     arr = Array("[Ljava/lang/Object;", pyarr)
     #print(arr)
 

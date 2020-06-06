@@ -4,6 +4,7 @@ from..java_method_def import java_method_def,JavaMethodDef
 from .package_manager import *
 from .contentresolver import ContentResolver
 from .string import String
+from .file import File
 from ... import config
 
 class Context(metaclass=JavaClassDef, jvm_name='android/content/Context',
@@ -52,6 +53,12 @@ class Context(metaclass=JavaClassDef, jvm_name='android/content/Context',
 
     @java_method_def(name='getPackageCodePath', signature='()Ljava/lang/String;', native=False)
     def getPackageCodePath(self, emu):
+        raise NotImplementedError()
+        pass
+    #
+
+    @java_method_def(name='getFilesDir', signature='()Ljava/io/File;', native=False)
+    def getFilesDir(self, emu):
         raise NotImplementedError()
         pass
     #
@@ -108,8 +115,15 @@ class ContextImpl(Context, metaclass=JavaClassDef, jvm_name='android/app/Context
     @java_method_def(name='getPackageCodePath', signature='()Ljava/lang/String;', native=False)
     def getPackageCodePath(self, emu):
         pkgName = config.global_config_get("pkg_name")
-        path = "/data/app/%s/base.apk"%(pkgName, )
+        path = "/data/app/%s-1.apk"%(pkgName, )
         return String(path)
+    #
+
+    @java_method_def(name='getFilesDir', signature='()Ljava/io/File;', native=False)
+    def getFilesDir(self, emu):
+        pkgName = config.global_config_get("pkg_name")
+        fdir = "/data/data/%s/files"%(pkgName, )
+        return File(fdir)
     #
 #
 
@@ -162,5 +176,10 @@ class ContextWrapper(Context, metaclass=JavaClassDef, jvm_name='android/content/
     @java_method_def(name='getPackageCodePath', signature='()Ljava/lang/String;', native=False)
     def getPackageCodePath(self, emu):
         return self.__impl.getPackageCodePath(emu)
+    #
+
+    @java_method_def(name='getFilesDir', signature='()Ljava/io/File;', native=False)
+    def getFilesDir(self, emu):
+        return self.__impl.getFilesDir(emu)
     #
 #
