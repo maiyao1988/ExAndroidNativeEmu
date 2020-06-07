@@ -1461,8 +1461,9 @@ class JNIEnv:
         
         pystr = memory_helpers.read_utf8(mu, utf8_ptr)
         logger.debug("JNIEnv->ReleaseStringUtfChars(%u, %s) was called" % (string, pystr))
-
-        self._emu.memory.unmap(utf8_ptr, len(pystr)+1)
+        if (utf8_ptr != 0):
+            self._emu.memory.unmap(utf8_ptr, len(pystr)+1)
+        #
     #
 
     @native_method

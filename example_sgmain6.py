@@ -507,7 +507,7 @@ try:
     app = MainApplication()
     app.attachBaseContext(impl)
 
-    o2 = Integer(3)
+    o2 = Integer(1)
     o3 = String("")
     o4 = String("/data/data/fm.xiami.main/app_SGLib")
     o5 = String("")
@@ -534,8 +534,18 @@ try:
     01-26 02:46:31.968  5752  6060 I librev-dj: param4 true [class java.lang.Boolean]
     01-26 02:46:31.976  5752  6060 I librev-dj: call my_doCommandNative return 0x200041
     01-26 02:46:31.976  5752  6060 I librev-dj: cmd 10401 return ab210e00103f3622607853182fe77adf41d41e872523ccfda2
+
+    06-04 03:14:19.257  5796  6311 I librev-dj: call my_doCommandNative 10401
+    06-04 03:14:19.258  5796  6311 I librev-dj: param0 {INPUT=XtX3M1bJ69cDAFWqkBwQYXgY&&&21465214&94de0d14487a78f08caa8b9366df870e&1591240459&mtop.alimusic.search.searchservice.searchsongs&1.3&&701287@xiami_android_8.3.8&AohsPSPH-F7lQLJzyIvh_6geqxEqIetYwOxZ0laI9k_9&&&27}
+    06-04 03:14:19.258  5796  6311 I librev-dj: param1 21465214
+    06-04 03:14:19.258  5796  6311 I librev-dj: param2 7
+    06-04 03:14:19.258  5796  6311 I librev-dj: param3 is null
+    06-04 03:14:19.258  5796  6311 I librev-dj: param4 true06-04 03:14:19.264  5796  6311 I librev-dj: call my_doCommandNative return 0x41
+    06-04 03:14:19.264  5796  6311 I librev-dj: cmd 10401 return ab210e0010e507dbe03e3a648e23f5fa221b65a7a1cd01789e
+
     '''
-    s = "XtX3M1bJ69cDAFWqkBwQYXgY&&&21465214&a75c08d1bc5069534cd65d35372bede2&2169991&mtop.alimusic.common.menuservice.getdata&1.0&&701287@xiami_android_8.3.8&AohsPSPH-F7lQLJzyIvh_6geqxEqIetYwOxZ0laI9k_9&&&27"
+    #s = "XtX3M1bJ69cDAFWqkBwQYXgY&&&21465214&a75c08d1bc5069534cd65d35372bede2&2169991&mtop.alimusic.common.menuservice.getdata&1.0&&701287@xiami_android_8.3.8&AohsPSPH-F7lQLJzyIvh_6geqxEqIetYwOxZ0laI9k_9&&&27"
+    s = "XtX3M1bJ69cDAFWqkBwQYXgY&&&21465214&94de0d14487a78f08caa8b9366df870e&1591240459&mtop.alimusic.search.searchservice.searchsongs&1.3&&701287@xiami_android_8.3.8&AohsPSPH-F7lQLJzyIvh_6geqxEqIetYwOxZ0laI9k_9&&&27"
     o1 = HashMap({String("INPUT"):String(s)})
     o2 = String("21465214")
     o3 = Integer(7)
@@ -543,8 +553,9 @@ try:
     o5 = Boolean(True)
     arr = Array("Ljava/lang/Object;", [o1, o2, o3, o4, o5])
     print("begin 10401")
-    emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
-    JNICLibrary.doCommandNative(emulator, 10401, arr)
+    #emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
+    r = JNICLibrary.doCommandNative(emulator, 10401, arr)
+    print("doCommandNative 10401 return %s"%r)
 #
 
 except UcError as e:
