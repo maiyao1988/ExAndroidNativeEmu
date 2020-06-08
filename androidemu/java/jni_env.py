@@ -1,4 +1,5 @@
 import logging
+import sys
 
 from ..hooker import Hooker
 from .classes.constructor import Constructor
@@ -13,6 +14,7 @@ from .classes.array import Array
 from .constant_values import JAVA_NULL
 from ..utils import memory_helpers
 from unicorn import *
+from ..utils.debug_utils import *
 
 logger = logging.getLogger(__name__)
 
@@ -807,12 +809,14 @@ class JNIEnv:
 
     @native_method
     def call_long_method(self, mu, env, obj_idx, method_id, arg1, arg2, arg3, arg4):
-        return self.__call_xxx_method(mu, env, obj_idx, method_id, (arg1, arg2, arg3, arg4), 0)
+        raise NotImplementedError()
+        #return self.__call_xxx_method(mu, env, obj_idx, method_id, (arg1, arg2, arg3, arg4), 0)
     #
 
     @native_method
     def call_long_method_v(self, mu, env, obj_idx, method_id, args):
-        return self.__call_xxx_method(mu, env, obj_idx, method_id, args, 1)
+        raise NotImplementedError()
+        #return self.__call_xxx_method(mu, env, obj_idx, method_id, args, 1)
     #
 
     @native_method
@@ -836,12 +840,14 @@ class JNIEnv:
 
     @native_method
     def call_double_method(self, mu, env, obj_idx, method_id, arg1, arg2, arg3, arg4):
-        return self.__call_xxx_method(mu, env, obj_idx, method_id, (arg1, arg2, arg3, arg4), 0)
+        raise NotImplementedError()
+        #return self.__call_xxx_method(mu, env, obj_idx, method_id, (arg1, arg2, arg3, arg4), 0)
     #
 
     @native_method
     def call_double_method_v(self, mu, env, obj_idx, method_id, args):
-        return self.__call_xxx_method(mu, env, obj_idx, method_id, args, 1)
+        raise NotImplementedError()
+        #return self.__call_xxx_method(mu, env, obj_idx, method_id, args, 1)
     #
 
     @native_method
@@ -1245,12 +1251,14 @@ class JNIEnv:
 
     @native_method
     def call_static_long_method(self, mu, env, clazz_idx, method_id, arg1, arg2, arg3, arg4):
-        return self.__call_static_xxx_method(mu, env, clazz_idx, method_id, (arg1, arg2, arg3, arg4), 0)
+        raise NotImplementedError()
+        #return self.__call_static_xxx_method(mu, env, clazz_idx, method_id, (arg1, arg2, arg3, arg4), 0)
     #
 
     @native_method
     def call_static_long_method_v(self, mu, env, clazz_idx, method_id, args):
-        return self.__call_static_xxx_method(mu, env, clazz_idx, method_id, args, 1)
+        raise NotImplementedError()
+        #return self.__call_static_xxx_method(mu, env, clazz_idx, method_id, args, 1)
     #
 
     @native_method
@@ -1273,12 +1281,14 @@ class JNIEnv:
 
     @native_method
     def call_static_double_method(self, mu, env, clazz_idx, method_id, arg1, arg2, arg3, arg4):
-        return self.__call_static_xxx_method(mu, env, clazz_idx, method_id, (arg1, arg2, arg3, arg4), 0)
+        raise NotImplementedError()
+        #return self.__call_static_xxx_method(mu, env, clazz_idx, method_id, (arg1, arg2, arg3, arg4), 0)
     #
 
     @native_method
     def call_static_double_method_v(self, mu, env, clazz_idx, method_id, args):
-        return self.__call_static_xxx_method(mu, env, clazz_idx, method_id, args, 1)
+        raise NotImplementedError()
+        #return self.__call_static_xxx_method(mu, env, clazz_idx, method_id, args, 1)
     #
 
     @native_method
@@ -1298,6 +1308,8 @@ class JNIEnv:
     @native_method
     def call_static_void_method_a(self, mu, env):
         raise NotImplementedError()
+    #
+
 
     @native_method
     def get_static_field_id(self, mu, env, clazz_idx, name_ptr, sig_ptr):
@@ -1308,10 +1320,10 @@ class JNIEnv:
         """
         name = memory_helpers.read_utf8(mu, name_ptr)
         sig = memory_helpers.read_utf8(mu, sig_ptr)
-        clazz = self.get_reference(clazz_idx)
 
         logger.debug("JNIEnv->GetStaticFieldId(%d, %s, %s) was called" % (clazz_idx, name, sig))
 
+        clazz = self.get_reference(clazz_idx)
         field = clazz.value.find_field(name, sig, True)
 
         if field is None:
@@ -1322,51 +1334,68 @@ class JNIEnv:
         return field.jvm_id
     #
 
-    @native_method
-    def get_static_object_field(self, mu, env, clazz_idx, field_id):
-        logger.debug("JNIEnv->GetStaticObjectField(%d, %d) was called" % (clazz_idx, field_id))
+    def __get_static_xxx_field(self, mu, env, clazz_idx, field_id, is_wide = False):
+
+        logger.debug("JNIEnv->GetStaticXXXField(%d, %d) was called" % (clazz_idx, field_id))
 
         clazz = self.get_reference(clazz_idx)
         field = clazz.value.find_field_by_id(field_id)
+        r = field.static_value
+        logger.debug("JNIEnv->GetStaticXXXField return %r"%r)
+        v = field.static_value
+        if (not is_wide):
+            return v
+        else:
+            rhigh = v >> 32
+            rlow = v & 0x0FFFFFFFF
+            return (rlow, rhigh)
+        #
+    #
 
-        return field.static_value
+    @native_method
+    def get_static_object_field(self, mu, env, clazz_idx, field_id):
+        return self.__get_static_xxx_field(mu, env, clazz_idx, field_id)
+    #
 
     @native_method
     def get_static_boolean_field(self, mu, env):
-        raise NotImplementedError()
+        return self.__get_static_xxx_field(mu, env, clazz_idx, field_id)
+    #
 
     @native_method
     def get_static_byte_field(self, mu, env):
-        raise NotImplementedError()
+        return self.__get_static_xxx_field(mu, env, clazz_idx, field_id)
+    #
 
     @native_method
     def get_static_char_field(self, mu, env):
-        raise NotImplementedError()
+        return self.__get_static_xxx_field(mu, env, clazz_idx, field_id)
+    #
 
     @native_method
     def get_static_short_field(self, mu, env):
-        raise NotImplementedError()
+        return self.__get_static_xxx_field(mu, env, clazz_idx, field_id)
+    #
 
     @native_method
     def get_static_int_field(self, mu, env, clazz_idx, field_id):
-        logger.debug("JNIEnv->GetStaticIntField(%d, %d) was called" % (clazz_idx, field_id))
-
-        clazz = self.get_reference(clazz_idx)
-        field = clazz.value.find_field_by_id(field_id)
-
-        return field.static_value
+        return self.__get_static_xxx_field(mu, env, clazz_idx, field_id)
+    #
 
     @native_method
-    def get_static_long_field(self, mu, env):
-        raise NotImplementedError()
+    def get_static_long_field(self, mu, env, clazz_idx, field_id):
+        return self.__get_static_xxx_field(mu, env, clazz_idx, field_id, True)
+    #
 
     @native_method
     def get_static_float_field(self, mu, env):
-        raise NotImplementedError()
+        return self.__get_static_xxx_field(mu, env, clazz_idx, field_id)
+    #
 
     @native_method
     def get_static_double_field(self, mu, env):
-        raise NotImplementedError()
+        return self.__get_static_xxx_field(mu, env, clazz_idx, field_id, True)
+    #
 
     @native_method
     def set_static_object_field(self, mu, env):
@@ -1393,8 +1422,19 @@ class JNIEnv:
         raise NotImplementedError()
 
     @native_method
-    def set_static_long_field(self, mu, env):
-        raise NotImplementedError()
+    def set_static_long_field(self, mu, env, clazz_idx, field_id, _, value_l, value_h):
+        #注意，由于刚好第四个参数是8个字节，arm32不会使用R3作为寄存器传递参数了，而是跳过R3直接使用栈，
+        value = value_h << 32 | value_l
+        logger.info("JNIEnv->set_static_long_field (%u, %u, 0x%016X)"%(clazz_idx, field_id, value))
+        clazz = self.get_reference(clazz_idx)
+
+        if not isinstance(clazz, jclass):
+            raise ValueError('Expected a jclass.')
+
+        field = clazz.value.find_field_by_id(field_id)
+        #FIXME: 对field支持还不完善，非stativ value无法设置，需要改进
+        field.static_value = value
+    #
 
     @native_method
     def set_static_float_field(self, mu, env):

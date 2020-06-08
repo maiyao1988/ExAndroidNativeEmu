@@ -109,7 +109,15 @@ def native_method(func):
             result = func(argv[0], mu, *native_args)
 
         if result is not None:
-            native_write_arg_register(emu, UC_ARM_REG_R0, result)
+            if(isinstance(result, tuple)):
+                #tuple作为特殊返回8字节数据约定
+                rlow = result[0]
+                rhigh = result[1]
+                native_write_arg_register(emu, UC_ARM_REG_R0, rlow)
+                native_write_arg_register(emu, UC_ARM_REG_R1, rhigh)
+            else:
+                native_write_arg_register(emu, UC_ARM_REG_R0, result)
+            #
         #
     #
 

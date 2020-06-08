@@ -382,6 +382,58 @@ class SecException(metaclass=JavaClassDef, jvm_name='com/alibaba/wireless/securi
     #
 #
 
+class SGPluginExtras(metaclass=JavaClassDef, jvm_name='com/alibaba/wireless/security/framework/SGPluginExtras', 
+        jvm_fields=[
+                     JavaFieldDef('slot', 'J', True, 0),
+                 ]):
+
+    def __init__(self):
+        pass
+    #
+#
+
+class MalDetect(metaclass=JavaClassDef, jvm_name='com/alibaba/wireless/security/securitybody/open/MalDetect'):
+
+    def __init__(self):
+        pass
+    #
+
+    @staticmethod
+    @java_method_def(name='OnDetectionJNI', args_list=["jint", "jstring", "jstring"], signature='(ILjava/lang/String;Ljava/lang/String;)V', native=False)
+    def OnDetectionJNI(mu, i1, s1, s2):
+        logger.warning("OnDetectionJNI %d %s %s ..."%(i1, s1, s2))
+        raise NotImplementedError()
+    #
+#
+
+
+class NativeReflectUtils(metaclass=JavaClassDef, jvm_name='com/alibaba/wireless/security/securitybody/NativeReflectUtils'):
+
+    def __init__(self):
+        pass
+    #
+
+    @staticmethod
+    @java_method_def(name='getScreenOrientation', args_list=["jint", "jstring", "jstring"], signature='(Landroid/content/Context;)I', native=False)
+    def getScreenOrientation(mu, ctx):
+        #竖屏
+        return 1
+    #
+#
+
+class SDKUtils(metaclass=JavaClassDef, jvm_name='mtopsdk/mtop/global/SDKUtils'):
+
+    def __init__(self):
+        pass
+    #
+
+    @staticmethod
+    @java_method_def(name='getCorrectionTime', signature='()J', native=False)
+    def getCorrectionTime(mu, ctx):
+        return NotImplementedError()
+    #
+#
+
 
 #not exist in usual sdk!!!
 class MiuiAd(metaclass=JavaClassDef, jvm_name='android/provider/MiuiSettings$Ad', jvm_ignore=True):
@@ -475,6 +527,10 @@ emulator.java_classloader.add_class(ECMiscInfo)
 emulator.java_classloader.add_class(MainApplication)
 emulator.java_classloader.add_class(JNIBridge)
 emulator.java_classloader.add_class(SecException)
+emulator.java_classloader.add_class(SGPluginExtras)
+emulator.java_classloader.add_class(MalDetect)
+emulator.java_classloader.add_class(NativeReflectUtils)
+emulator.java_classloader.add_class(SDKUtils)
 
 emulator.java_classloader.add_class(MiuiAd)
 emulator.java_classloader.add_class(TelephonyManagerEx)
@@ -489,6 +545,9 @@ emulator.memory.map(0xffff0000, 0x1000, UC_PROT_EXEC | UC_PROT_READ, vf, 0)
 
 # Load all libraries.
 lib_module = emulator.load_library("vfs/data/data/fm.xiami.main/lib/libsgmainso-6.4.163.so")
+lib_module_secbody = emulator.load_library("vfs/data/data/fm.xiami.main/lib/libsgsecuritybodyso-6.4.95.so")
+lib_module_avmp = emulator.load_library("vfs/data/data/fm.xiami.main/lib/libsgavmpso-6.4.35.so")
+
 
 #androidemu.utils.debug_utils.dump_symbols(emulator, sys.stdout)
 
@@ -502,10 +561,10 @@ try:
     # Run JNI_OnLoad.
     #   JNI_OnLoad will call 'RegisterNatives'.
     impl = ContextImpl()
-    emulator.call_symbol(lib_module, 'JNI_OnLoad', emulator.java_vm.address_ptr, 0x00)
-
     app = MainApplication()
     app.attachBaseContext(impl)
+
+    emulator.call_symbol(lib_module, 'JNI_OnLoad', emulator.java_vm.address_ptr, 0x00)
 
     o2 = Integer(1)
     o3 = String("")
@@ -553,9 +612,40 @@ try:
     o5 = Boolean(True)
     arr = Array("Ljava/lang/Object;", [o1, o2, o3, o4, o5])
     print("begin 10401")
-    #emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
     r = JNICLibrary.doCommandNative(emulator, 10401, arr)
     print("doCommandNative 10401 return %s"%r)
+
+    '''
+    o1 = Integer(0)
+    print("begin 12301")
+    arr = Array("Ljava/lang/Object;", [o1])
+    r = JNICLibrary.doCommandNative(emulator, 12301, arr)
+    '''
+
+    print("secbody JNI_OnLoad")
+    #emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
+    emulator.call_symbol(lib_module_secbody, 'JNI_OnLoad', emulator.java_vm.address_ptr, 0x00)
+    
+    o1 = String("securitybody")
+    o2 = String("6.4.95")
+    o3 = String("/data/data/fm.xiami.main/lib/libsgsecuritybodyso-6.4.95.so")
+    
+    print("begin securitybodyso 10102")
+    arr = Array("Ljava/lang/Object;", [o1, o2, o3])
+    JNICLibrary.doCommandNative(emulator, 10102, arr)
+    
+    
+    #emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
+    emulator.call_symbol(lib_module_avmp, 'JNI_OnLoad', emulator.java_vm.address_ptr, 0x00)
+
+    o1 = String("avmp")
+    o2 = String("6.4.35")
+    o3 = String("/data/data/fm.xiami.main/lib/libsgavmpso-6.4.35.so")
+
+    print("begin avmp 10102")
+    arr = Array("Ljava/lang/Object;", [o1, o2, o3])
+    JNICLibrary.doCommandNative(emulator, 10102, arr)
+    
 #
 
 except UcError as e:
