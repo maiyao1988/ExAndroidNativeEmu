@@ -635,7 +635,6 @@ try:
     JNICLibrary.doCommandNative(emulator, 10102, arr)
     
     
-    #emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
     emulator.call_symbol(lib_module_avmp, 'JNI_OnLoad', emulator.java_vm.address_ptr, 0x00)
 
     o1 = String("avmp")
@@ -645,7 +644,48 @@ try:
     print("begin avmp 10102")
     arr = Array("Ljava/lang/Object;", [o1, o2, o3])
     JNICLibrary.doCommandNative(emulator, 10102, arr)
-    
+
+
+    o1 = String("mwua")
+    o2 = String("sgcipher")
+
+    print("begin avmp 60901")
+    #emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
+    arr = Array("Ljava/lang/Object;", [o1, o2])
+    vmp_inst = JNICLibrary.doCommandNative(emulator, 60901, arr)
+    print("60901 return %r"%vmp_inst)
+
+    '''
+    01-28 02:24:32.022  7389  7544 I librev-dj: call my_doCommandNative 60902
+    01-28 02:24:32.022  7389  7544 I librev-dj: param0 4250478350 [class java.lang.Long]
+    01-28 02:24:32.022  7389  7544 I librev-dj: param1 sign [class java.lang.String]
+    01-28 02:24:32.022  7389  7544 I librev-dj: param2 class [B [class java.lang.Class]
+    01-28 02:24:32.022  7389  7544 I librev-dj: param3 [Ljava.lang.Object;@800c770 [class [Ljava.lang.Object;]
+    01-28 02:24:32.099  7389  7544 I librev-dj: call my_doCommandNative return 0x95
+    01-28 02:24:32.099  7389  7544 I librev-dj: cmd 60902 return Udd9_PJaIv9t63ccPnqTEueflauoVQkhZLF+SWtD+hpI+ZvjblJMKz/9Ccp8oalFtHOHmE5MVXwGTzWDmtF8LRT2ssTpjnhXOvJfWH+hIAeqI3l0EVs3J5j7JjsoSvrrIQiUTJgjvOrSbNwQpEPB0hwYnTu82Aeuu03mJCFmuxfYc75ZVjqH1j4VLr81XTU/zmd1d9irWgA/mf2Ve512vxbj7qrW2Kuz8SUG3/bCNT2ta5ACJ1uZckEyv0ScQx8CynByYn41CQlrkHMT1mZgLM5Is6TfXE4UeC+pFLFuDXYta6ehiM49uflm95JQVBLwKezkOTjACWpol1B81p4Km+5wWFsMM62McPmgh2f31hgO4T8VpsY4DEdpsBKkrEfFUxmtt51Zy3G7Pw3NQRx823UWohZEV5veS2FFoU0pK+mmu2mGQHNLEE1Vbbxr1zA3uPTL0&MIT1_a0010fdb56926a9a642f4bd0f57dca86a9d50fcb85001
+    01-28 02:24:32.099  7389  7544 I librev-dj: cmd 60902 inner array
+    01-28 02:24:32.099  7389  7544 I librev-dj: param0 0 [class java.lang.Integer]
+    01-28 02:24:32.099  7389  7544 I librev-dj: param1 [B@5b93ae9 [class [B]
+    01-28 02:24:32.100  7389  7544 I librev-dj: param2 50 [class java.lang.Integer]
+    01-28 02:24:32.100  7389  7544 I librev-dj: param3  [class java.lang.String]
+    01-28 02:24:32.100  7389  7544 I librev-dj: param4 [B@907436e [class [B]
+    01-28 02:24:32.100  7389  7544 I librev-dj: param5 0 [class java.lang.Integer]
+    01-28 02:24:32.100  7389  7544 I librev-dj: cmd 60902 content ab210e0010e68383c6b1fe5baa33f0eddc45e943a955191a9a
+    '''
+
+    sdata = 'ab210e0010e68383c6b1fe5baa33f0eddc45e943a955191a9a'
+    data = bytearray(sdata, "utf-8")
+    le = len(data)
+
+    maybe_arr_out = Array("B", bytearray())
+    o1 = vmp_inst
+    o2 = String("sign")
+    o3 = Array
+    o4 = Array("Ljava/lang/Object;", [Integer(0), data, le, String(""), maybe_arr_out, Integer(0)])
+    arr = Array("Ljava/lang/Object;", [o1, o2, o3, o4])
+    print("60902 run")
+    vmp_inst = JNICLibrary.doCommandNative(emulator, 60902, arr)
+
 #
 
 except UcError as e:

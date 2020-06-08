@@ -4,6 +4,7 @@ import sys
 from ..hooker import Hooker
 from .classes.constructor import Constructor
 from .classes.method import Method
+from .java_class_def import JavaClassDef
 from .constant_values import MODIFIER_STATIC
 from .helpers.native_method import native_method
 from .jni_const import *
@@ -14,7 +15,7 @@ from .classes.array import Array
 from .constant_values import JAVA_NULL
 from ..utils import memory_helpers
 from unicorn import *
-from ..utils.debug_utils import *
+from ..utils import debug_utils
 
 logger = logging.getLogger(__name__)
 
@@ -319,6 +320,9 @@ class JNIEnv:
 
     #args is a tuple or list
     def read_args(self, mu, args, args_list):
+        #FIXME 在这里处理八个字节参数问题，
+        #1.第一个参数为jlong jdouble 直接跳过列表第一个成员，因为第一个成员刚好是call_xxx的第三个参数，根据调用约定，如果这个参数是8个字节，则直接跳过R3寄存器使用栈
+        #2.jlong或者jdouble需要两个arg成一个参数，对应用层透明
         if args_list is None:
             return []
         #
@@ -688,7 +692,9 @@ class JNIEnv:
 
         if not isinstance(clazz, jclass):
             raise ValueError('Expected a jclass.')
+        #
 
+        print("get_method_id type %s"%(clazz.value))
         method = clazz.value.find_method(name, sig)
 
         if method is None:
@@ -1169,6 +1175,7 @@ class JNIEnv:
         constructor_args = self.read_args_common(mu, args, method.args_list, args_type)
 
         v = method.func(self._emu, *constructor_args)
+        #FIXME python的double怎么办？？？
         if (not is_wide):
             return v
         else:
@@ -1542,8 +1549,14 @@ class JNIEnv:
 
         array_pyobj = JNIEnv.jobject_to_pyobject(array_obj)
         pyobj_item = array_pyobj[item_idx]
-        #FIXME 考虑pyobj_item是Class的情况，应该用jclass包裹
-        return self.add_local_reference(jobject(pyobj_item))
+        obj_type = type(pyobj_item)
+        if (obj_type == JavaClassDef):
+            #是否返回所有的Object都要这样判断？
+            return self.add_local_reference(jclass(pyobj_item))
+        #
+        else:
+            return self.add_local_reference(jobject(pyobj_item))
+        #
     #
 
     @native_method
