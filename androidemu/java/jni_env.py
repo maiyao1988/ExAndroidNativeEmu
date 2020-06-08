@@ -698,7 +698,7 @@ class JNIEnv:
         return method.jvm_id
     #
 
-    def __call_xxx_method(self, mu, env, obj_idx, method_id, args, args_type):
+    def __call_xxx_method(self, mu, env, obj_idx, method_id, args, args_type, is_wide=False):
         obj = self.get_reference(obj_idx)
 
         if not isinstance(obj, jobject):
@@ -718,7 +718,15 @@ class JNIEnv:
         # Parse arguments.
         constructor_args = self.read_args_common(mu, args, method.args_list, args_type)
 
-        return method.func(pyobj, self._emu, *constructor_args)
+        v = method.func(pyobj, self._emu, *constructor_args)
+
+        if (not is_wide):
+            return v
+        else:
+            rhigh = v >> 32
+            rlow = v & 0x0FFFFFFFF
+            return (rlow, rhigh)
+        #
     #
 
     @native_method
@@ -809,14 +817,12 @@ class JNIEnv:
 
     @native_method
     def call_long_method(self, mu, env, obj_idx, method_id, arg1, arg2, arg3, arg4):
-        raise NotImplementedError()
-        #return self.__call_xxx_method(mu, env, obj_idx, method_id, (arg1, arg2, arg3, arg4), 0)
+        return self.__call_xxx_method(mu, env, obj_idx, method_id, (arg1, arg2, arg3, arg4), 0, True)
     #
 
     @native_method
     def call_long_method_v(self, mu, env, obj_idx, method_id, args):
-        raise NotImplementedError()
-        #return self.__call_xxx_method(mu, env, obj_idx, method_id, args, 1)
+        return self.__call_xxx_method(mu, env, obj_idx, method_id, args, 1, True)
     #
 
     @native_method
@@ -1142,7 +1148,7 @@ class JNIEnv:
         return method.jvm_id
 
 
-    def __call_static_xxx_method(self, mu, env, clazz_idx, method_id, args, args_type):
+    def __call_static_xxx_method(self, mu, env, clazz_idx, method_id, args, args_type, is_wide = False):
         clazz = self.get_reference(clazz_idx)
 
         if not isinstance(clazz, jclass):
@@ -1162,7 +1168,14 @@ class JNIEnv:
         # Parse arguments.
         constructor_args = self.read_args_common(mu, args, method.args_list, args_type)
 
-        return method.func(self._emu, *constructor_args)
+        v = method.func(self._emu, *constructor_args)
+        if (not is_wide):
+            return v
+        else:
+            rhigh = v >> 32
+            rlow = v & 0x0FFFFFFFF
+            return (rlow, rhigh)
+        #
     #
 
     @native_method
@@ -1251,14 +1264,14 @@ class JNIEnv:
 
     @native_method
     def call_static_long_method(self, mu, env, clazz_idx, method_id, arg1, arg2, arg3, arg4):
-        raise NotImplementedError()
-        #return self.__call_static_xxx_method(mu, env, clazz_idx, method_id, (arg1, arg2, arg3, arg4), 0)
+        #raise NotImplementedError()
+        return self.__call_static_xxx_method(mu, env, clazz_idx, method_id, (arg1, arg2, arg3, arg4), 0, True)
     #
 
     @native_method
     def call_static_long_method_v(self, mu, env, clazz_idx, method_id, args):
-        raise NotImplementedError()
-        #return self.__call_static_xxx_method(mu, env, clazz_idx, method_id, args, 1)
+        #raise NotImplementedError()
+        return self.__call_static_xxx_method(mu, env, clazz_idx, method_id, args, 1, True)
     #
 
     @native_method
