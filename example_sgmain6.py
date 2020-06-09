@@ -174,8 +174,14 @@ class DeviceInfoCapturer(metaclass=JavaClassDef, jvm_name='com/taobao/wireless/s
         pass
 
     @staticmethod
-    @java_method_def(name='doCommandForString', signature='(I)Ljava/lang/String;', native=False)
+    @java_method_def(name='doCommandForString', args_list=["jint"], signature='(I)Ljava/lang/String;', native=False)
     def doCommandForString(mu, cmdId):
+        print("doCommandForString %d"%cmdId)
+        if (cmdId == 122):
+            return String("fm.xiami.main")
+        else:
+            raise NotImplementedError()
+        #
         return String("0")
     #
 
@@ -406,6 +412,20 @@ class MalDetect(metaclass=JavaClassDef, jvm_name='com/alibaba/wireless/security/
     #
 #
 
+class ByteArray(Array, metaclass=JavaClassDef, jvm_name="[B", jvm_super=Array):
+    def __init__(self, item_list):
+        Array.__init__(self, item_list)
+    #
+
+
+    # #TODO: 在继承多态机制完善后移动到Object类上
+    @java_method_def(name='getClass', signature='()Ljava/lang/Class;', native=False)
+    def getClass(self, emu):
+        return self.class_object
+    #
+
+#
+
 
 class NativeReflectUtils(metaclass=JavaClassDef, jvm_name='com/alibaba/wireless/security/securitybody/NativeReflectUtils'):
 
@@ -531,6 +551,7 @@ emulator.java_classloader.add_class(SGPluginExtras)
 emulator.java_classloader.add_class(MalDetect)
 emulator.java_classloader.add_class(NativeReflectUtils)
 emulator.java_classloader.add_class(SDKUtils)
+emulator.java_classloader.add_class(ByteArray)
 
 emulator.java_classloader.add_class(MiuiAd)
 emulator.java_classloader.add_class(TelephonyManagerEx)
@@ -571,7 +592,7 @@ try:
     o4 = String("/data/data/fm.xiami.main/app_SGLib")
     o5 = String("")
     pyarr = [app, o2, o3, o4, o5]
-    arr = Array("Ljava/lang/Object;", pyarr)
+    arr = Array(pyarr)
     #print(arr)
 
     #emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
@@ -582,7 +603,7 @@ try:
     o3 = String("/data/data/fm.xiami.main/lib/libsgmainso-6.4.163.so")
     
     print("begin 10102")
-    arr = Array("Ljava/lang/Object;", [o1, o2, o3])
+    arr = Array([o1, o2, o3])
     JNICLibrary.doCommandNative(emulator, 10102, arr)
 
     '''
@@ -610,7 +631,7 @@ try:
     o3 = Integer(7)
     o4 = JAVA_NULL
     o5 = Boolean(True)
-    arr = Array("Ljava/lang/Object;", [o1, o2, o3, o4, o5])
+    arr = Array([o1, o2, o3, o4, o5])
     print("begin 10401")
     r = JNICLibrary.doCommandNative(emulator, 10401, arr)
     print("doCommandNative 10401 return %s"%r)
@@ -618,7 +639,7 @@ try:
     '''
     o1 = Integer(0)
     print("begin 12301")
-    arr = Array("Ljava/lang/Object;", [o1])
+    arr = Array([o1])
     r = JNICLibrary.doCommandNative(emulator, 12301, arr)
     '''
 
@@ -631,7 +652,7 @@ try:
     o3 = String("/data/data/fm.xiami.main/lib/libsgsecuritybodyso-6.4.95.so")
     
     print("begin securitybodyso 10102")
-    arr = Array("Ljava/lang/Object;", [o1, o2, o3])
+    arr = Array([o1, o2, o3])
     JNICLibrary.doCommandNative(emulator, 10102, arr)
     
     
@@ -642,7 +663,7 @@ try:
     o3 = String("/data/data/fm.xiami.main/lib/libsgavmpso-6.4.35.so")
 
     print("begin avmp 10102")
-    arr = Array("Ljava/lang/Object;", [o1, o2, o3])
+    arr = Array([o1, o2, o3])
     JNICLibrary.doCommandNative(emulator, 10102, arr)
 
 
@@ -650,8 +671,7 @@ try:
     o2 = String("sgcipher")
 
     print("begin avmp 60901")
-    #emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
-    arr = Array("Ljava/lang/Object;", [o1, o2])
+    arr = Array([o1, o2])
     vmp_inst = JNICLibrary.doCommandNative(emulator, 60901, arr)
     print("60901 return %r"%vmp_inst)
 
@@ -672,20 +692,21 @@ try:
     01-28 02:24:32.100  7389  7544 I librev-dj: param5 0 [class java.lang.Integer]
     01-28 02:24:32.100  7389  7544 I librev-dj: cmd 60902 content ab210e0010e68383c6b1fe5baa33f0eddc45e943a955191a9a
     '''
-
+    
     sdata = 'ab210e0010e68383c6b1fe5baa33f0eddc45e943a955191a9a'
-    data = bytearray(sdata, "utf-8")
-    le = len(data)
+    data = ByteArray(bytearray(sdata, "utf-8"))
+    le = Integer(len(data))
 
-    maybe_arr_out = Array("B", bytearray())
+    maybe_arr_out = ByteArray(bytearray())
     o1 = vmp_inst
     o2 = String("sign")
-    o3 = Array
-    o4 = Array("Ljava/lang/Object;", [Integer(0), data, le, String(""), maybe_arr_out, Integer(0)])
-    arr = Array("Ljava/lang/Object;", [o1, o2, o3, o4])
+    o3 = ByteArray
+    o4 = ByteArray([Integer(0), data, le, String(""), maybe_arr_out, Integer(0)])
+    arr = Array([o1, o2, o3, o4])
     print("60902 run")
-    vmp_inst = JNICLibrary.doCommandNative(emulator, 60902, arr)
-
+    #emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
+    vmp_r = JNICLibrary.doCommandNative(emulator, 60902, arr)
+    
 #
 
 except UcError as e:

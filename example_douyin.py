@@ -184,7 +184,7 @@ try:
     x = XGorgen()
     data = 'acde74a94e6b493a3399fac83c7c08b35D58B21D9582AF77647FC9902E36AE70f9c001e9334e6e94916682224fbe4e5f00000000000000000000000000000000'
     data = bytearray(bytes.fromhex(data))
-    arr = Array("B", data)
+    arr = Array(data)
     result = x.leviathan(emulator, 1562848170, arr)
 
     print(''.join(['%02x' % b for b in result]))

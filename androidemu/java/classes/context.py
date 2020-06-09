@@ -59,8 +59,16 @@ class Context(metaclass=JavaClassDef, jvm_name='android/content/Context',
 
     @java_method_def(name='getFilesDir', signature='()Ljava/io/File;', native=False)
     def getFilesDir(self, emu):
-        raise NotImplementedError()
-        pass
+        pkgName = config.global_config_get("pkg_name")
+        fdir = "/data/data/%s/files"%(pkgName, )
+        return File(fdir)
+    #
+
+    @java_method_def(name='getPackageName', signature='()Ljava/lang/String;', native=False)
+    def getPackageName(self, emu):
+        #多态机制不完善，先在这里实现
+        pkgName = config.global_config_get("pkg_name")
+        return String(pkgName)
     #
 #
 

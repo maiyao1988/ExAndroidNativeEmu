@@ -45,7 +45,7 @@ class Set(metaclass=JavaClassDef, jvm_name='java/util/Set'):
 
     @java_method_def(name='toArray', signature='()[Ljava/lang/Object;', native=False)
     def toArray(self, emu):
-        return Array("Ljava/lang/Object;", list(self.__pyset))
+        return Array(list(self.__pyset))
     #
 
 

@@ -650,12 +650,15 @@ class JNIEnv:
 
     @native_method
     def get_object_class(self, mu, env, obj_idx):
+
         obj = self.get_reference(obj_idx)
         if (obj == None):
             # TODO: Proper Java error?
             raise RuntimeError('get_object_class can not get class for object id %d for JNIEnv.' %obj_idx)
         #
         pyobj = JNIEnv.jobject_to_pyobject(obj)
+        logger.debug("JNIEnv->GetObjectClass(%r) was called" % (pyobj, ))
+
         clazz  = pyobj.__class__
         return self.add_local_reference(jclass(clazz))
     #
@@ -1571,7 +1574,7 @@ class JNIEnv:
     def new_byte_array(self, mu, env, bytelen):
         logger.debug("JNIEnv->NewByteArray(%u) was called" % bytelen)
         barr = bytearray([0] * bytelen)
-        arr = Array("B", barr)
+        arr = Array(barr)
         return self.add_local_reference(jobject(arr))
     #
 
@@ -1744,7 +1747,7 @@ class JNIEnv:
     def set_byte_array_region(self, mu, env, arrayJREF, startIndex, length, bufAddress):
         string = memory_helpers.read_byte_array(mu, bufAddress, length)
         logger.debug("JNIEnv->SetByteArrayRegion was called")
-        arr = Array("B", string)
+        arr = Array(string)
         self.set_local_reference(arrayJREF, jobject(arr))
     #
 

@@ -246,7 +246,7 @@ try:
     data = 'acde74a94e6b493a3399fac83c7c08b35D58B21D9582AF77647FC9902E36AE70f9c001e9334e6e94916682224fbe4e5f00000000000000000000000000000000'
     data = bytearray(bytes.fromhex(data))
     n = 1562848170
-    arr = Array("B", data)
+    arr = Array(data)
     
     emulator.mu.hook_add(UC_HOOK_MEM_READ, hook_mem_read, mnt)
     print("before lev")

@@ -4,9 +4,8 @@ from ..java_method_def import java_method_def, JavaMethodDef
 
 class Array(metaclass=JavaClassDef, jvm_name='java/lang/reflect/Array'):
 
-    def __init__(self, jvm_type, pyitems):
+    def __init__(self, pyitems):
         self.__pyitems = pyitems
-        self.__jvm_type = jvm_type
     #
 
     def get_py_items(self):
