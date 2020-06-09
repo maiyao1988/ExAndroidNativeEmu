@@ -15,6 +15,7 @@ from androidemu.java.classes.types import *
 from androidemu.java.classes.context import *
 from androidemu.java.classes.array import Array
 from androidemu.java.classes.map import *
+from androidemu.java.classes.activity_thread import *
 import androidemu.utils.debug_utils
 from androidemu.utils.chain_log import ChainLogger
 from androidemu.java.constant_values import *
@@ -108,7 +109,7 @@ class SPUtility2(metaclass=JavaClassDef, jvm_name='com/taobao/wireless/security/
     @staticmethod
     @java_method_def(name='readFromSPUnified', args_list=["jstring", "jstring", "jstring"], signature='(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;', native=False)
     def readFromSPUnified(mu, s1, s2, s3):
-        #代码去找app_SGLib下面的SGMANAGER_DATA2文件，文件不存在
+        logger.debug("readFromSPUnified %s %s %s"%(s1, s2, s3))
         key = "%s_%s"%(s1.get_py_string(), s2.get_py_string())
         path = "vfs/data/data/fm.xiami.main/files/SGMANAGER_DATA2"
         with open(path) as f:
@@ -179,6 +180,70 @@ class DeviceInfoCapturer(metaclass=JavaClassDef, jvm_name='com/taobao/wireless/s
         print("doCommandForString %d"%cmdId)
         if (cmdId == 122):
             return String("fm.xiami.main")
+        elif (cmdId == 104):
+            '''
+            TelephonyManager v0 = h.a;
+            if(v0 != null) {
+                String v0_1 = v0.getDeviceId();
+                if(v0_1 != null && v0_1.length() != 0) {
+                    return v0_1;
+                }
+            }
+            '''
+            return JAVA_NULL#String("AohsPSPH-F7lQLJzyIvh_6geqxEqIetYwOxZ0laI9k_9")
+        #
+        elif (cmdId == 105):
+            #
+            #telephonyManager.getSubscriberId();
+            return JAVA_NULL
+        elif (cmdId == 11):
+            #http.proxy
+            return String("0")
+        elif (cmdId == 109):
+            #mac
+            return String("00:a7:10:93:64:57")
+        elif (cmdId == 110):
+            #return v0.getSSID();
+            return JAVA_NULL
+        elif (cmdId == 111):
+            #return v0.getBSSID();
+            return JAVA_NULL
+        elif (cmdId == 114):
+            '''
+            DisplayMetrics v0_1 = v0.getResources().getDisplayMetrics();
+            int v1 = v0_1.widthPixels;
+            int v0_2 = v0_1.heightPixels;
+            '''
+            return String("1080*1794")
+        elif (cmdId == 115):
+            #StatFs v1 = new StatFs(arg5.getPath());
+            
+            #long v2 = ((long)v1.getBlockSize());
+            #long v0_1 = ((long)v1.getBlockCount());
+            return String("100000012")
+        elif (cmdId == 117):
+            '''
+            Intent v8_2 = v8_1.registerReceiver(null, new IntentFilter("android.intent.action.BATTERY_CHANGED"));
+            if(v8_2 == null) {
+                goto label_67;
+            }
+
+            c.b = v8_2.getIntExtra("level", -1) + "";
+            c.c = v8_2.getIntExtra("voltage", -1) + "";
+            c.d = v8_2.getIntExtra("temperature", -1) + "";
+            '''
+            return String("-1")
+        elif (cmdId == 121):
+            #v0 = Class.forName("com.taobao.login4android.Login").getMethod("getNick").invoke(v0);
+            #goto label_10;
+            #FIXME
+            return JAVA_NULL
+        #
+        elif (cmdId == 123):
+            #v0.versionName
+            #FIXME
+            return String("xiami???")
+        #
         else:
             raise NotImplementedError()
         #
@@ -581,9 +646,8 @@ for module in emulator.modules:
 try:
     # Run JNI_OnLoad.
     #   JNI_OnLoad will call 'RegisterNatives'.
-    impl = ContextImpl()
-    app = MainApplication()
-    app.attachBaseContext(impl)
+    act_thread = ActivityThread()
+    app = act_thread.currentApplication(emulator)
 
     emulator.call_symbol(lib_module, 'JNI_OnLoad', emulator.java_vm.address_ptr, 0x00)
 
@@ -706,6 +770,8 @@ try:
     print("60902 run")
     #emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
     vmp_r = JNICLibrary.doCommandNative(emulator, 60902, arr)
+
+    print(vmp_r)
     
 #
 

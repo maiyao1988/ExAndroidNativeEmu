@@ -4,7 +4,7 @@ from ..java_method_def import java_method_def, JavaMethodDef
 from .context import ContextImpl, Context, ContextWrapper
 
 
-class Application(ContextWrapper, metaclass=JavaClassDef, jvm_name='android/app/Application'):
+class Application(ContextWrapper, metaclass=JavaClassDef, jvm_name='android/app/Application', jvm_super=ContextWrapper):
 
     def __init__(self):
         pass

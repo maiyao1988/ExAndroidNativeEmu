@@ -4,13 +4,33 @@ from ..java_method_def import java_method_def, JavaMethodDef
 from ..classes.context import ContextImpl
 from .application import Application
 
-class ActivityThread(metaclass=JavaClassDef, jvm_name='android/app/ActivityThread'):
+class ArrayMap(metaclass=JavaClassDef, jvm_name='android/util/ArrayMap'):
+    def __init__(self):
+        pass
+    #
+
+    @java_method_def(name='size', signature='()I', native=False)
+    def size(self, emu):
+        return 0
+    #
+
+    @java_method_def(name='valueAt', args_list=["jint"], signature='(I)Ljava/lang/Object;', native=False)
+    def valueAt(self, emu, id):
+        raise NotImplementedError()
+    #
+#
+
+class ActivityThread(metaclass=JavaClassDef, jvm_name='android/app/ActivityThread', 
+        jvm_fields=[
+                     JavaFieldDef('mActivities', 'Landroid/util/ArrayMap;', False), 
+        ]):
 
     s_am = None
     def __init__(self):
         self.__ctx_impl = ContextImpl()
         self.app = Application()
         self.app.attachBaseContext(self.__ctx_impl)
+        self.mActivities = ArrayMap()
     #
 
     @staticmethod
@@ -34,3 +54,15 @@ class ActivityThread(metaclass=JavaClassDef, jvm_name='android/app/ActivityThrea
         return self.__ctx_impl
     #
 #
+
+
+class ActivityClientRecord(metaclass=JavaClassDef, jvm_name='android/app/ActivityThread$ActivityClientRecord',
+        jvm_fields=[
+                     JavaFieldDef('paused', 'Z', False), 
+                     JavaFieldDef('activity', 'Landroid/app/Activity;', False), 
+                 ]):
+    def __init__(self):
+        self.paused = False
+    #
+#
+

@@ -475,11 +475,13 @@ class JNIEnv:
 
     @native_method
     def throw(self, mu, env):
-        raise NotImplementedError()
+        raise RuntimeError("throw is call, maybe bug")
+    #
 
     @native_method
     def throw_new(self, mu, env):
-        raise NotImplementedError()
+        raise RuntimeError("throw_new is call, maybe bug")
+    #
 
     @native_method
     def exception_occurred(self, mu, env):

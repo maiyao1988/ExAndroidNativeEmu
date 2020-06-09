@@ -159,14 +159,19 @@ class VirtualFileSystem:
         #define O_CREAT 00000100
         # Special cases, such as /dev/urandom.
 
+        file_path = self.translate_path(filename)
         if filename == '/dev/urandom':
             logger.info("File opened '%s'" % filename)
-            #return self.__pcb.alloc_file_fd('/dev/urandom', None, 'urandom')
-            raise NotImplementedError
+            parent = os.path.dirname(file_path)
+            if (not os.path.exists(parent)):
+                os.makedirs(parent)
+            #
+            with open(file_path, "wb") as f:
+                b = int(1000000000).to_bytes(8, byteorder='little')
+                f.write(b)
+            #
         #
-
-        file_path = self.translate_path(filename)
-        if (filename.startswith("/proc/")):
+        elif (filename.startswith("/proc/")):
             #simulate proc file system
             parent = os.path.dirname(file_path)
             if (not os.path.exists(parent)):
