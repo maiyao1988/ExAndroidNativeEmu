@@ -330,7 +330,7 @@ class JNIEnv:
         i = 0
         for arg_name in args_list:
             ref = args[i]
-            if arg_name in ('jint', "jlong", "jchar", "jbyte"):
+            if arg_name in ('jint', "jlong", "jchar", "jbyte", "jboolean"):
                 result.append(ref)
             elif arg_name == 'jstring' or arg_name == "jobject":
                 jobj = self.get_reference(ref)

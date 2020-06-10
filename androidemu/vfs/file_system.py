@@ -11,6 +11,7 @@ from . import file_helpers
 from .. import pcb
 import platform
 import shutil
+import random
 
 g_isWin = platform.system() == "Windows"
 if not g_isWin:
@@ -18,8 +19,8 @@ if not g_isWin:
 #
 logger = logging.getLogger(__name__)
 
-OVERRIDE_URANDOM = False
-OVERRIDE_URANDOM_BYTE = b"\x00"
+OVERRIDE_URANDOM = True
+OVERRIDE_URANDOM_INT = 1
 
 #status
 s_status = '''
@@ -167,7 +168,11 @@ class VirtualFileSystem:
                 os.makedirs(parent)
             #
             with open(file_path, "wb") as f:
-                b = int(1000000000).to_bytes(8, byteorder='little')
+                ran = OVERRIDE_URANDOM_INT
+                if (not OVERRIDE_URANDOM):
+                    ran = random.randint(1<<64, 1<<128)
+                #
+                b = int(ran).to_bytes(128, byteorder='little')
                 f.write(b)
             #
         #

@@ -125,8 +125,10 @@ class SPUtility2(metaclass=JavaClassDef, jvm_name='com/taobao/wireless/security/
     #
 
     @staticmethod
-    @java_method_def(name='saveToFileUnifiedForNative', signature='(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Z)I', native=False)
+    @java_method_def(name='saveToFileUnifiedForNative', args_list=["jstring", "jstring", "jstring", "jboolean"], signature='(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Z)I', native=False)
     def saveToFileUnifiedForNative(mu, s1, s2, s3, b):
+        logger.debug("saveToFileUnifiedForNative %s %s %s %r", s1, s2, s3, b)
+        #raise NotImplementedError()
         return 0
     #
 
@@ -178,9 +180,7 @@ class DeviceInfoCapturer(metaclass=JavaClassDef, jvm_name='com/taobao/wireless/s
     @java_method_def(name='doCommandForString', args_list=["jint"], signature='(I)Ljava/lang/String;', native=False)
     def doCommandForString(mu, cmdId):
         print("doCommandForString %d"%cmdId)
-        if (cmdId == 122):
-            return String("fm.xiami.main")
-        elif (cmdId == 104):
+        if (cmdId == 104):
             '''
             TelephonyManager v0 = h.a;
             if(v0 != null) {
@@ -190,24 +190,27 @@ class DeviceInfoCapturer(metaclass=JavaClassDef, jvm_name='com/taobao/wireless/s
                 }
             }
             '''
-            return JAVA_NULL#String("AohsPSPH-F7lQLJzyIvh_6geqxEqIetYwOxZ0laI9k_9")
+            return JAVA_NULL
         #
         elif (cmdId == 105):
-            #
+            #长度有影响
             #telephonyManager.getSubscriberId();
+            #return String("12312321")
             return JAVA_NULL
         elif (cmdId == 11):
             #http.proxy
+            #有影响
             return String("0")
         elif (cmdId == 109):
             #mac
+            #有影响
             return String("00:a7:10:93:64:57")
         elif (cmdId == 110):
             #return v0.getSSID();
-            return JAVA_NULL
+            return String("Tencent-WiFi")
         elif (cmdId == 111):
             #return v0.getBSSID();
-            return JAVA_NULL
+            return String("78:bc:1a:3c:2d:81")
         elif (cmdId == 114):
             '''
             DisplayMetrics v0_1 = v0.getResources().getDisplayMetrics();
@@ -220,7 +223,7 @@ class DeviceInfoCapturer(metaclass=JavaClassDef, jvm_name='com/taobao/wireless/s
             
             #long v2 = ((long)v1.getBlockSize());
             #long v0_1 = ((long)v1.getBlockCount());
-            return String("100000012")
+            return String("11454181376")
         elif (cmdId == 117):
             '''
             Intent v8_2 = v8_1.registerReceiver(null, new IntentFilter("android.intent.action.BATTERY_CHANGED"));
@@ -232,17 +235,20 @@ class DeviceInfoCapturer(metaclass=JavaClassDef, jvm_name='com/taobao/wireless/s
             c.c = v8_2.getIntExtra("voltage", -1) + "";
             c.d = v8_2.getIntExtra("temperature", -1) + "";
             '''
-            return String("-1")
+            #有影响
+            return String("100")
         elif (cmdId == 121):
             #v0 = Class.forName("com.taobao.login4android.Login").getMethod("getNick").invoke(v0);
             #goto label_10;
-            #FIXME
-            return JAVA_NULL
+            #FIXME 对结果有影响
+            return String("")
         #
+        elif (cmdId == 122):
+            return String("fm.xiami.main")
         elif (cmdId == 123):
             #v0.versionName
-            #FIXME
-            return String("xiami???")
+            #FIXME 对结果有影响
+            return String("8.3.8")
         #
         else:
             raise NotImplementedError()
@@ -700,13 +706,13 @@ try:
     r = JNICLibrary.doCommandNative(emulator, 10401, arr)
     print("doCommandNative 10401 return %s"%r)
 
-    '''
+    '''    
     o1 = Integer(0)
     print("begin 12301")
     arr = Array([o1])
     r = JNICLibrary.doCommandNative(emulator, 12301, arr)
     '''
-
+    
     print("secbody JNI_OnLoad")
     #emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
     emulator.call_symbol(lib_module_secbody, 'JNI_OnLoad', emulator.java_vm.address_ptr, 0x00)
@@ -773,6 +779,21 @@ try:
 
     print(vmp_r)
     
+    sdata = 'ab210e0010e68383c6b1fe5baa33f0eddc45e943a955191a9a'
+    data = ByteArray(bytearray(sdata, "utf-8"))
+    le = Integer(len(data))
+
+    maybe_arr_out = ByteArray(bytearray())
+    o1 = vmp_inst
+    o2 = String("sign")
+    o3 = ByteArray
+    o4 = ByteArray([Integer(0), data, le, String(""), maybe_arr_out, Integer(0)])
+    arr = Array([o1, o2, o3, o4])
+    print("60902 run")
+    #emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
+    vmp_r = JNICLibrary.doCommandNative(emulator, 60902, arr)
+
+    print(vmp_r)
 #
 
 except UcError as e:
