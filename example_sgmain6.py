@@ -180,7 +180,11 @@ class DeviceInfoCapturer(metaclass=JavaClassDef, jvm_name='com/taobao/wireless/s
     @java_method_def(name='doCommandForString', args_list=["jint"], signature='(I)Ljava/lang/String;', native=False)
     def doCommandForString(mu, cmdId):
         print("doCommandForString %d"%cmdId)
-        if (cmdId == 104):
+        if (cmdId == 11):
+            #http.proxy
+            #有影响
+            return String("0")
+        elif (cmdId == 104):
             '''
             TelephonyManager v0 = h.a;
             if(v0 != null) {
@@ -197,20 +201,17 @@ class DeviceInfoCapturer(metaclass=JavaClassDef, jvm_name='com/taobao/wireless/s
             #telephonyManager.getSubscriberId();
             #return String("12312321")
             return JAVA_NULL
-        elif (cmdId == 11):
-            #http.proxy
-            #有影响
-            return String("0")
+
         elif (cmdId == 109):
             #mac
             #有影响
             return String("00:a7:10:93:64:57")
         elif (cmdId == 110):
             #return v0.getSSID();
-            return String("Tencent-WiFi")
+            return String("my-home")
         elif (cmdId == 111):
             #return v0.getBSSID();
-            return String("78:bc:1a:3c:2d:81")
+            return String("78:bc:0a:3c:2c:81")
         elif (cmdId == 114):
             '''
             DisplayMetrics v0_1 = v0.getResources().getDisplayMetrics();
