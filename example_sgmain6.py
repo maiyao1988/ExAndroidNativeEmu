@@ -38,7 +38,7 @@ def hook_code(mu, address, size, user_data):
             sys.exit(-1)
         #
         #androidemu.utils.debug_utils.dump_registers(mu, sys.stdout)
-        androidemu.utils.debug_utils.dump_code(emu, address, size, g_cfd)
+        androidemu.utils.debug_utils.dump_code(emu, address, size, sys.stdout)
     except Exception as e:
         logger.exception("exception in hook_code")
         sys.exit(-1)
@@ -669,7 +669,6 @@ try:
     arr = Array(pyarr)
     #print(arr)
 
-    #emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
     JNICLibrary.doCommandNative(emulator, 10101, arr)
 
     o1 = String("main")
@@ -718,7 +717,6 @@ try:
     '''
     
     print("secbody JNI_OnLoad")
-    #emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
     emulator.call_symbol(lib_module_secbody, 'JNI_OnLoad', emulator.java_vm.address_ptr, 0x00)
     
     o1 = String("securitybody")
@@ -738,9 +736,11 @@ try:
 
     print("begin securitybodyso 20102")
     arr = Array([o1, o2, o3, o4, o5, o6])
+
+    #emulator.mu.hook_add(UC_HOOK_CODE, hook_code, emulator)
     mini_wua = JNICLibrary.doCommandNative(emulator, 20102, arr)
     print("20102 return %r"%mini_wua)
-    
+    '''
     emulator.call_symbol(lib_module_avmp, 'JNI_OnLoad', emulator.java_vm.address_ptr, 0x00)
 
     o1 = String("avmp")
@@ -759,6 +759,7 @@ try:
     arr = Array([o1, o2])
     vmp_inst = JNICLibrary.doCommandNative(emulator, 60901, arr)
     print("60901 return %r"%vmp_inst)
+    '''
     
     '''
     01-28 02:24:32.022  7389  7544 I librev-dj: call my_doCommandNative 60902
@@ -777,7 +778,7 @@ try:
     01-28 02:24:32.100  7389  7544 I librev-dj: param5 0 [class java.lang.Integer]
     01-28 02:24:32.100  7389  7544 I librev-dj: cmd 60902 content ab210e0010e68383c6b1fe5baa33f0eddc45e943a955191a9a
     '''
-    
+    '''
     sdata = 'ab210e0010e68383c6b1fe5baa33f0eddc45e943a955191a9a'
     data = ByteArray(bytearray(sdata, "utf-8"))
     le = Integer(len(data))
@@ -809,7 +810,7 @@ try:
     vmp_r = JNICLibrary.doCommandNative(emulator, 60902, arr)
 
     print(vmp_r)
-    
+    '''
 #
 
 except UcError as e:

@@ -1028,8 +1028,7 @@ class JNIEnv:
 
         return field.jvm_id
 
-    @native_method
-    def get_object_field(self, mu, env, obj_idx, field_id):
+    def __get_xxx_field(self, mu, env, obj_idx, field_id, is_wide = False):
         obj = self.get_reference(obj_idx)
 
         if not isinstance(obj, jobject):
@@ -1042,59 +1041,62 @@ class JNIEnv:
             # TODO: Proper Java error?
             raise RuntimeError("Could not find field %d in object %s by id." % (field_id, pyobj.jvm_name))
 
-        logger.debug("JNIEnv->GetObjectField(%s, %s <%s>) was called" % (pyobj.jvm_name,
+        logger.debug("JNIEnv->GetXXXField(%s, %s <%s>) was called" % (pyobj.jvm_name,
                                                                          field.name,
                                                                          field.signature))
-
-        return getattr(pyobj, field.name)
+        v = getattr(pyobj, field.name)
+        if (not is_wide):
+            return v
+        else:
+            rhigh = v >> 32
+            rlow = v & 0x0FFFFFFFF
+            return (rlow, rhigh)
+        #
+    #
+    @native_method
+    def get_object_field(self, mu, env, obj_idx, field_id):
+        return self.__get_xxx_field(mu, env, obj_idx, field_id)
+    #
 
     @native_method
-    def get_boolean_field(self, mu, env):
-        raise NotImplementedError()
+    def get_boolean_field(self, mu, env, obj_idx, field_id):
+        return self.__get_xxx_field(mu, env, obj_idx, field_id)
+    #
 
     @native_method
-    def get_byte_field(self, mu, env):
-        raise NotImplementedError()
+    def get_byte_field(self, mu, env, obj_idx, field_id):
+        return self.__get_xxx_field(mu, env, obj_idx, field_id)
+    #
 
     @native_method
-    def get_char_field(self, mu, env):
-        raise NotImplementedError()
+    def get_char_field(self, mu, env, obj_idx, field_id):
+        return self.__get_xxx_field(mu, env, obj_idx, field_id)
+    #
 
     @native_method
-    def get_short_field(self, mu, env):
-        raise NotImplementedError()
+    def get_short_field(self, mu, env, obj_idx, field_id):
+        return self.__get_xxx_field(mu, env, obj_idx, field_id)
+    #
 
     @native_method
     def get_int_field(self, mu, env, obj_idx, field_id):
-        obj = self.get_reference(obj_idx)
-
-        if not isinstance(obj, jobject):
-            raise ValueError('Expected a jobject.')
-
-        pyobj = JNIEnv.jobject_to_pyobject(obj)
-        field = pyobj.__class__.find_field_by_id(field_id)
-
-        if field is None:
-            # TODO: Proper Java error?
-            raise RuntimeError("Could not find field %d in object %s by id." % (field_id, pyobj.jvm_name))
-
-        logger.debug("JNIEnv->GetIntField(%s, %s <%s>) was called" % (pyobj.jvm_name,
-                                                                      field.name,
-                                                                      field.signature))
-
-        return getattr(pyobj, field.name)
+        return self.__get_xxx_field(mu, env, obj_idx, field_id)
+    #
 
     @native_method
-    def get_long_field(self, mu, env):
-        raise NotImplementedError()
+    def get_long_field(self, mu, env, obj_idx, field_id):
+        return self.__get_xxx_field(mu, env, obj_idx, field_id, True)
+    #
 
     @native_method
-    def get_float_field(self, mu, env):
-        raise NotImplementedError()
+    def get_float_field(self, mu, env, obj_idx, field_id):
+        return self.__get_xxx_field(mu, env, obj_idx, field_id)
+    #
 
     @native_method
-    def get_double_field(self, mu, env):
+    def get_double_field(self, mu, env, obj_idx, field_id):
         raise NotImplementedError()
+    #
 
     @native_method
     def set_object_field(self, mu, env):
@@ -1542,8 +1544,28 @@ class JNIEnv:
     #
 
     @native_method
-    def new_object_array(self, mu, env, class_id, obj_init):
-        raise NotImplementedError()
+    def new_object_array(self, mu, env, size, class_idx, obj_init):
+        logger.debug("JNIEnv->NewObjectArray(%d, %u, %r) was called" %(size, class_idx, obj_init))
+        clazz = self.get_reference(class_idx)
+
+        if not isinstance(clazz, jclass):
+            raise ValueError('Expected a jclass.')
+        #
+        pyclazz = clazz.value
+
+        pyarr = []
+        for i in range(0, size):
+            pyarr.append(JAVA_NULL)
+        #
+        
+        if (obj_init != JAVA_NULL):
+            obj = self.get_reference(obj_init)
+            pyobj = self.jobject_to_pyobject(obj)
+            pyarr[0] = pyobj
+        #
+        arr = Array(pyarr)
+        return self.add_local_reference(jobject(arr))
+        
     #
 
     @native_method
@@ -1664,13 +1686,15 @@ class JNIEnv:
 
     @native_method
     def release_byte_array_elements(self, mu, env,array_idx, elems, mode):
+        if (elems == JAVA_NULL):
+            return
+        #
         #前四个字节必为长度
         logger.debug("JNIEnv->ReleaseByteArrayElements(%u, %u, %u) was called" % (array_idx, elems, mode))
         true_buf = elems - 4
         b = mu.mem_read(true_buf, 4)
         elems_sz =  int.from_bytes(b, byteorder='little', signed = False)
         self._emu.memory.unmap(true_buf, elems_sz+4)
-        return 0
     #
 
     @native_method

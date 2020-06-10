@@ -41,3 +41,4 @@ class Method(metaclass=JavaClassDef,
             raise RuntimeError('No modifier was given to class %s method %s' % (clazz.jvm_name, method.name))
 
         return method.modifier
+    #
