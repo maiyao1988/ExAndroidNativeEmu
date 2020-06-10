@@ -118,7 +118,8 @@ class Emulator:
         
         # Android
         self.system_properties = {"libc.debug.malloc.options": "", "ro.build.version.sdk":"19", "ro.build.version.release":"4.4.4","persist.sys.dalvik.vm.lib":"libdvm.so", "ro.product.cpu.abi":"armeabi-v7a", "ro.product.cpu.abi2":"armeabi", 
-                "ro.product.manufacturer":"LGE", "ro.product.manufacturer":"LGE", "ro.debuggable":"0", "ro.product.model":"AOSP on HammerHead","ro.hardware":"hammerhead", "ro.product.device":"hammerhead", "ro.build.host":"833d1eed3ea3", "ro.build.type":"user", 
+                "ro.product.manufacturer":"LGE", "ro.product.manufacturer":"LGE", "ro.debuggable":"0", "ro.product.model":"AOSP on HammerHead","ro.hardware":"hammerhead", "ro.product.board":"hammerhead", "ro.product.device":"hammerhead", 
+                "ro.build.host":"833d1eed3ea3", "ro.build.type":"user", 
                 "ro.secure":"1", "wifi.interface":"wlan0", "ro.product.brand":"Android",
                 }
         self.memory = MemoryMap(self.mu, config.MAP_ALLOC_BASE, config.MAP_ALLOC_BASE+config.MAP_ALLOC_SIZE)

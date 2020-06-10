@@ -3,6 +3,7 @@ import posixpath
 import sys
 import os
 import json
+import time
 
 from unicorn import *
 from unicorn.arm_const import *
@@ -521,8 +522,10 @@ class SDKUtils(metaclass=JavaClassDef, jvm_name='mtopsdk/mtop/global/SDKUtils'):
 
     @staticmethod
     @java_method_def(name='getCorrectionTime', signature='()J', native=False)
-    def getCorrectionTime(mu, ctx):
-        return NotImplementedError()
+    def getCorrectionTime(mu):
+        #return int(time.time())
+        #just for not random debug
+        return 1591789191
     #
 #
 
@@ -726,6 +729,17 @@ try:
     arr = Array([o1, o2, o3])
     JNICLibrary.doCommandNative(emulator, 10102, arr)
     
+    o1 = String("1591789191") #unix 时间搓，变量
+    o2 = String("21465214") #appID
+    o3 = Integer(8)
+    o4 = JAVA_NULL
+    o5 = String("pageName=&pageId=")
+    o6 = Integer(0)
+
+    print("begin securitybodyso 20102")
+    arr = Array([o1, o2, o3, o4, o5, o6])
+    mini_wua = JNICLibrary.doCommandNative(emulator, 20102, arr)
+    print("20102 return %r"%mini_wua)
     
     emulator.call_symbol(lib_module_avmp, 'JNI_OnLoad', emulator.java_vm.address_ptr, 0x00)
 
@@ -745,7 +759,7 @@ try:
     arr = Array([o1, o2])
     vmp_inst = JNICLibrary.doCommandNative(emulator, 60901, arr)
     print("60901 return %r"%vmp_inst)
-
+    
     '''
     01-28 02:24:32.022  7389  7544 I librev-dj: call my_doCommandNative 60902
     01-28 02:24:32.022  7389  7544 I librev-dj: param0 4250478350 [class java.lang.Long]
@@ -795,6 +809,7 @@ try:
     vmp_r = JNICLibrary.doCommandNative(emulator, 60902, arr)
 
     print(vmp_r)
+    
 #
 
 except UcError as e:
