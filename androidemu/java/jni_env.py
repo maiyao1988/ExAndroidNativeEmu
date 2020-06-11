@@ -1552,6 +1552,7 @@ class JNIEnv:
             raise ValueError('Expected a jclass.')
         #
         pyclazz = clazz.value
+        arr_item_cls_name = pyclazz.jvm_name
 
         pyarr = []
         for i in range(0, size):
@@ -1563,7 +1564,16 @@ class JNIEnv:
             pyobj = self.jobject_to_pyobject(obj)
             pyarr[0] = pyobj
         #
-        arr = Array(pyarr)
+        new_jvm_name = ""
+        #FIXME check if is array
+        if (arr_item_cls_name[0] == "["):
+            new_jvm_name = "[%s"%arr_item_cls_name
+        #
+        else: 
+            new_jvm_name = "[L%s;"%arr_item_cls_name
+        #jvm_name=None, jvm_fields=None, jvm_ignore=False, jvm_super=None
+        pyarray_clazz = JavaClassDef("%s_Array"%arr_item_cls_name, (Array,), {}, jvm_name=new_jvm_name, jvm_super=Array)
+        arr = pyarray_clazz(pyarr)
         return self.add_local_reference(jobject(arr))
         
     #
@@ -1587,8 +1597,15 @@ class JNIEnv:
     #
 
     @native_method
-    def set_object_array_element(self, mu, env):
-        raise NotImplementedError()
+    def set_object_array_element(self, mu, env, array_idx, index, obj_idx):
+        logger.debug("JNIEnv->SetObjectArrayElement(%u, %u, %u) was called" % (array_idx, index, obj_idx))
+        array_obj = self.get_reference(array_idx)
+
+        array_pyobj = JNIEnv.jobject_to_pyobject(array_obj)
+        obj = self.get_reference(obj_idx)
+        pyobj = JNIEnv.jobject_to_pyobject(obj)
+        array_pyobj[index] = pyobj
+    #
 
     @native_method
     def new_boolean_array(self, mu, env):

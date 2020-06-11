@@ -1,6 +1,7 @@
 from ..java_class_def import JavaClassDef
 from ..java_field_def import JavaFieldDef
 from ..java_method_def import java_method_def, JavaMethodDef
+from ..constant_values import *
 from .string import *
 from .method import *
 
@@ -59,6 +60,10 @@ class Class(metaclass=JavaClassDef, jvm_name='java/lang/Class'):
         signature_no_ret = sbuf.getvalue()
         pyname = name.get_py_string()
         pymethod = self.__pyclazz.find_method_sig_with_no_ret(pyname, signature_no_ret)
+        if (pymethod == None):
+            assert False, "getDeclaredMethod not found..."
+            return JAVA_NULL
+        #
         reflected_method = Method(self.__pyclazz, pymethod)
         logger.debug("getDeclaredMethod return %r"%reflected_method)
         return reflected_method
