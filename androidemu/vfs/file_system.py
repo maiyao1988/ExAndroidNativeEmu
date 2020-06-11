@@ -19,7 +19,7 @@ if not g_isWin:
 #
 logger = logging.getLogger(__name__)
 
-OVERRIDE_URANDOM = True
+OVERRIDE_URANDOM = False
 OVERRIDE_URANDOM_INT = 1
 
 #status

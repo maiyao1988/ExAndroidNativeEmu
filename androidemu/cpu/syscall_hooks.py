@@ -19,7 +19,7 @@ from .. import config
 from .. import pcb
 from ..utils import debug_utils
 
-OVERRIDE_TIMEOFDAY = True
+OVERRIDE_TIMEOFDAY = False
 OVERRIDE_TIMEOFDAY_SEC = 0
 OVERRIDE_TIMEOFDAY_USEC = 0
 
