@@ -4,6 +4,7 @@ from .executable import Executable
 from ..java_class_def import JavaClassDef
 from ..java_field_def import JavaFieldDef
 from ..java_method_def import java_method_def, JavaMethodDef
+from ..constant_values import *
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,25 @@ class Method(metaclass=JavaClassDef,
             raise RuntimeError('No modifier was given to class %s method %s' % (clazz.jvm_name, method.name))
 
         return method.modifier
+    #
+
+    @java_method_def(
+        name="invoke",
+        signature="(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;",
+        args_list=['jobject', 'jobject']
+    )
+    def invoke(self, emu, obj, args):
+        logger.debug('get_method_modifiers(%r, %r)' % (obj, args))
+
+        if(obj == JAVA_NULL):
+            #static method
+            v = self._method.func(emu, *args)
+        #
+        else:
+            v = self._method.func(obj, emu, *args)
+        #
+        return v
+
     #
 
     def __repr__(self):

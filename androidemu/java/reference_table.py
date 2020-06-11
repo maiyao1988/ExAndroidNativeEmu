@@ -19,6 +19,7 @@ class ReferenceTable:
             raise ValueError('Expected a index.')
 
         self._table[idx] = newobj
+    #
 
     def add(self, obj):
         if not isinstance(obj, jobject):
@@ -33,6 +34,7 @@ class ReferenceTable:
         self._table[index] = obj
 
         return index
+    #
 
     def remove(self, obj):
         # TODO: Test

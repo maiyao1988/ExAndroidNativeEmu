@@ -485,19 +485,6 @@ class MalDetect(metaclass=JavaClassDef, jvm_name='com/alibaba/wireless/security/
     #
 #
 
-class ByteArray(Array, metaclass=JavaClassDef, jvm_name="[B", jvm_super=Array):
-    def __init__(self, item_list):
-        Array.__init__(self, item_list)
-    #
-
-
-    # #TODO: 在继承多态机制完善后移动到Object类上
-    @java_method_def(name='getClass', signature='()Ljava/lang/Class;', native=False)
-    def getClass(self, emu):
-        return self.class_object
-    #
-
-#
 
 
 class NativeReflectUtils(metaclass=JavaClassDef, jvm_name='com/alibaba/wireless/security/securitybody/NativeReflectUtils'):
@@ -626,7 +613,6 @@ emulator.java_classloader.add_class(SGPluginExtras)
 emulator.java_classloader.add_class(MalDetect)
 emulator.java_classloader.add_class(NativeReflectUtils)
 emulator.java_classloader.add_class(SDKUtils)
-emulator.java_classloader.add_class(ByteArray)
 
 emulator.java_classloader.add_class(MiuiAd)
 emulator.java_classloader.add_class(TelephonyManagerEx)

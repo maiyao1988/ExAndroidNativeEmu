@@ -280,7 +280,8 @@ class JNIEnv:
     def add_local_reference(self, obj):
         if not isinstance(obj, jobject):
             raise ValueError('Expected a jobject.')
-        return self._locals.add(obj)
+        index = self._locals.add(obj)
+        return index
 
     def set_local_reference(self, idx, newobj):
         if not isinstance(newobj, jobject):
@@ -404,12 +405,6 @@ class JNIEnv:
         name = memory_helpers.read_utf8(mu, name_ptr)
         logger.debug("JNIEnv->FindClass(%s) was called" % name)
 
-        if name.startswith('['):
-            #raise NotImplementedError('Array type not implemented.')
-            #treat as class Array
-            name = "java/lang/reflect/Array"
-        #
-
         clazz = self._class_loader.find_class_by_name(name)
         if clazz is None:
             # TODO: Proper Java error?
@@ -518,23 +513,24 @@ class JNIEnv:
         raise NotImplementedError()
 
     @native_method
-    def new_global_ref(self, mu, env, obj):
+    def new_global_ref(self, mu, env, jobj):
         """
         Creates a new global reference to the object referred to by the obj argument. The obj argument may be a
         global or local reference. Global references must be explicitly disposed of by calling DeleteGlobalRef().
         """
-        logger.debug("JNIEnv->NewGlobalRef(%d) was called" % obj)
+        logger.debug("JNIEnv->NewGlobalRef(%d) was called" % jobj)
 
-        if obj == 0:
+        if jobj == 0:
             return 0
 
-        obj = self.get_local_reference(obj)
+        obj = self.get_local_reference(jobj)
 
         if obj is None:
             # TODO: Implement global > global support (?)
             raise NotImplementedError('Invalid local reference obj.')
-
-        return self.add_global_reference(obj)
+        #
+        index = self.add_global_reference(obj)
+        return index
 
     @native_method
     def delete_global_ref(self, mu, env, idx):
@@ -1571,8 +1567,15 @@ class JNIEnv:
         #
         else: 
             new_jvm_name = "[L%s;"%arr_item_cls_name
-        #jvm_name=None, jvm_fields=None, jvm_ignore=False, jvm_super=None
-        pyarray_clazz = JavaClassDef("%s_Array"%arr_item_cls_name, (Array,), {}, jvm_name=new_jvm_name, jvm_super=Array)
+        #
+        pyarray_clazz = self._class_loader.find_class_by_name(new_jvm_name)
+        if (pyarray_clazz == None):
+            #jvm_name=None, jvm_fields=None, jvm_ignore=False, jvm_super=None
+            #动态创建Array新类，因为Descriptor会变
+            #pyarray_clazz = JavaClassDef("%s_Array"%arr_item_cls_name, (Array,), {}, jvm_name=new_jvm_name, jvm_super=Array)
+            #self._class_loader.add_class(pyarray_clazz)
+            raise RuntimeError("NewObjectArray Array Class %s not found"%new_jvm_name)
+        #
         arr = pyarray_clazz(pyarr)
         return self.add_local_reference(jobject(arr))
         
