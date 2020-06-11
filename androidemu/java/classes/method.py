@@ -7,7 +7,6 @@ from ..java_method_def import java_method_def, JavaMethodDef
 
 logger = logging.getLogger(__name__)
 
-
 class Method(metaclass=JavaClassDef,
              jvm_name='java/lang/reflect/Method',
              jvm_fields=[
@@ -16,20 +15,19 @@ class Method(metaclass=JavaClassDef,
              ],
              jvm_super=Executable):
 
-    def __init__(self, clazz: JavaClassDef, method: JavaMethodDef):
+    def __init__(self, pydeclaringClass: JavaClassDef, pymethod: JavaMethodDef):
         super().__init__()
-        self._clazz = clazz
-        self._method = method
-        self.slot = method.jvm_id
-        self.declaringClass = self._clazz
-        self.accessFlags = method.modifier
+        self._method = pymethod
+        self.slot = pymethod.jvm_id
+        self.declaringClass = pydeclaringClass
+        self.accessFlags = pymethod.modifier
+    #
 
     @staticmethod
     @java_method_def(
         name="getMethodModifiers",
         signature="(Ljava/lang/Class;I)I",
-        args_list=['jobject', 'jint'],
-        ignore=True
+        args_list=['jobject', 'jint']
     )
     def get_method_modifiers(emu, clazz_obj, jvm_method_id):
         clazz = clazz_obj.value
@@ -42,3 +40,8 @@ class Method(metaclass=JavaClassDef,
 
         return method.modifier
     #
+
+    def __repr__(self):
+        return "Method(%s, %s)"%(self.declaringClass, self._method)
+    #
+#

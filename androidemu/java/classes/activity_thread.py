@@ -102,8 +102,8 @@ class ActivityThread(metaclass=JavaClassDef, jvm_name='android/app/ActivityThrea
         self.__ctx_impl = ContextImpl()
         self.app = Application()
         self.app.attachBaseContext(self.__ctx_impl)
-        #self.mActivities = ArrayMap([ActivityClientRecord()])
-        self.mActivities = ArrayMap([])
+        self.mActivities = ArrayMap([ActivityClientRecord()])
+        #self.mActivities = ArrayMap([])
     #
 
     @staticmethod

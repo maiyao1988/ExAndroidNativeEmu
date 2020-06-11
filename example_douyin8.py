@@ -203,7 +203,7 @@ libdvm = emulator.load_library("vfs/system/lib/libdvm.so")
 
 libcm = emulator.load_library("vfs/system/lib/libc.so")
 
-emulator.mu.hook_add(UC_HOOK_MEM_WRITE, hook_mem_write, mnt)
+#emulator.mu.hook_add(UC_HOOK_MEM_WRITE, hook_mem_write, mnt)
 lib_module = emulator.load_library("tests/bin/libcms8.so")
 
 # Show loaded modules.
@@ -248,7 +248,7 @@ try:
     n = 1562848170
     arr = Array(data)
     
-    emulator.mu.hook_add(UC_HOOK_MEM_READ, hook_mem_read, mnt)
+    #emulator.mu.hook_add(UC_HOOK_MEM_READ, hook_mem_read, mnt)
     print("before lev")
     
     result = XGorgen.leviathan(emulator, n, arr)

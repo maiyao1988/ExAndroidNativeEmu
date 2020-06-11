@@ -21,7 +21,7 @@ class JavaClassLoader(metaclass=JavaClassDef, jvm_name='java/lang/ClassLoader'):
         if (clazz == Class):
             clazz.class_loader = self
         #
-        clazz.class_object = Class(clazz.jvm_name)
+        clazz.class_object = Class(clazz)
         self.class_by_id[clazz.jvm_id] = clazz
         self.class_by_name[clazz.jvm_name] = clazz
     #

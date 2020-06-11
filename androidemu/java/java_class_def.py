@@ -68,6 +68,22 @@ class JavaClassDef(type):
         return None
     #
 
+    #用于支持java反射，java反射签名都没有返回值
+    #@param signature_no_ret something like (ILjava/lang/String;) 注意，没有返回值
+    def find_method_sig_with_no_ret(cls, name, signature_no_ret):
+        assert signature_no_ret[0] == "(" and signature_no_ret[len(signature_no_ret)-1] == ")", "signature_no_ret error"
+        for method in cls.jvm_methods.values():
+            if method.name == name and method.signature.startswith(signature_no_ret):
+                return method
+            #
+        #
+        if (cls.jvm_super is not None):
+            return cls.jvm_super.find_method_sig_with_no_ret(name, signature_no_ret)
+        #
+        return None
+    #
+
+
     def find_method_by_id(cls, jvm_id):
         if (jvm_id in cls.jvm_methods):
             return cls.jvm_methods[jvm_id]
