@@ -116,6 +116,8 @@ def native_method(func):
                 native_write_arg_register(emu, UC_ARM_REG_R0, rlow)
                 native_write_arg_register(emu, UC_ARM_REG_R1, rhigh)
             else:
+                #FIXME handle python基本类型str int float,处理返回值逻辑略为混乱，
+                #返回值的问题统一在这里处理掉
                 native_write_arg_register(emu, UC_ARM_REG_R0, result)
             #
         #

@@ -696,7 +696,7 @@ class JNIEnv:
         pyobj = JNIEnv.jobject_to_pyobject(obj)
         return JNI_TRUE if pyobj.jvm_id == pyclazz.jvm_id else JNI_FALSE
     #
-    
+
     @native_method
     def get_method_id(self, mu, env, clazz_idx, name_ptr, sig_ptr):
         """
@@ -890,17 +890,19 @@ class JNIEnv:
         raise NotImplementedError()
 
     @native_method
-    def call_void_method(self, mu, env):
-        raise NotImplementedError()
-
-    @native_method
-    def call_void_method_v(self, mu, env, obj_idx, method_id, args):
-        return self.__call_xxx_method(mu, env, obj_idx, method_id, args, 1)
+    def call_void_method(self, mu, env, obj_idx, method_id, arg1, arg2, arg3, arg4):
+        self.__call_xxx_method(mu, env, obj_idx, method_id, (arg1, arg2, arg3, arg4), 0)
     #
 
     @native_method
     def call_void_method_a(self, mu, env):
         raise NotImplementedError()
+    #
+
+    @native_method
+    def call_void_method_v(self, mu, env, obj_idx, method_id, args):
+        self.__call_xxx_method(mu, env, obj_idx, method_id, args, 1)
+    #
 
     @native_method
     def call_nonvirtual_object_method(self, mu, env):
@@ -1354,12 +1356,12 @@ class JNIEnv:
 
     @native_method
     def call_static_void_method(self, mu, env, clazz_idx, method_id, arg1, arg2, arg3, arg4):
-        return self.__call_static_xxx_method(mu, env, clazz_idx, method_id, (arg1, arg2, arg3, arg4), 0)
+        self.__call_static_xxx_method(mu, env, clazz_idx, method_id, (arg1, arg2, arg3, arg4), 0)
     #
 
     @native_method
     def call_static_void_method_v(self, mu, env, clazz_idx, method_id, args):
-        return self.__call_static_xxx_method(mu, env, clazz_idx, method_id, args, 1)
+        self.__call_static_xxx_method(mu, env, clazz_idx, method_id, args, 1)
     #
 
     @native_method

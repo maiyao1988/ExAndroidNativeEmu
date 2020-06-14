@@ -2,8 +2,8 @@ from ..java_class_def import JavaClassDef
 from ..java_field_def import JavaFieldDef
 from ..java_method_def import java_method_def, JavaMethodDef
 from ..classes.context import ContextImpl
+from ..constant_values import *
 from .application import Application
-
 
 class AccessibilityManager(metaclass=JavaClassDef, jvm_name='android/view/accessibility/AccessibilityManager'):
     def __init__(self):
@@ -13,6 +13,12 @@ class AccessibilityManager(metaclass=JavaClassDef, jvm_name='android/view/access
     @java_method_def(name='getEnabledAccessibilityServiceList', args_list=["jint"], signature='(I)Ljava/util/List;', native=False)
     def getEnabledAccessibilityServiceList(self, emu, i):
         raise NotImplementedError()
+    #
+#
+
+class AccessibilityInteractionController(metaclass=JavaClassDef, jvm_name='android/view/AccessibilityInteractionController'):
+    def __init__(self):
+        pass
     #
 #
 
@@ -27,22 +33,37 @@ class Window(metaclass=JavaClassDef, jvm_name='android/view/Window'):
     #
 #
 
-class AttachInfo(metaclass=JavaClassDef, jvm_name='android/view/View$AttachInfo'):
+class ViewRootImpl(metaclass=JavaClassDef, jvm_name='android/view/ViewRootImpl',
+                jvm_fields=[
+                     JavaFieldDef('mAccessibilityInteractionController', 'android/view/AccessibilityInteractionController', False)
+                 ]
+    ):
+
     def __init__(self):
-        pass
+        self.mAccessibilityInteractionController = AccessibilityInteractionController()
     #
 #
 
+class AttachInfo(metaclass=JavaClassDef, jvm_name='android/view/View$AttachInfo', 
+                jvm_fields=[
+                     JavaFieldDef('mViewRootImpl', 'android/view/ViewRootImpl', False)
+                 ]
+    ):
 
-class ViewRootImpl(metaclass=JavaClassDef, jvm_name='android/view/ViewRootImpl'):
-    def __init__(self):
-        pass
+    def __init__(self, view_root_impl):
+        self.mViewRootImpl = view_root_impl
     #
+
 #
 
-class View(metaclass=JavaClassDef, jvm_name='android/view/View'):
+
+class View(metaclass=JavaClassDef, jvm_name='android/view/View', 
+                jvm_fields=[
+                     JavaFieldDef('', 'android/view/View$AttachInfo', False)
+                 ]
+    ):
     def __init__(self):
-        pass
+        self.mAttachInfo = AttachInfo(ViewRootImpl())
     #
 #
 
