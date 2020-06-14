@@ -380,9 +380,7 @@ class JNIEnv:
 
     @staticmethod
     def jobject_to_pyobject(obj):
-        if(isinstance(obj, jclass)):
-            return obj.value.class_object
-        elif(isinstance(obj, jobject)):
+        if(isinstance(obj, jobject)):
             return obj.value
         else:
             raise RuntimeError("jobject_to_pyobject unknown obj type %r"%obj)
@@ -405,17 +403,19 @@ class JNIEnv:
         name = memory_helpers.read_utf8(mu, name_ptr)
         logger.debug("JNIEnv->FindClass(%s) was called" % name)
 
-        clazz = self._class_loader.find_class_by_name(name)
-        if clazz is None:
+        pyclazz = self._class_loader.find_class_by_name(name)
+        if pyclazz is None:
             # TODO: Proper Java error?
             raise RuntimeError('Could not find class \'%s\' for JNIEnv.' % name)
 
-        if clazz.jvm_ignore:
+        if pyclazz.jvm_ignore:
             logger.debug("FindClass %s return 0 because of ignored")
             return 0
         #
-
-        return self.add_local_reference(jclass(clazz))
+        #jclass包裹的都是Class的对象(Java Class Object)
+        jvm_clazz = pyclazz.class_object
+        return self.add_local_reference(jclass(jvm_clazz))
+    #
 
     @native_method
     def from_reflected_method(self, mu, env):
@@ -437,24 +437,30 @@ class JNIEnv:
 
         if not isinstance(clazz, jclass):
             raise ValueError('Expected a jclass.')
+        #
+        class_obj = clazz.value
 
-        method = clazz.value.find_method_by_id(method_id)
+        pyclazz = class_obj.get_py_clazz()
+
+        method = pyclazz.find_method_by_id(method_id)
         if method is None:
-            raise RuntimeError("Could not find method ('%u') in class %s." % (method_id, clazz.value.jvm_name))
+            raise RuntimeError("Could not find method ('%u') in class %s." % (method_id, pyclazz.jvm_name))
 
         if method.modifier & MODIFIER_STATIC:
             mu.mem_write(is_static, int(JNI_TRUE).to_bytes(4, byteorder='little'))
         else:
             mu.mem_write(is_static, int(JNI_FALSE).to_bytes(4, byteorder='little'))
 
-        logger.debug("JNIEnv->ToReflectedMethod(%s, %s, %u) was called" % (clazz.value.jvm_name,
+        logger.debug("JNIEnv->ToReflectedMethod(%s, %s, %u) was called" % (pyclazz.jvm_name,
                                                                            method.name,
                                                                            is_static))
 
         if method.name == '<init>' and method.signature.endswith('V'):
-            return Constructor(clazz.value, method)
+            return Constructor(pyclazz, method)
         else:
-            return Method(clazz.value, method)
+            return Method(pyclazz, method)
+        #
+    #
 
     @native_method
     def get_superclass(self, mu, env):
@@ -608,19 +614,23 @@ class JNIEnv:
 
     def __new_object(self, mu, env, clazz_idx, method_id, args, args_type):
         # Get class reference.
-        clazz = self.get_reference(clazz_idx)
-        if not isinstance(clazz, jclass):
+        jclazz = self.get_reference(clazz_idx)
+        if not isinstance(jclazz, jclass):
             raise ValueError('Expected a jclass.')
 
         # Create class instance.
-        obj = clazz.value()
+        class_obj = jclazz.value
+        
+        pyclazz = class_obj.get_py_clazz()
+
+        obj = pyclazz()
 
         # Get constructor method.
-        method = obj.__class__.find_method_by_id(method_id)
+        method = pyclazz.find_method_by_id(method_id)
         if method.name != '<init>' or not method.signature.endswith('V'):
             raise ValueError('Class constructor has the wrong name or does not return void.')
 
-        logger.debug("JNIEnv->NewObjectX(%s, %s, %r) was called" % (clazz.value.jvm_name, method.name, args))
+        logger.debug("JNIEnv->NewObjectX(%s, %s, %r) was called" % (pyclazz.jvm_name, method.name, args))
 
         # Parse arguments.
         constructor_args = self.read_args_common(mu, args, method.args_list, args_type)
@@ -657,8 +667,10 @@ class JNIEnv:
         pyobj = JNIEnv.jobject_to_pyobject(obj)
         logger.debug("JNIEnv->GetObjectClass(%r) was called" % (pyobj, ))
 
-        clazz  = pyobj.__class__
-        return self.add_local_reference(jclass(clazz))
+        pyclazz  = pyobj.__class__
+
+        jvm_clazz = pyclazz.class_object
+        return self.add_local_reference(jclass(jvm_clazz))
     #
 
     @native_method
@@ -677,8 +689,13 @@ class JNIEnv:
 
         # TODO: Casting check (?)
 
+        class_obj = clazz.value
+        
+        pyclazz = class_obj.get_py_clazz()
+
         pyobj = JNIEnv.jobject_to_pyobject(obj)
-        return JNI_TRUE if pyobj.jvm_id == clazz.value.jvm_id else JNI_FALSE
+        return JNI_TRUE if pyobj.jvm_id == pyclazz.jvm_id else JNI_FALSE
+    #
 
     @native_method
     def get_method_id(self, mu, env, clazz_idx, name_ptr, sig_ptr):
@@ -695,12 +712,16 @@ class JNIEnv:
             raise ValueError('Expected a jclass.')
         #
 
-        print("get_method_id type %s"%(clazz.value))
-        method = clazz.value.find_method(name, sig)
+        class_obj = clazz.value
+        
+        pyclazz = class_obj.get_py_clazz()
+
+        print("get_method_id type %s"%(pyclazz))
+        method = pyclazz.find_method(name, sig)
 
         if method is None:
             # TODO: Proper Java error?
-            raise RuntimeError("Could not find method ('%s', '%s') in class %s." % (name, sig, clazz.value.jvm_name))
+            raise RuntimeError("Could not find method ('%s', '%s') in class %s." % (name, sig, pyclazz.jvm_name))
 
         return method.jvm_id
     #
@@ -711,6 +732,7 @@ class JNIEnv:
         if not isinstance(obj, jobject):
             raise ValueError('Expected a jobject.')
         pyobj = JNIEnv.jobject_to_pyobject(obj)
+
         method = pyobj.__class__.find_method_by_id(method_id)
         if method is None:
             # TODO: Proper Java error?
@@ -868,17 +890,19 @@ class JNIEnv:
         raise NotImplementedError()
 
     @native_method
-    def call_void_method(self, mu, env):
-        raise NotImplementedError()
-
-    @native_method
-    def call_void_method_v(self, mu, env, obj_idx, method_id, args):
-        return self.__call_xxx_method(mu, env, obj_idx, method_id, args, 1)
+    def call_void_method(self, mu, env, obj_idx, method_id, arg1, arg2, arg3, arg4):
+        self.__call_xxx_method(mu, env, obj_idx, method_id, (arg1, arg2, arg3, arg4), 0)
     #
 
     @native_method
     def call_void_method_a(self, mu, env):
         raise NotImplementedError()
+    #
+
+    @native_method
+    def call_void_method_v(self, mu, env, obj_idx, method_id, args):
+        self.__call_xxx_method(mu, env, obj_idx, method_id, args, 1)
+    #
 
     @native_method
     def call_nonvirtual_object_method(self, mu, env):
@@ -1013,11 +1037,15 @@ class JNIEnv:
 
         logger.debug("JNIEnv->GetFieldId(%d, %s, %s) was called" % (clazz_idx, name, sig))
 
-        field = clazz.value.find_field(name, sig, False)
+        class_obj = clazz.value
+        
+        pyclazz = class_obj.get_py_clazz()
+
+        field = pyclazz.find_field(name, sig, False)
 
         if field is None:
             # TODO: Proper Java error?
-            raise RuntimeError("Could not find field ('%s', '%s') in class %s." % (name, sig, clazz.value.jvm_name))
+            raise RuntimeError("Could not find field ('%s', '%s') in class %s." % (name, sig, pyclazz.jvm_name))
 
         if field.ignore:
             return 0
@@ -1143,13 +1171,17 @@ class JNIEnv:
 
         if not isinstance(clazz, jclass):
             raise ValueError('Expected a jclass.')
+        #
 
-        method = clazz.value.find_method(name, sig)
+        class_obj = clazz.value
+        
+        pyclazz = class_obj.get_py_clazz()
+        method = pyclazz.find_method(name, sig)
 
         if method is None:
             # TODO: Proper Java error?
             raise RuntimeError(
-                "Could not find static method ('%s', '%s') in class %s." % (name, sig, clazz.value.jvm_name))
+                "Could not find static method ('%s', '%s') in class %s." % (name, sig, pyclazz.jvm_name))
 
         if method.ignore:
             return 0
@@ -1163,14 +1195,18 @@ class JNIEnv:
         if not isinstance(clazz, jclass):
             raise ValueError('Expected a jclass.')
 
-        method = clazz.value.find_method_by_id(method_id)
+        class_obj = clazz.value
+        
+        pyclazz = class_obj.get_py_clazz()
+
+        method = pyclazz.find_method_by_id(method_id)
 
         if method is None:
             # TODO: Proper Java error?
-            raise RuntimeError("Could not find method %d in class %s by id." % (method_id, clazz.value.jvm_name))
+            raise RuntimeError("Could not find method %d in class %s by id." % (method_id, pyclazz.jvm_name))
 
         logger.debug("JNIEnv->CallStaticXXXMethodX(%s, %s <%s>, %r) was called" % (
-            clazz.value.jvm_name,
+            pyclazz.jvm_name,
             method.name,
             method.signature, args))
 
@@ -1320,12 +1356,12 @@ class JNIEnv:
 
     @native_method
     def call_static_void_method(self, mu, env, clazz_idx, method_id, arg1, arg2, arg3, arg4):
-        return self.__call_static_xxx_method(mu, env, clazz_idx, method_id, (arg1, arg2, arg3, arg4), 0)
+        self.__call_static_xxx_method(mu, env, clazz_idx, method_id, (arg1, arg2, arg3, arg4), 0)
     #
 
     @native_method
     def call_static_void_method_v(self, mu, env, clazz_idx, method_id, args):
-        return self.__call_static_xxx_method(mu, env, clazz_idx, method_id, args, 1)
+        self.__call_static_xxx_method(mu, env, clazz_idx, method_id, args, 1)
     #
 
     @native_method
@@ -1347,12 +1383,17 @@ class JNIEnv:
         logger.debug("JNIEnv->GetStaticFieldId(%d, %s, %s) was called" % (clazz_idx, name, sig))
 
         clazz = self.get_reference(clazz_idx)
-        field = clazz.value.find_field(name, sig, True)
+
+        class_obj = clazz.value
+        
+        pyclazz = class_obj.get_py_clazz()
+
+        field = pyclazz.find_field(name, sig, True)
 
         if field is None:
             # TODO: Proper Java error?
             raise RuntimeError(
-                "Could not find static field ('%s', '%s') in class %s." % (name, sig, clazz.value.jvm_name))
+                "Could not find static field ('%s', '%s') in class %s." % (name, sig, pyclazz.jvm_name))
 
         return field.jvm_id
     #
@@ -1362,7 +1403,13 @@ class JNIEnv:
         logger.debug("JNIEnv->GetStaticXXXField(%d, %d) was called" % (clazz_idx, field_id))
 
         clazz = self.get_reference(clazz_idx)
-        field = clazz.value.find_field_by_id(field_id)
+
+        class_obj = clazz.value
+        
+        pyclazz = class_obj.get_py_clazz()
+
+        field = pyclazz.find_field_by_id(field_id)
+
         r = field.static_value
         logger.debug("JNIEnv->GetStaticXXXField return %r"%r)
         v = field.static_value
@@ -1454,7 +1501,11 @@ class JNIEnv:
         if not isinstance(clazz, jclass):
             raise ValueError('Expected a jclass.')
 
-        field = clazz.value.find_field_by_id(field_id)
+        class_obj = clazz.value
+        
+        pyclazz = class_obj.get_py_clazz()
+
+        field = pyclazz.find_field_by_id(field_id)
         #FIXME: 对field支持还不完善，非stativ value无法设置，需要改进
         field.static_value = value
     #
@@ -1547,7 +1598,11 @@ class JNIEnv:
         if not isinstance(clazz, jclass):
             raise ValueError('Expected a jclass.')
         #
-        pyclazz = clazz.value
+
+        class_obj = clazz.value
+        
+        pyclazz = class_obj.get_py_clazz()
+        
         arr_item_cls_name = pyclazz.jvm_name
 
         pyarr = []
@@ -1589,14 +1644,7 @@ class JNIEnv:
 
         array_pyobj = JNIEnv.jobject_to_pyobject(array_obj)
         pyobj_item = array_pyobj[item_idx]
-        obj_type = type(pyobj_item)
-        if (obj_type == JavaClassDef):
-            #是否返回所有的Object都要这样判断？
-            return self.add_local_reference(jclass(pyobj_item))
-        #
-        else:
-            return self.add_local_reference(jobject(pyobj_item))
-        #
+        return self.add_local_reference(jobject(pyobj_item))
     #
 
     @native_method
@@ -1830,7 +1878,9 @@ class JNIEnv:
         if not isinstance(clazz, jclass):
             raise ValueError('Expected a jclass.')
 
-        clazz = clazz.value
+        class_obj = clazz.value
+        
+        pyclazz = class_obj.get_py_clazz()
 
         for i in range(0, methods_count):
             ptr_name = memory_helpers.read_ptr(mu, (i * 12) + methods)
@@ -1840,7 +1890,7 @@ class JNIEnv:
             name = memory_helpers.read_utf8(mu, ptr_name)
             signature = memory_helpers.read_utf8(mu, ptr_sign)
 
-            clazz.register_native(name, signature, ptr_func)
+            pyclazz.register_native(name, signature, ptr_func)
 
         return JNI_OK
 

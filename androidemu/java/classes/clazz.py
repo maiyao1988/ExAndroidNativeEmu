@@ -4,6 +4,7 @@ from ..java_method_def import java_method_def, JavaMethodDef
 from ..constant_values import *
 from .string import *
 from .method import *
+from .field import *
 
 import io
 
@@ -29,14 +30,50 @@ class Class(metaclass=JavaClassDef, jvm_name='java/lang/Class'):
         return String(name)
     #
 
+    @java_method_def(name='getCanonicalName', signature='()Ljava/lang/String;', native=False)
+    def getCanonicalName(self, emu):
+        name = self.getName(emu).get_py_string()
+        
+        if (name[0] == "["):
+            dims = 0
+            for ch in name:
+                if (ch == '['):
+                    dims += 1
+                #
+                else:
+                    break
+                #
+            #
+            #去除[
+            name = name[dims:]
+            if (name[0] == "L"):
+                #去除类型前的L
+                name = name[1:]
+            #
+
+            for i in range(dims):
+                name = name + "[]"
+            #
+        #
+        #$->.
+        name = name.replace("$", ".")
+        return String(name)
+    #
+
     def get_jni_descriptor(self):
         return self.__descriptor_represent
+    #
+
+    def get_py_clazz(self):
+        return self.__pyclazz
     #
 
 
     @java_method_def(name='getDeclaredField', args_list=["jstring"], signature='(Ljava/lang/String;)Ljava/lang/reflect/Field;', native=False)
     def getDeclaredField(self, emu, name):
-        raise NotImplementedError()
+        logger.debug("getDeclaredField %s"%name)
+        reflected_field = Field(self.__pyclazz, name.get_py_string())
+        return reflected_field
     #
 
     @java_method_def(name='getDeclaredMethod', args_list=["jstring", "jobject"], signature='(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;', native=False)
