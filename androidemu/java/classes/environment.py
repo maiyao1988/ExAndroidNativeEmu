@@ -13,6 +13,6 @@ class Environment(metaclass=JavaClassDef, jvm_name='android/os/Environment'):
     @staticmethod
     @java_method_def(name='getExternalStorageDirectory', signature='()Ljava/io/File;', native=False)
     def getExternalStorageDirectory(emu):
-        return File(String("/sdcard/"))
+        return File("/sdcard/")
     #
 #

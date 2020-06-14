@@ -1,11 +1,12 @@
 from ..java_class_def import JavaClassDef
 from ..java_field_def import JavaFieldDef
 from ..java_method_def import java_method_def, JavaMethodDef
-from .array import Array
+from .array import *
 
 class String(metaclass=JavaClassDef, jvm_name='java/lang/String'):
     
     def __init__(self, pystr=""):
+        assert type(pystr) == str
         self.__str = pystr
     #
 
@@ -26,7 +27,7 @@ class String(metaclass=JavaClassDef, jvm_name='java/lang/String'):
     def getBytes(self, emu, charset):
         pycharset = charset.get_py_string()
         barr = bytearray(self.__str, pycharset)
-        arr = Array(barr)
+        arr = ByteArray(barr)
         return arr
     #
 

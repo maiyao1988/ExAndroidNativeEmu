@@ -6,6 +6,7 @@ from .string import String
 class File(metaclass=JavaClassDef, jvm_name='java/io/File'):
     
     def __init__(self, path):
+        assert type(path) == str
         self.__path = path
     #
 
