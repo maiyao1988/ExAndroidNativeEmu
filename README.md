@@ -9,9 +9,10 @@ This is a personal improved version of [AndroidNativeEmu](https://github.com/Aeo
  - Stop all runing when getting exception  instead of just skiping one emulator runing for easily bug detecting...
  - Support ELF DT_INIT call
  - Auto Load dependency so.
- - auto generate /proc/\[pid\]/maps according to current memory map
- - fix R_ARM_ABS32 relocation bug.
- - use program header to load so instead of section header
+ - Auto generate /proc/\[pid\]/maps according to current memory map
+ - Fix R_ARM_ABS32 relocation bug.
+ - Use program header to load so instead of section header
+ - Support Java reflection
  
 ## TODO
  - Simulate linker TLS initialization.
