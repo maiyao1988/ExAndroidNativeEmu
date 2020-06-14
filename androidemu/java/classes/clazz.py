@@ -34,7 +34,7 @@ class Class(metaclass=JavaClassDef, jvm_name='java/lang/Class'):
         return self.__descriptor_represent
     #
 
-    def get_py_clazz():
+    def get_py_clazz(self):
         return self.__pyclazz
     #
 

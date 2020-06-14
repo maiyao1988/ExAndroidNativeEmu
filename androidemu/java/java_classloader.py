@@ -10,6 +10,7 @@ class JavaClassLoader(metaclass=JavaClassDef, jvm_name='java/lang/ClassLoader'):
     def __init__(self):
         self.class_by_id = dict()
         self.class_by_name = dict()
+    #
 
     def add_class(self, clazz):
         if not isinstance(clazz, JavaClassDef):
@@ -31,7 +32,7 @@ class JavaClassLoader(metaclass=JavaClassDef, jvm_name='java/lang/ClassLoader'):
             return None
 
         return self.class_by_id[jvm_id]
-
+    #
     def find_class_by_name(self, name):
         if name not in self.class_by_name:
             return None
