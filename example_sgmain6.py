@@ -9,6 +9,7 @@ import hashlib
 import json
 import urllib
 import requests
+import random
 
 from unicorn import *
 from unicorn.arm_const import *
@@ -424,7 +425,7 @@ class ECMiscInfo(metaclass=JavaClassDef, jvm_name='com/alibaba/wireless/security
     @staticmethod
     @java_method_def(name='registerAppLifeCyCleCallBack', signature='()V', native=False)
     def registerAppLifeCyCleCallBack(mu):
-        logger.warning("registerAppLifeCyCleCallBack skip")
+        logger.warn("registerAppLifeCyCleCallBack skip")
     #
 #
 
@@ -445,7 +446,7 @@ class JNIBridge(metaclass=JavaClassDef, jvm_name='com/uc/crashsdk/JNIBridge'):
     @staticmethod
     @java_method_def(name='registerInfoCallback', args_list=["jstring", "jint", "jlong", "jint"], signature='(Ljava/lang/String;IJI)I', native=False)
     def registerInfoCallback(mu, s1, i1, j1, i2):
-        logger.warning("registerInfoCallback %s skip..."%s1)
+        logger.warn("registerInfoCallback %s skip..."%s1)
         return 0
     #
 #
@@ -732,7 +733,7 @@ def get_wua(emulator, vmp_inst, sdata):
     maybe_arr_out = ByteArray(bytearray())
     o1 = vmp_inst
     o2 = String("sign")
-    o3 = ByteArray
+    o3 = ByteArray.class_object
     o4 = ByteArray([Integer(0), data, le, String(""), maybe_arr_out, Integer(0)])
     arr = Array([o1, o2, o3, o4])
     print("60902 run")
@@ -819,20 +820,21 @@ def test_enc():
 #
 
 g_utdid = "XtX3M1bJ69cDAFWqkBwQYXgY"
-g_countor = 1
+#计数器初始值随机一下
+g_countor = random.randint(123, 1221)
 def _get_countor():
     global g_countor
     g_countor = (g_countor + 1) & 0x7fffffff
     return g_countor
 #
 
-def get_callId(api_perfix, serach_content):
+def get_callId(api_perfix, serach_content, pageId):
     '''
     06-11 10:16:42.094  2572  3107 I Xposed  : digest input accessToken=platformId=android_phoneremoteIp=nullmodel={"isRecommendCorrection":true,"isTouFu":true,"key":"林俊杰","pagingVO":{"page":1,"pageSize":20}}ali88mu5sic
     06-11 10:16:42.094  2572  3107 I Xposed  : return [-127, 95, -59, -52, 49, -18, -72, -49, -77, 113, 52, -61, 47, 20, 20, 44]
     815fc5cc31eeb8cfb37134c32f14142c
     '''
-    s = r'accessToken=platformId=android_phoneremoteIp=nullmodel={"isRecommendCorrection":true,"isTouFu":true,"key":"%s","pagingVO":{"page":1,"pageSize":20}}ali88mu5sic'%serach_content
+    s = r'accessToken=platformId=android_phoneremoteIp=nullmodel={"isRecommendCorrection":true,"isTouFu":true,"key":"%s","pagingVO":{"page":%d,"pageSize":20}}ali88mu5sic'%(serach_content, pageId)
     #print(s)
     m = hashlib.md5()
     m.update(s.encode("utf-8"))
@@ -843,21 +845,32 @@ def get_callId(api_perfix, serach_content):
 def get_x_c_traceid():
     global g_utdid
     ts = int(time.time()*1000)
-    seq = _get_countor() % 1000
+    seq = _get_countor() % 10000
     processId = 4386 #暂时写死
     r = "%s%d%04d%s%d"%(g_utdid, ts, seq, "1", processId)
     return r
 #
 
-def gen_data(api, serach_content):
-    #{"requestStr":"{\"header\":{\"accessToken\":\"\",\"appId\":200,\"appVersion\":8030800,\"callId\":\"mtop.alimusic.search.searchservice.searchsongs_815fc5cc31eeb8cfb37134c32f14142c\",\"ch\":\"701287\",\"deviceId\":\"00c3476989d8b8a6\",\"language\":\"zh_CN\",\"network\":1,\"openId\":0,\"osVersion\":\"23\",\"platformId\":\"android_phone\",\"proxy\":\"false\",\"resolution\":\"1794x1080\",\"utdid\":\"XtX3M1bJ69cDAFWqkBwQYXgY\",\"uxid\":\"\"},\"model\":{\"isRecommendCorrection\":true,\"isTouFu\":true,\"key\":\"林俊杰\",\"pagingVO\":{\"page\":1,\"pageSize\":20}}}"}
-    callId = get_callId(api, serach_content)
-    data = '{"requestStr":"{\"header\":{\"accessToken\":\"\",\"appId\":200,\"appVersion\":8030800,\"callId\":\"%s\",\"ch\":\"701287\",\"deviceId\":\"00c3476989d8b8a6\",\"language\":\"zh_CN\",\"network\":1,\"openId\":0,\"osVersion\":\"23\",\"platformId\":\"android_phone\",\"proxy\":\"false\",\"resolution\":\"1794x1080\",\"utdid\":\"%s\",\"uxid\":\"\"},\"model\":{\"isRecommendCorrection\":true,\"isTouFu\":true,\"key\":\"%s\",\"pagingVO\":{\"page\":1,\"pageSize\":20}}}"}'\
-    %(callId, g_utdid, serach_content)
+def gen_data(api, serach_content, page_id):
+    callId = get_callId(api, serach_content, page_id)
+    #注意一定要加r在前头，协议报文发出去就是要带\的
+    data = r'{"requestStr":"{\"header\":{\"accessToken\":\"\",\"appId\":200,\"appVersion\":8030800,\"callId\":\"%s\",\"ch\":\"701287\",\"deviceId\":\"00c3476989d8b8a6\",\"language\":\"zh_CN\",\"network\":1,\"openId\":0,\"osVersion\":\"23\",\"platformId\":\"android_phone\",\"proxy\":\"false\",\"resolution\":\"1794x1080\",\"utdid\":\"%s\",\"uxid\":\"\"},\"model\":{\"isRecommendCorrection\":true,\"isTouFu\":true,\"key\":\"%s\",\"pagingVO\":{\"page\":%d,\"pageSize\":20}}}"}'\
+    %(callId, g_utdid, serach_content, page_id)
     return data
 #
 
 def get_x_sign_input(api, data, unix_time):
+    #最少校验header
+    '''
+    x-appkey: 21465214
+    x-features: 27
+    x-pv: 5.2
+    x-t: 159193026
+    x-ttid: 701287%40xiami_android_8.3.8
+    x-utdid: XtX3M1bJ69cDAFWqkBwQYXgY
+    x-devid: AohsPSPH-F7lQLJzyIvh_6geqxEqIetYwOxZ0laI9k_9
+    x-sign: ab210e0010114a2aed193332437fe8317734f70a07698642ce
+    '''
     m = hashlib.md5()
     m.update(data.encode("utf-8"))
     data_md5 = m.hexdigest()
@@ -866,18 +879,18 @@ def get_x_sign_input(api, data, unix_time):
     return s
 #
 
-def test_get():
+def search_song(emulator, vmp_inst, serach_content):
 
-    serach_content = "林俊杰"
     #test_enc()
     api = "mtop.alimusic.search.searchservice.searchsongs"
-    #res = get_callId(api, serach_content)
+    #res = get_callId(api, serach_content, 1)
     #print(res)
 
     #x_c_traceid = get_x_c_traceid()
     #print(x_c_traceid)
 
-    data = gen_data(api, serach_content)
+    page_id = 1
+    data = gen_data(api, serach_content, page_id)
     print(data)
 
     unix_time = int(time.time())
@@ -886,25 +899,30 @@ def test_get():
     
     #x_sign_input = "XtX3M1bJ69cDAFWqkBwQYXgY&&&21465214&9d2395108230634c7438d833739c4ec9&1591175586&mtop.alimusic.search.searchservice.searchsongs&1.3&&701287@xiami_android_8.3.8&AohsPSPH-F7lQLJzyIvh_6geqxEqIetYwOxZ0laI9k_9&&&27"
     #x_sign_input = "XtX3M1bJ69cDAFWqkBwQYXgY&&&21465214&b2604d60fe6fe6695f0c6e8186b9d972&1591887863&mtop.alimusic.search.searchservice.searchsongs&1.3&&701287@xiami_android_8.3.8&AohsPSPH-F7lQLJzyIvh_6geqxEqIetYwOxZ0laI9k_9&&&27"
-    emulator = Emulator(
-        vfs_root=posixpath.join(posixpath.dirname(__file__), "vfs"),
-        config_path="xiami.json"
-    )
-    sgmain_init(emulator)
+
     x_sign = get_x_sign(emulator, x_sign_input)
     print(x_sign)
     
-    vmp_inst = avmp_wua_sgcipher_create(emulator)
-    wua = get_wua(emulator, vmp_inst, x_sign)
 
+    '''
+    #必须的header
+    x-appkey: 21465214
+    x-features: 27
+    x-pv: 5.2
+    x-t: 159193026
+    x-ttid: 701287%40xiami_android_8.3.8
+    x-utdid: XtX3M1bJ69cDAFWqkBwQYXgY
+    x-devid: AohsPSPH-F7lQLJzyIvh_6geqxEqIetYwOxZ0laI9k_9
+    x-sign: ab210e0010114a2aed193332437fe8317734f70a07698642ce
+    '''
     header = {}
     header["x-appkey"] = "21465214"
     header["x-nq"] = "WIFI"
-    header["x-mini-wua"] = get_mini_wua(emulator, unix_time) #TODO
+    header["x-mini-wua"] = get_mini_wua(emulator, unix_time)
     header["x-c-traceid"] = get_x_c_traceid()
     header["x-app-conf-v"] = "0"
-    header["x-features"] = "5.2"
-    header["x-pv"] = "27"
+    header["x-features"] = "27"
+    header["x-pv"] = "5.2"  #协议版本
     header["x-t"] = str(unix_time)
     header["x-app-ver"] = "8.3.8"
     header["f-refer"] = "mtop"
@@ -920,21 +938,45 @@ def test_get():
     header["content-type"] = "application/x-www-form-urlencoded;charset=UTF-8"
     print("header:")
     print(header)
-    print(wua)
-
-    #https://acs.m.taobao.com/gw/mtop.alimusic.search.searchservice.searchsongs/1.3/?data=%7B%22requestStr%22%3A%22%7B%5C%22header%5C%22%3A%7B%5C%22accessToken%5C%22%3A%5C%22%5C%22%2C%5C%22appId%5C%22%3A200%2C%5C%22appVersion%5C%22%3A8030800%2C%5C%22callId%5C%22%3A%5C%22mtop.alimusic.search.searchservice.searchsongs_815fc5cc31eeb8cfb37134c32f14142c%5C%22%2C%5C%22ch%5C%22%3A%5C%22701287%5C%22%2C%5C%22deviceId%5C%22%3A%5C%2200c3476989d8b8a6%5C%22%2C%5C%22language%5C%22%3A%5C%22zh_CN%5C%22%2C%5C%22network%5C%22%3A1%2C%5C%22openId%5C%22%3A0%2C%5C%22osVersion%5C%22%3A%5C%2223%5C%22%2C%5C%22platformId%5C%22%3A%5C%22android_phone%5C%22%2C%5C%22proxy%5C%22%3A%5C%22false%5C%22%2C%5C%22resolution%5C%22%3A%5C%221794x1080%5C%22%2C%5C%22utdid%5C%22%3A%5C%22XtX3M1bJ69cDAFWqkBwQYXgY%5C%22%2C%5C%22uxid%5C%22%3A%5C%22%5C%22%7D%2C%5C%22model%5C%22%3A%7B%5C%22isRecommendCorrection%5C%22%3Atrue%2C%5C%22isTouFu%5C%22%3Atrue%2C%5C%22key%5C%22%3A%5C%22%E6%9E%97%E4%BF%8A%E6%9D%B0%5C%22%2C%5C%22pagingVO%5C%22%3A%7B%5C%22page%5C%22%3A1%2C%5C%22pageSize%5C%22%3A20%7D%7D%7D%22%7D&wua=Udd9_IpLcQKXNKqMbzDa1%2FvbXA7vvQsGEhgISS%2Bk8K0KiPTVb2yTKaB4VIGtwcdpWR5qHRwfYTNabU3u%2FrlxIOwS9M1vtVr0lR7loYAmhaXNr3whCct3gGVuxY9prZmVjCCyHqDBdSEIjgmFXrOpbKbKgmBdS%2BHpBxssjr3AXlw2Xza82Dv4Eko56vCsXkzBHwvOtq9bUuZKsR2j1AfSed8A7OUtaZAjNvD72%2B2EWrynygRjY3wwwSxDlssjj3o1GRGAaJZ5Eyv8SNPFWaFRCu71nWC5tLCXwpEzZDb7z%2BkgpgaWe%2Fgg1LyqPStMW6Le4KDTyriF4kIR8nw0Azg0%2Fltns2XMf2Y7eKtjjGA0wbhT2LW7LLTzccYbHzgQ%2BPNApgFZPDUTkGndC%2BwUnqYexjjSrgM3jP5gzeM67J1vjdC6VKrbLHGxOqcBSqaRvSCSUs29IyTs%2FuAA4w23R2pYygLQLNA%3D%3D%26MIT1_a0010bc4dd8b7722195272e27e2ff2de17c44afa24cc7&type=originaljson
-    
+   
     url = "https://acs.m.taobao.com/gw/mtop.alimusic.search.searchservice.searchsongs/1.3/"
-    params_song = {"data":data, "wua":wua, "type":"originaljson"}
+    #wua非必须
+    #type非必须
+
+    params_song = {"data":data,
+      "wua" : get_wua(emulator, vmp_inst, x_sign),
+      "type":"originaljson"}
 
     http_session = requests.Session()
 
-    resp = http_session.get(url, headers=header, params=params_song, verify=False).content
-    print(resp.decode("utf-8"))
-    
+    proxies = { "http": "http://127.0.0.1:8089", "https": "http://127.0.0.1:8089", } 
+    r = http_session.get(url, headers=header, 
+            params=params_song, verify=False
+            #, proxies = proxies
+            )
+    resp = r.content
+    return resp.decode("utf-8")
 #
 
 if __name__ == "__main__":
-    test_get()
+    emulator = Emulator(
+        vfs_root=posixpath.join(posixpath.dirname(__file__), "vfs"),
+        config_path="xiami.json"
+    )
+    sgmain_init(emulator)
+    vmp_inst = avmp_wua_sgcipher_create(emulator)
+    serach_content = "周杰伦"
+    t1 = time.time()
+    resp = search_song(emulator, vmp_inst, serach_content)
+    t2 = time.time() - t1
+    print(resp)
+    print("time used %.3f"%t2)
+
+    serach_content = "稻香"
+    t1 = time.time()
+    resp = search_song(emulator, vmp_inst, serach_content)
+    t2 = time.time() - t1
+    print(resp)
+    print("time used %.3f"%t2)
 #
 

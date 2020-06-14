@@ -4,6 +4,7 @@ from ..java_method_def import java_method_def, JavaMethodDef
 from ..constant_values import *
 from .string import *
 from .method import *
+from .field import *
 
 import io
 
@@ -33,10 +34,16 @@ class Class(metaclass=JavaClassDef, jvm_name='java/lang/Class'):
         return self.__descriptor_represent
     #
 
+    def get_py_clazz():
+        return self.__pyclazz
+    #
+
 
     @java_method_def(name='getDeclaredField', args_list=["jstring"], signature='(Ljava/lang/String;)Ljava/lang/reflect/Field;', native=False)
     def getDeclaredField(self, emu, name):
-        raise NotImplementedError()
+        logger.debug("getDeclaredField %s"%name)
+        reflected_field = Field(self.__pyclazz, name)
+        return reflected_field
     #
 
     @java_method_def(name='getDeclaredMethod', args_list=["jstring", "jobject"], signature='(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;', native=False)

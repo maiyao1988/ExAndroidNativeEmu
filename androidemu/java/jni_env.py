@@ -380,9 +380,7 @@ class JNIEnv:
 
     @staticmethod
     def jobject_to_pyobject(obj):
-        if(isinstance(obj, jclass)):
-            return obj.value.class_object
-        elif(isinstance(obj, jobject)):
+        if(isinstance(obj, jobject)):
             return obj.value
         else:
             raise RuntimeError("jobject_to_pyobject unknown obj type %r"%obj)
@@ -1589,14 +1587,7 @@ class JNIEnv:
 
         array_pyobj = JNIEnv.jobject_to_pyobject(array_obj)
         pyobj_item = array_pyobj[item_idx]
-        obj_type = type(pyobj_item)
-        if (obj_type == JavaClassDef):
-            #是否返回所有的Object都要这样判断？
-            return self.add_local_reference(jclass(pyobj_item))
-        #
-        else:
-            return self.add_local_reference(jobject(pyobj_item))
-        #
+        return self.add_local_reference(jobject(pyobj_item))
     #
 
     @native_method

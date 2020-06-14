@@ -30,11 +30,11 @@ class Method(metaclass=JavaClassDef,
         signature="(Ljava/lang/Class;I)I",
         args_list=['jobject', 'jint']
     )
-    def get_method_modifiers(emu, clazz_obj, jvm_method_id):
+    def getMethodModifiers(emu, clazz_obj, jvm_method_id):
         clazz = clazz_obj.value
         method = clazz.find_method_by_id(jvm_method_id)
 
-        logger.debug('get_method_modifiers(%s, %s)' % (clazz.jvm_name, method.name))
+        logger.debug('Method.getMethodModifiers(%s, %s)' % (clazz.jvm_name, method.name))
 
         if method.modifier is None:
             raise RuntimeError('No modifier was given to class %s method %s' % (clazz.jvm_name, method.name))
@@ -48,7 +48,7 @@ class Method(metaclass=JavaClassDef,
         args_list=['jobject', 'jobject']
     )
     def invoke(self, emu, obj, args):
-        logger.debug('get_method_modifiers(%r, %r)' % (obj, args))
+        logger.debug('Method.invoke(%r, %r)' % (obj, args))
 
         if(obj == JAVA_NULL):
             #static method
