@@ -5,6 +5,7 @@ import importlib
 import inspect
 import pkgutil
 import sys
+import os.path
 
 from random import randint
 
@@ -72,7 +73,9 @@ class Emulator:
     #
 
     def __add_classes(self):
-        dirname = "androidemu/java/classes"
+        full_dirname = "%s/java/classes"%(os.path.dirname(__file__), )
+        cwd = os.getcwd()
+        dirname = os.path.relpath(full_dirname, cwd)
         preload_classes = set()
         for importer, package_name, c in pkgutil.iter_modules([dirname]):
             full_name = "%s.%s"%(dirname.replace("/", "."), package_name)
