@@ -25,6 +25,8 @@ from .native.hooks import NativeHooks
 from .native.memory import NativeMemory
 from .native.memory_map import MemoryMap
 from .vfs.file_system import VirtualFileSystem
+from .vfs.virtual_file import VirtualFile
+from .utils import misc_utils
 
 from .java.java_class_def import JavaClassDef
 from .java.constant_values import JAVA_NULL
@@ -155,6 +157,17 @@ class Emulator:
         self.native_hooks = NativeHooks(self, self.native_memory, self.modules, self.hooker, self.__vfs_root)
 
         self.__add_classes()
+
+        #映射常用的文件，cpu一些原子操作的函数实现地方
+        path = "%s/system/lib/vectors"%vfs_root
+        vf = VirtualFile("[vectors]", misc_utils.my_open(path, os.O_RDONLY), path)
+        self.memory.map(0xffff0000, 0x1000, UC_PROT_EXEC | UC_PROT_READ, vf, 0)
+
+        #映射app_process，android系统基本特征
+        path = "%s/system/bin/app_process32"%vfs_root
+        sz = os.path.getsize(path)
+        vf = VirtualFile("/system/bin/app_process32", misc_utils.my_open(path, os.O_RDONLY), path)
+        self.memory.map(0xab006000, sz, UC_PROT_WRITE | UC_PROT_READ, vf, 0)
     #
 
     def load_library(self, filename, do_init=True):

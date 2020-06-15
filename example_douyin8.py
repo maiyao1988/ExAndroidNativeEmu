@@ -213,12 +213,6 @@ for module in emulator.modules:
     logger.info("=> 0x%08x - %s" % (module.base, module.filename))
 
 try:
-    # bypass douyin checks
-
-    path = "vfs/system/bin/app_process32"
-    sz = os.path.getsize(path)
-    vf = VirtualFile("/system/bin/app_process32", misc_utils.my_open(path, os.O_RDONLY), path)
-    emulator.memory.map(0xab006000, sz, UC_PROT_WRITE | UC_PROT_READ, vf, 0)
 
     # Run JNI_OnLoad.
     #   JNI_OnLoad will call 'RegisterNatives'.
