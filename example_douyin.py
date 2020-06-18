@@ -191,9 +191,6 @@ try:
     # 0300000000002034d288fe8d6b95b778105cc36eade709d2b500
     # Dump natives found.
 
-#  for method in MainActivity.jvm_methods.values():
-#      if method.native:
-#         logger.info("- [0x%08x] %s - %s" % (method.native_addr, method.name, method.signature))
 except UcError as e:
     print("Exit at %x" % emulator.mu.reg_read(UC_ARM_REG_PC))
     raise

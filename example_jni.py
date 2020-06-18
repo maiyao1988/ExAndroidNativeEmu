@@ -102,9 +102,6 @@ try:
     logger.info("Exited EMU.")
     logger.info("Native methods registered to MainActivity:")
 
-    for method in MainActivity.jvm_methods.values():
-        if method.native:
-            logger.info("- [0x%08x] %s - %s" % (method.native_addr, method.name, method.signature))
 except UcError as e:
     print("Exit at %x" % emulator.mu.reg_read(UC_ARM_REG_PC))
     raise
