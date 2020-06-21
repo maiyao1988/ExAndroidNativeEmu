@@ -76,12 +76,11 @@ class Emulator:
 
     def __add_classes(self):
         full_dirname = "%s/java/classes"%(os.path.dirname(__file__), )
-        cwd = os.getcwd()
-        dirname = os.path.relpath(full_dirname, cwd)
+
         preload_classes = set()
-        for importer, package_name, c in pkgutil.iter_modules([dirname]):
-            full_name = "%s.%s"%(dirname.replace("/", "."), package_name)
-            m = importlib.import_module(full_name)
+        for importer, package_name, c in pkgutil.iter_modules([full_dirname]):
+            import_name = ".java.classes.%s"%package_name
+            m = importlib.import_module(import_name, "androidemu")
             #print(dir(m))
             clsList = inspect.getmembers(m, inspect.isclass)
             for _, clz in clsList:
