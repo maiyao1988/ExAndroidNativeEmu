@@ -60,12 +60,10 @@ class Long(metaclass=JavaClassDef, jvm_name='java/lang/Long'):
         self.__value = value
     #
 
-    @java_method_def(name='<init>', args_list=["jint", "jint", "jint"], signature='(J)V', native=False)
-    #FIXME 坑，底层NewObject函数jlong参数刚好四个参数，刚好跳过第四个寄存器，第三个寄存器的值是没有作用的，这里先绕过这个问题
-    #FIXME 底层如何抽象掉这种恶心的细节？
-    def ctor(self, emu, _, vl, vh):
+    @java_method_def(name='<init>', args_list=["jlong"], signature='(J)V', native=False)
+    def ctor(self, emu, lvalue):
 
-        self.__value = (vh << 32) | vl
+        self.__value = lvalue
     #
 
     @java_method_def(name='longValue', signature='()J', native=False)

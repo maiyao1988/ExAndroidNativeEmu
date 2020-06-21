@@ -321,19 +321,39 @@ class JNIEnv:
 
     #args is a tuple or list
     def read_args(self, mu, args, args_list):
-        #FIXME 在这里处理八个字节参数问题，
+        #在这里处理八个字节参数问题，
         #1.第一个参数为jlong jdouble 直接跳过列表第一个成员，因为第一个成员刚好是call_xxx的第三个参数，根据调用约定，如果这个参数是8个字节，则直接跳过R3寄存器使用栈
         #2.jlong或者jdouble需要两个arg成一个参数，对应用层透明
         if args_list is None:
             return []
         #
         result = []
-        i = 0
-        for arg_name in args_list:
-            ref = args[i]
-            if arg_name in ('jint', "jlong", "jchar", "jbyte", "jboolean"):
-                result.append(ref)
+        args_index = 0
+        n = len(args_list)
+        nargs = len(args)
+        args_list_index = 0
+        while args_list_index < n:
+            arg_name = args_list[args_list_index]
+            if (args_index == 0 and arg_name in ("jlong", "jdouble")):
+                #处理第一个参数(call_xxx第四个参数)跳过问题
+                args_index =  args_index + 1
+                continue
+            #
+            v = args[args_index]
+            if arg_name in ('jint', "jchar", "jbyte", "jboolean"):
+                result.append(v)
+            #
+            elif arg_name in ("jlong", "jdouble"):
+                args_index = args_index + 1
+                if (args_index >= nargs):
+                    raise RuntimeError("read_args get long on args_list, buf args len is not enough to read heigh bytes")
+                #
+                vh = args[args_index]
+                value = (vh << 32) | v
+                result.append(value)
+            #
             elif arg_name == 'jstring' or arg_name == "jobject":
+                ref = v
                 jobj = self.get_reference(ref)
                 obj = None
                 if (jobj == None):
@@ -344,27 +364,45 @@ class JNIEnv:
                 result.append(obj)
             else:
                 raise NotImplementedError('Unknown arg name %s' % arg_name)
-            i = i+1
+            args_index = args_index + 1
+            args_list_index = args_list_index + 1
         #
         return result
     #
 
-    def args_v_to_args(self, mu, args_ptr, args_list):
-        args = []
-        if args_list is None:
-            return args
-        #
-        for arg_name in args_list:
-            ref = int.from_bytes(mu.mem_read(args_ptr, 4), byteorder='little')
-            args.append(ref)
-            args_ptr = args_ptr + 4
-        #
-        return args
-    #
 
     def read_args_v(self, mu, args_ptr, args_list):
-        args = self.args_v_to_args(mu, args_ptr, args_list)
-        return self.read_args(mu, args, args_list)
+        result = []
+        if args_list is None:
+            return result
+        #
+        for arg_name in args_list:
+            #使用指针arg_ptr的作为call_xxx_v第四个参数,不会出现跳过第四个参数的情况,因为arg_ptr总是四个字节
+            v = int.from_bytes(mu.mem_read(args_ptr, 4), byteorder='little')
+            if arg_name in ('jint', "jchar", "jbyte", "jboolean"):
+                result.append(v)
+            elif arg_name in ("jlong", "jdouble"):
+                args_ptr = args_ptr + 4
+                vh = int.from_bytes(mu.mem_read(args_ptr, 4), byteorder='little')
+                value = (vh << 32) | v
+                result.append(value)
+            #
+            elif arg_name == 'jstring' or arg_name == "jobject":
+                ref = v
+                jobj = self.get_reference(ref)
+                obj = None
+                if (jobj == None):
+                    logging.warning("arg_name %s ref %d is not vaild maybe wrong arglist"%(arg_name, ref))
+                    obj = JAVA_NULL
+                else:
+                    obj = jobj.value
+                result.append(obj)
+            else:
+                raise NotImplementedError('Unknown arg name %s' % arg_name)
+            #
+            args_ptr = args_ptr + 4
+        #
+        return result
     #
 
     #arg_type = 0 tuple or list, 1 arg_v, 2 array
