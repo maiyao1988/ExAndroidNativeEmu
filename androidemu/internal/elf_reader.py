@@ -40,6 +40,7 @@ DT_PLTREL	=20
 DT_DEBUG	=21
 DT_TEXTREL	=22
 DT_JMPREL	=23
+DT_GNU_HASH = 0x6ffffef5
 DT_LOPROC	=0x70000000
 DT_HIPROC	=0x7fffffff
 
@@ -153,6 +154,11 @@ class ELFReader:
             self.__init_array_off = 0
             self.__init_array_size = 0
             self.__init_off = 0
+            self.__nbucket = 0
+            self.__nchain = 0
+            self.__bucket = 0
+            self.__chain = 0
+
 
             self.__phdrs = []
             self.__loads = []
@@ -241,6 +247,51 @@ class ELFReader:
                     self.__chain = d_val_ptr + 8 + self.__nbucket * 4
                     nsymbol = self.__nchain
                 #
+                elif(d_tag == DT_GNU_HASH):
+                    '''
+                    struct gnu_hash_table {
+                        uint32_t nbuckets;
+                        uint32_t symoffset;
+                        uint32_t bloom_size;
+                        uint32_t bloom_shift;
+                        uint32_t bloom[bloom_size]; /* uint32_t for 32-bit binaries */
+                        uint32_t buckets[nbuckets];
+                        uint32_t chain[];
+                    };
+                    '''
+                    #参考https://flapenguin.me/elf-dt-gnu-hash
+                    ori = f.tell()
+                    f.seek(d_val_ptr, 0)
+                    hash_heads = f.read(16)
+                    f.seek(ori, 0)
+                    gnu_nbucket_, symoffset, gnu_maskwords_, gnu_shift2_ = struct.unpack("<IIII", hash_heads)
+                    gnu_bloom_filter_ = d_val_ptr + 16
+                    gnu_bucket_ = gnu_bloom_filter_ + 4*gnu_maskwords_
+
+                    gnu_chain_ = gnu_bucket_ + 4*gnu_nbucket_ - 4*symoffset
+
+                    #gnuhash 的bucket是有序的,最后一个bucket存着最大的symid
+                    last_bucket_id = gnu_nbucket_ - 1
+                    
+                    symidx = 0
+                    f.seek(gnu_bucket_+4*last_bucket_id, 0)
+                    nbytes = f.read(4)
+                    symidx = int.from_bytes(nbytes, 'little')
+                    while True:
+                        #从最后一个bucket开始遍历,就是最后一个chain,找到chain结尾就是符号数量
+                        f.seek(gnu_chain_+4*symidx, 0)
+                        cbytes = f.read(4)
+                        c = int.from_bytes(cbytes, 'little')
+                        #Chain ends with an element with the lowest bit set to 1.
+                        if ((c & 1) == 1):
+                            break
+                        #
+                        symidx = symidx + 1
+                    #
+                    nsymbol = symidx + 1
+                    
+                    f.seek(ori, 0)
+                #
                 elif (d_tag == DT_INIT):
                     self.__init_off = d_val_ptr
                 elif(d_tag == DT_INIT_ARRAY):
@@ -255,7 +306,7 @@ class ELFReader:
                     self.__plt_got = d_val_ptr
                 #
             #
-            assert nsymbol > -1, "can not detect nsymbol by DT_HASH, DT_GNUHASH, not support now"
+            assert nsymbol > -1, "can not detect nsymbol by DT_HASH or DT_GNU_HASH, make sure their exist in so!!!"
             self.__dyn_str_off = dyn_str_off
             self.__dym_sym_off = dyn_sym_off
 
@@ -312,7 +363,6 @@ class ELFReader:
                 relplt_table.append(d)
             #
             self.__rels["relplt"] = relplt_table
-            print("ok")
             self.__so_needed = []
             for str_off in dt_needed:
                 endId=self.__dyn_str_buf.find(b"\x00", str_off)
@@ -503,7 +553,7 @@ class ELFReader:
         mu.mem_write(info_base+280, int(1).to_bytes(4, byteorder='little'))
         
         #Elf32_Addr load_bias
-        mu.mem_write(info_base+284, int(1).to_bytes(4, byteorder='little'))
+        mu.mem_write(info_base+284, int(0).to_bytes(4, byteorder='little'))
         
         soinfo_sz = 288
         return soinfo_sz
