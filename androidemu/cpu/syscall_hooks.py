@@ -52,6 +52,7 @@ class SyscallHooks:
         self._syscall_handler.set_handler(0x72, "wait4", 4, self.__wait4)
         self._syscall_handler.set_handler(0x74, "sysinfo", 1, self.__sysinfo)
         self._syscall_handler.set_handler(0x78, "clone", 5, self.__clone)
+        self._syscall_handler.set_handler(0x7E, "sigprocmask", 3, self._handle_sigprocmask)
         self._syscall_handler.set_handler(0xAC, "prctl", 5, self._handle_prctl)
         self._syscall_handler.set_handler(0xAF, "sigprocmask", 3, self._handle_sigprocmask)
         self._syscall_handler.set_handler(0xBA, "sigaltstack", 2, self.__sigaltstack)
