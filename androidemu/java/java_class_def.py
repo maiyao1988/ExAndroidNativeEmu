@@ -2,6 +2,7 @@ import inspect
 import itertools
 import logging
 from .jvm_id_conter import *
+from .jni_ref import jobject
 
 logger = logging.getLogger(__name__)
 
@@ -19,9 +20,15 @@ class JavaClassDef(type):
         cls.jvm_ignore = jvm_ignore
         cls.jvm_super = jvm_super
         cls.class_object = None
+        cls.jni_env_object_id = 0x7FFFF  # a invalid id
+        cls.jni_env = None
 
         # Register all defined Java methods.
         for func in inspect.getmembers(cls, predicate=inspect.isfunction):
+            if hasattr(func[1], 'jvm_method'):
+                method = func[1].jvm_method
+                cls.jvm_methods[method.jvm_id] = method
+        for func in inspect.getmembers(cls, predicate=inspect.ismethod):
             if hasattr(func[1], 'jvm_method'):
                 method = func[1].jvm_method
                 cls.jvm_methods[method.jvm_id] = method
@@ -36,6 +43,13 @@ class JavaClassDef(type):
 
     def __new__(cls, name, base, ns, **kargs):
         return type.__new__(cls, name, base, ns)
+    #
+
+    def __call__(cls, *args, **kwargs):
+        obj = type.__call__(cls, *args, **kwargs)
+        if cls.jni_env:
+            obj.jni_env_object_id = cls.jni_env.add_global_reference(jobject(obj))
+        return obj
     #
 
     def register_native(cls, name, signature, ptr_func):

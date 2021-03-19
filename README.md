@@ -13,6 +13,7 @@ This is a personal improved version of [AndroidNativeEmu](https://github.com/Aeo
  - Fix R_ARM_ABS32 relocation bug.
  - Use program header to load so instead of section header
  - Support Java reflection
+ - Support self jobject parameter for native method and self jclass parameter for static native method
  
 ## TODO
  - Simulate linker TLS initialization.

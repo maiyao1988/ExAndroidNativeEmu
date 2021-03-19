@@ -21,6 +21,7 @@ from .internal.modules import Modules
 from .java.helpers.native_method import native_write_args
 from .java.java_classloader import JavaClassLoader
 from .java.java_vm import JavaVM
+from .java.jni_ref import jclass
 from .native.hooks import NativeHooks
 from .native.memory import NativeMemory
 from .native.memory_map import MemoryMap
@@ -173,6 +174,11 @@ class Emulator:
         vf = VirtualFile("/system/bin/app_process32", misc_utils.my_open(path, os.O_RDONLY), path)
         self.memory.map(0xab006000, sz, UC_PROT_WRITE | UC_PROT_READ, vf, 0)
     #
+
+    def add_java_class(self, clazz):
+        self.java_classloader.add_class(clazz)
+        clazz.jni_env_object_id = self.java_vm.jni_env.add_global_reference(jclass(clazz))
+        clazz.jni_env = self.java_vm.jni_env
 
     def load_library(self, filename, do_init=True):
         libmod = self.modules.load_module(filename, True)

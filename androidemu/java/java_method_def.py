@@ -22,21 +22,23 @@ def java_method_def(name, signature, native=False, args_list=None, modifier=None
             clz = args[0].__class__
             emulator = None
             extra_args = None
-            if (isinstance(clz, JavaClassDef)):
-                #如果第一个参数是Java类，则是self
+            thiz = args[0].jni_env_object_id
+            if (isinstance(clz, JavaClassDef) or isinstance(args[0], JavaClassDef)):
+                #如果第一个参数是Java类对象，则是self 或者 如果第一个参数是Java类，则是cls
                 emulator = args[1]
                 extra_args = args[2:]
             #
             else:
                 #否则是static方法
                 emulator = args[0]
+                thiz = 0x7FFFF
                 extra_args = args[1:]
             #
 
             return emulator.call_native(
                 native_wrapper.jvm_method.native_addr,
                 emulator.java_vm.jni_env.address_ptr,  # JNIEnv*
-                0xFA,    # this, TODO: Implement proper "this", a reference to the Java object inside which this native
+                thiz,    # this, TODO: Implement proper "this", a reference to the Java object inside which this native
                          # method has been declared in
                 *extra_args  # Extra args.
             )
