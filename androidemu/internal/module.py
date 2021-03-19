@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger(__name__)
 
 class Module:
 
@@ -40,7 +42,7 @@ class Module:
     def call_init(self, emu):
         for fun_ptr in self.init_array:
             fun_addr = fun_ptr
-            print("Calling Init_array %s function: 0x%08X " %(self.filename, fun_addr))
+            logger.info("Calling Init_array %s function: 0x%08X " %(self.filename, fun_addr))
             emu.call_native(fun_addr)
         #
     #

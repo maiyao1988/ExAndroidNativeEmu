@@ -4,6 +4,8 @@ from ..java_method_def import java_method_def, JavaMethodDef
 from .string import String
 from .array import Array
 from ... import config
+import logging
+logger = logging.getLogger(__name__)
 
 class NetworkInterface(metaclass=JavaClassDef, jvm_name='java/net/NetworkInterface'):
     def __init__(self, pyname):
@@ -13,7 +15,7 @@ class NetworkInterface(metaclass=JavaClassDef, jvm_name='java/net/NetworkInterfa
     @staticmethod
     @java_method_def(name='getByName', args_list=["jstring"], signature='(Ljava/lang/String;)Ljava/net/NetworkInterface;', native=False)
     def getByName(emu, s1):
-        print("getByName %r"%s1)
+        logger.info("getByName %r"%s1)
         pyname = s1.get_py_string()
         return NetworkInterface(pyname)
     #

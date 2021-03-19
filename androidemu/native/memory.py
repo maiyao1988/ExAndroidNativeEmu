@@ -2,6 +2,8 @@ from unicorn import Uc, UC_PROT_READ, UC_PROT_WRITE
 from ..cpu.syscall_handlers import SyscallHandlers
 from .memory_map import MemoryMap
 import os
+import logging
+logger = logging.getLogger(__name__)
 
 class NativeMemory:
     """
@@ -59,7 +61,7 @@ class NativeMemory:
         else:
             res = self._memory.map(addr, length, prot)
         #
-        print("mmap return 0x%08X"%res)
+        logger.info("mmap return 0x%08X"%res)
         return res
     #
 

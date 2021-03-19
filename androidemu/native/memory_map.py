@@ -3,6 +3,8 @@ import os
 import sys
 from unicorn import *
 from ..utils.misc_utils import page_end, page_start
+import logging
+logger = logging.getLogger(__name__)
 
 PAGE_SIZE = 0x1000
 
@@ -66,7 +68,7 @@ class MemoryMap:
                 if (map_base > self._alloc_max_addr or map_base < self._alloc_min_addr):
                     raise RuntimeError("mmap error map_base 0x%08X out of range (0x%08X-0x%08X)!!!"%(map_base, self._alloc_min_addr, self._alloc_max_addr))
                 #
-                print("before mem_map addr:0x%08X, sz:0x%08X"%(map_base, size))
+                logger.info("before mem_map addr:0x%08X, sz:0x%08X"%(map_base, size))
 
                 self.__mu.mem_map(map_base, size, perms=prot)
                 return map_base
@@ -137,7 +139,7 @@ class MemoryMap:
             raise Exception('map addr was not multiple of page size (%d, %d).' % (address, PAGE_SIZE))
         #
 
-        print("map addr:0x%08X, end:0x%08X, sz:0x%08X off=0x%08X"%(address, address+size, size, offset))
+        logger.info("map addr:0x%08X, end:0x%08X, sz:0x%08X off=0x%08X"%(address, address+size, size, offset))
         #traceback.print_stack()
         al_address = address
         al_size = page_end(al_address+size) - al_address
@@ -147,7 +149,7 @@ class MemoryMap:
             os.lseek(vf.descriptor, offset, os.SEEK_SET)
             #data = os.read(vf.descriptor, size)
             data = self.__read_fully(vf.descriptor, size)
-            print("read for offset %d sz %d data sz:%d"%(offset, size, len(data)))
+            logger.info("read for offset %d sz %d data sz:%d"%(offset, size, len(data)))
             #print("data:%r"%data)
             self.__mu.mem_write(res_addr, data)
             self.__file_map_addr[al_address]=(al_address+al_size, offset, vf)
@@ -179,7 +181,7 @@ class MemoryMap:
 
         size = page_end(addr+size) - addr
         try:
-            print("unmap 0x%08X sz=0x0x%08X end=0x0x%08X"%(addr,size, addr+size))
+            logger.info("unmap 0x%08X sz=0x0x%08X end=0x0x%08X"%(addr,size, addr+size))
             if (addr in self.__file_map_addr):
                 file_map_attr = self.__file_map_addr[addr]
                 if (addr+size != file_map_attr[0]):

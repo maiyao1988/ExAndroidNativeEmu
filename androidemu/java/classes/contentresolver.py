@@ -2,6 +2,8 @@ from ..java_class_def import JavaClassDef
 from ..java_field_def import JavaFieldDef
 from ..java_method_def import java_method_def,JavaMethodDef
 from .bundle import Bundle
+import logging
+logger = logging.getLogger(__name__)
 
 
 class ContentResolver(metaclass=JavaClassDef, jvm_name='android/content/ContentResolver'):
@@ -17,7 +19,7 @@ class ContentResolver(metaclass=JavaClassDef, jvm_name='android/content/ContentR
     @java_method_def(name='call', args_list=["jobject", "jstring", "jstring", "jobject"], \
         signature='(Landroid/net/Uri;Ljava/lang/String;Ljava/lang/String;Landroid/os/Bundle;)Landroid/os/Bundle;', native=False)
     def call(self, emu, uri, method, arg, extras):
-        print("call %r %r %r %r"%(uri, method, arg, extras))
+        logger.info("call %r %r %r %r"%(uri, method, arg, extras))
         pyuri_str = uri.get_py_string()
         py_method = method.get_py_string()
         py_arg = arg.get_py_string()

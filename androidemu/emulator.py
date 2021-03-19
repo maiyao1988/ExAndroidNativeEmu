@@ -137,7 +137,7 @@ class Emulator:
         addr = self.memory.map(config.STACK_ADDR, config.STACK_SIZE, UC_PROT_READ | UC_PROT_WRITE)
         self.mu.reg_write(UC_ARM_REG_SP, config.STACK_ADDR + config.STACK_SIZE)
         sp = self.mu.reg_read(UC_ARM_REG_SP)
-        print ("stack addr %x"%sp)
+        logger.info("stack addr %x"%sp)
 
         # CPU
         self.interrupt_handler = InterruptHandler(self.mu)

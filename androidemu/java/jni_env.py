@@ -754,7 +754,7 @@ class JNIEnv:
         
         pyclazz = class_obj.get_py_clazz()
 
-        print("get_method_id type %s"%(pyclazz))
+        logger.info("get_method_id type %s"%(pyclazz))
         method = pyclazz.find_method(name, sig)
 
         if method is None:

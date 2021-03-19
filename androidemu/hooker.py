@@ -3,6 +3,8 @@ from unicorn import *
 from unicorn.arm_const import *
 import sys
 import traceback
+import logging
+logger = logging.getLogger(__name__)
 
 STACK_OFFSET = 8
 
@@ -93,7 +95,7 @@ class Hooker:
         # Find hook.
         hook_id = self._emu.mu.reg_read(UC_ARM_REG_R4)
         hook_func = self._hooks[hook_id]
-        print ("hook_id:%d, hook_func:%r"%(hook_id, hook_func))
+        logger.info("hook_id:%d, hook_func:%r"%(hook_id, hook_func))
 
         # Call hook.
         try:
