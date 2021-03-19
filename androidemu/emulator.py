@@ -180,6 +180,14 @@ class Emulator:
         clazz.jni_env_object_id = self.java_vm.jni_env.add_global_reference(jclass(clazz))
         clazz.jni_env = self.java_vm.jni_env
 
+    @staticmethod
+    def register_java_class_native_for_module(clazz, lib_module):
+        base = "Java_" + clazz.jvm_name.replace("/", "_") + "_"
+        for method in clazz.jvm_methods.values():
+            if method.native:
+                symbol_addr = lib_module.find_symbol(base + method.name)
+                method.native_addr = symbol_addr
+
     def load_library(self, filename, do_init=True):
         libmod = self.modules.load_module(filename, True)
         return libmod
