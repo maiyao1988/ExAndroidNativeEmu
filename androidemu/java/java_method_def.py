@@ -22,10 +22,10 @@ def java_method_def(name, signature, native=False, args_list=None, modifier=None
             clz = args[0].__class__
             emulator = None
             extra_args = None
-            thiz = args[0].jni_env_object_id
             if (isinstance(clz, JavaClassDef) or isinstance(args[0], JavaClassDef)):
                 #如果第一个参数是Java类对象，则是self 或者 如果第一个参数是Java类，则是cls
                 emulator = args[1]
+                thiz = args[0].jni_env_object_id
                 extra_args = args[2:]
             #
             else:
