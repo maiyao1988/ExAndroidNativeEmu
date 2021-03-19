@@ -321,7 +321,8 @@ class Modules:
                     # Weak symbol initialized as 0
                     return 0
                 else:
-                    logger.error('=> Undefined external symbol: %s' %name)
+                    if name is not None and name != "":
+                        logger.error('=> Undefined external symbol: %s' %name)
                     return None
             else:
                 return target
