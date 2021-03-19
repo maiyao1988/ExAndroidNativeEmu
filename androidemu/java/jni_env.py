@@ -387,7 +387,7 @@ class JNIEnv:
                 value = (vh << 32) | v
                 result.append(value)
             #
-            elif arg_name == 'jstring' or arg_name == "jobject":
+            elif arg_name in ("jstring", "jobject", 'jbyteArray'):
                 ref = v
                 jobj = self.get_reference(ref)
                 obj = None
