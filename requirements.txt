@@ -1,2 +1,2 @@
-unicorn==1.0.1
-capstone==4.0.1
+unicorn==1.0.2
+capstone==4.0.2
