@@ -108,7 +108,7 @@ class Emulator:
     :type modules Modules
     :type memory Memory
     """
-    def __init__(self, vfs_root="vfs", config_path="default.json", vfp_inst_set=True):
+    def __init__(self, vfs_root="vfs", config_path="default.json", vfp_inst_set=True, vfs_fallback_real_fs=False):
         # Unicorn.
         config.global_config_init(config_path)
         self.mu = Uc(UC_ARCH_ARM, UC_MODE_ARM)
@@ -146,7 +146,7 @@ class Emulator:
         self.syscall_hooks = SyscallHooks(self.mu, self.syscall_handler)
 
         # File System
-        self.vfs = VirtualFileSystem(vfs_root, self.syscall_handler, self.memory)
+        self.vfs = VirtualFileSystem(vfs_root, self.syscall_handler, self.memory, vfs_fallback_real_fs)
         # Hooker
         self.memory.map(config.HOOK_MEMORY_BASE, config.HOOK_MEMORY_SIZE, UC_PROT_READ | UC_PROT_WRITE | UC_PROT_EXEC)
         self.hooker = Hooker(self, config.HOOK_MEMORY_BASE, config.HOOK_MEMORY_SIZE)

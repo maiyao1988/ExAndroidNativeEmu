@@ -85,11 +85,12 @@ class VirtualFileSystem:
     """
     :type syscall_handler SyscallHandlers
     """
-    def __init__(self, root_path, syscall_handler, memory_map):
+    def __init__(self, root_path, syscall_handler, memory_map, fallback_real_fs=False):
         self._root_path = root_path
         self.__memory_map = memory_map
         self.__pcb = pcb.get_pcb()
         self.__clear_proc_dir()
+        self.fallback_real_fs = fallback_real_fs
         
         syscall_handler.set_handler(0x3, "read", 3, self._handle_read)
         syscall_handler.set_handler(0x4, "write", 3, self._handle_write)
@@ -233,6 +234,10 @@ class VirtualFileSystem:
                 pass
             #
         #
+        # fallback: use real file system
+        if self.fallback_real_fs and not os.path.isfile(file_path):
+            logger.warning("File use real filesystem '%s'" % filename)
+            file_path = filename
         if os.path.isfile(file_path):
             flags = os.O_RDWR
             if (mode & 100):
