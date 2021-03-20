@@ -340,7 +340,7 @@ class JNIEnv:
                 continue
             #
             v = args[args_index]
-            if arg_name in ('jint', "jchar", "jbyte", "jboolean"):
+            if arg_name in ("jint", "jshort", "jfloat", "jchar", "jbyte", "jboolean"):
                 result.append(v)
             #
             elif arg_name in ("jlong", "jdouble"):
@@ -352,7 +352,7 @@ class JNIEnv:
                 value = (vh << 32) | v
                 result.append(value)
             #
-            elif arg_name == 'jstring' or arg_name == "jobject":
+            elif arg_name in ("jstring", "jobject", 'jbyteArray'):
                 ref = v
                 jobj = self.get_reference(ref)
                 obj = None
@@ -379,7 +379,7 @@ class JNIEnv:
         for arg_name in args_list:
             #使用指针arg_ptr的作为call_xxx_v第四个参数,不会出现跳过第四个参数的情况,因为arg_ptr总是四个字节
             v = int.from_bytes(mu.mem_read(args_ptr, 4), byteorder='little')
-            if arg_name in ('jint', "jchar", "jbyte", "jboolean"):
+            if arg_name in ("jint", "jshort", "jfloat", "jchar", "jbyte", "jboolean"):
                 result.append(v)
             elif arg_name in ("jlong", "jdouble"):
                 args_ptr = args_ptr + 4
