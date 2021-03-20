@@ -6,6 +6,7 @@ import inspect
 import pkgutil
 import sys
 import os.path
+import struct
 
 from random import randint
 
@@ -199,11 +200,13 @@ class Emulator:
             logger.error('Unable to find symbol \'%s\' in module \'%s\'.' % (symbol_name, module.filename))
             return
 
-        return self.call_native(symbol_addr, *argv)
+        return self.call_native(symbol_addr, "I", *argv)
     #
 
-    def call_native(self, addr, *argv):
+
+    def call_native(self, addr, return_type, *argv):
         assert addr != None, "call addr is None"
+        # 返回类型表示使用java函数签名中的表达方式
         # Detect JNI call
         is_jni = False
 
@@ -218,13 +221,54 @@ class Emulator:
             stop_pos = randint(config.HOOK_MEMORY_BASE, config.HOOK_MEMORY_BASE + config.HOOK_MEMORY_SIZE) | 1
             self.mu.reg_write(UC_ARM_REG_LR, stop_pos)
             r = self.mu.emu_start(addr, stop_pos - 1)
+            if return_type == "V":
+                return
             # Read result from locals if jni.
             res = self.mu.reg_read(UC_ARM_REG_R0)
+            # 判断返回类型并处理负数、8字节数、浮点数，因为数组与对象类型很常见，加入初始判断以便快速失败
+            if len(return_type) > 0 and return_type[0] != '[' and return_type[0] != 'L':
+                if return_type[0] == 'I':
+                    if res > 0x7FFFFFFF:
+                        b = res.to_bytes(4, byteorder='little', signed=False)
+                        return int.from_bytes(b, byteorder='little', signed=True)
+                    return res
+                if return_type[0] == 'Z':
+                    return bool(res)
+                if return_type[0] == 'B':
+                    if res > 0x7F and res <= 0xFF:
+                        b = res.to_bytes(1, byteorder='little', signed=False)
+                        return int.from_bytes(b, byteorder='little', signed=True)
+                    return res
+                if return_type[0] == 'C':
+                    return res
+                if return_type[0] == 'S':
+                    if res > 0x7FFF and res <= 0xFFFF:
+                        b = res.to_bytes(2, byteorder='little', signed=False)
+                        return int.from_bytes(b, byteorder='little', signed=True)
+                    return res
+                if return_type[0] == 'J':
+                    res1 = self.mu.reg_read(UC_ARM_REG_R1)
+                    res = (res1 << 32) | res
+                    if res > 0x7FFFFFFFFFFFFFFF:
+                        b = res.to_bytes(8, byteorder='little', signed=False)
+                        return int.from_bytes(b, byteorder='little', signed=True)
+                    return res
+                if return_type[0] == 'F':
+                    b = res.to_bytes(4, byteorder='little', signed=False)
+                    return struct.unpack("<f", b)
+                if return_type[0] == 'D':
+                    res1 = self.mu.reg_read(UC_ARM_REG_R1)
+                    res = (res1 << 32) | res
+                    b = res.to_bytes(8, byteorder='little', signed=False)
+                    return struct.unpack("<d", b)
             if is_jni:
                 result_idx = res
                 result = self.java_vm.jni_env.get_local_reference(result_idx)
                 if result is None:
-                    return JAVA_NULL
+                    # 如果未找到引用，同时指定返回类型为数组或对象，则返回JAVA_NULL，否则返回原始值
+                    if len(return_type) > 0 and (return_type[0] == '[' or return_type[0] == 'L'):
+                        return JAVA_NULL
+                    return res
                 return result.value
             #
             else:

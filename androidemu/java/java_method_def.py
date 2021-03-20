@@ -1,5 +1,8 @@
+import struct
 from .jvm_id_conter import *
 from .java_class_def import JavaClassDef
+import logging
+logger = logging.getLogger(__name__)
 
 class JavaMethodDef:
 
@@ -60,10 +63,12 @@ def java_method_def(name, signature, native=False, args_list=None, modifier=None
                     else:
                         new_extra_args.append(extra_args[i])
             else:
+                logger.warning("JNI func "+name+" "+signature+" parm not match. Don't use default value or key=parm.")
                 new_extra_args = extra_args
-
+            return_type = signature[signature.rfind(')')+1:]
             return emulator.call_native(
                 native_wrapper.jvm_method.native_addr,
+                return_type,
                 emulator.java_vm.jni_env.address_ptr,  # JNIEnv*
                 thiz,    # this, TODO: Implement proper "this", a reference to the Java object inside which this native
                          # method has been declared in
