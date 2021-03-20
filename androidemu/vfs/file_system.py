@@ -234,11 +234,11 @@ class VirtualFileSystem:
                 pass
             #
         #
-        # fallback: use real file system
-        if self.fallback_real_fs and not os.path.isfile(file_path):
+        # fallback: use real file system for only read or write without create
+        if (mode != 0 and (mode & 100)) and self.fallback_real_fs and not os.path.isfile(file_path) and os.path.isfile(filename):
             logger.warning("File use real filesystem '%s'" % filename)
             file_path = filename
-        if os.path.isfile(file_path):
+        if (mode != 0 and (mode & 100)) or os.path.isfile(file_path):
             flags = os.O_RDWR
             if (mode & 100):
                 flags |= os.O_CREAT
