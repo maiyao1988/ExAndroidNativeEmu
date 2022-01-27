@@ -20,7 +20,7 @@ class NetworkInterface(metaclass=JavaClassDef, jvm_name='java/net/NetworkInterfa
 
     @java_method_def(name='getHardwareAddress', signature='()[B', native=False)
     def getHardwareAddress(self, emu):
-        mac = config.global_config_get("mac")
+        mac = emu.config.get("mac")
         barr = bytearray(mac)
         arr = Array(barr)
         return arr

@@ -33,5 +33,11 @@ class List(metaclass=JavaClassDef, jvm_name='java/util/List'):
     def size(self, emu):
         return len(self.__pylist)
     #
+
+
+    @java_method_def(name='isEmpty', signature='()Z', native=False)
+    def isEmpty(self, emu):
+        return len(self.__pylist) == 0
+    #
 #
 

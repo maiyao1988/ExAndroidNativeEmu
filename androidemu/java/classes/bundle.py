@@ -19,6 +19,18 @@ class Bundle(metaclass=JavaClassDef, jvm_name='android/os/Bundle'):
             #attention do not return None, return None means no return value in function, return JAVA_NULL means the return value is NULL
             return JAVA_NULL
         #
-        raise NotImplementedError()
+    #
+
+
+    @java_method_def(name='getBoolean', args_list=["jstring"], signature='(Ljava/lang/String;)Z',
+                     native=False)
+    def getBoolean(self, emu, k):
+        pykey = k.get_py_string()
+        if (pykey in self.__pymap):
+            return bool(self.__pymap[pykey])
+        else:
+            # attention do not return None, return None means no return value in function, return JAVA_NULL means the return value is NULL
+            return JAVA_NULL
+        #
     #
 #

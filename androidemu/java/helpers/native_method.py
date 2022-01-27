@@ -2,67 +2,81 @@ import inspect
 
 from unicorn import Uc
 from unicorn.arm_const import *
+from unicorn.arm64_const import *
+from ...const import emu_const
 
-from ...hooker import STACK_OFFSET
 from ..java_class_def import JavaClassDef
 from ..jni_const import JNI_ERR
 from ..jni_ref import jobject
 
 
 def native_write_args(emu, *argv):
+    max_regs_args = 4
+    reg_base = UC_ARM_REG_R0
+    sp_reg = UC_ARM_REG_SP
+
+    if (emu.get_arch() == emu_const.ARCH_ARM64):
+        max_regs_args = 8
+        reg_base = UC_ARM64_REG_X0
+        sp_reg = UC_ARM64_REG_SP
+    #
+    ptr_sz = emu.get_ptr_size()
     amount = len(argv)
-
-    if amount == 0:
-        return
-
-    if amount >= 1:
-        native_write_arg_register(emu, UC_ARM_REG_R0, argv[0])
-
-    if amount >= 2:
-        native_write_arg_register(emu, UC_ARM_REG_R1, argv[1])
-
-    if amount >= 3:
-        native_write_arg_register(emu, UC_ARM_REG_R2, argv[2])
-
-    if amount >= 4:
-        native_write_arg_register(emu, UC_ARM_REG_R3, argv[3])
-
-    if amount >= 5:
-        sp_start = emu.mu.reg_read(UC_ARM_REG_SP)
-        sp_current = sp_start - STACK_OFFSET  # Need to offset because our hook pushes one register on the stack.
-        sp_current = sp_current - (4 * (amount - 4))  # Reserve space for arguments.
+    
+    nreg = max_regs_args
+    if (amount < max_regs_args):
+        nreg = amount
+    #
+    
+    for i in range(0, nreg):
+        native_write_arg_register(emu, reg_base+i, argv[i])
+    #
+    if amount > max_regs_args:
+        sp_start = emu.mu.reg_read(sp_reg)
+        sp_current = sp_start
+        sp_current = sp_current - (ptr_sz * (amount - max_regs_args))  # Reserve space for arguments.
         sp_end = sp_current
 
-        for arg in argv[4:]:
-            emu.mu.mem_write(sp_current, native_translate_arg(emu, arg).to_bytes(4, byteorder='little'))
-            sp_current = sp_current + 4
+        for arg in argv[max_regs_args:]:
+            emu.mu.mem_write(sp_current, native_translate_arg(emu, arg).to_bytes(ptr_sz, byteorder='little'))
+            sp_current = sp_current + ptr_sz
 
-        emu.mu.reg_write(UC_ARM_REG_SP, sp_end)
+        emu.mu.reg_write(sp_reg, sp_end)
+    #
+#
 
 
-def native_read_args(mu, args_count):
+def native_read_args_in_hook_code(emu, args_count):
+    max_regs_args = 4   #寄存器参数个数
+    reg_base = UC_ARM_REG_R0
+    sp_reg = UC_ARM_REG_SP
+
+    if (emu.get_arch() == emu_const.ARCH_ARM64):
+        max_regs_args = 8
+        reg_base = UC_ARM64_REG_X0
+        sp_reg = UC_ARM64_REG_SP
+    #
+    ptr_sz = emu.get_ptr_size()
+
+    nreg = max_regs_args
+    if (args_count < max_regs_args):
+        nreg = args_count
+    #
     native_args = []
+    mu = emu.mu
 
-    if args_count >= 1:
-        native_args.append(mu.reg_read(UC_ARM_REG_R0))
+    for i in range(0, nreg):
+        native_args.append(mu.reg_read(reg_base+i))
+    #
+    if args_count > max_regs_args:
+        sp = mu.reg_read(sp_reg)
 
-    if args_count >= 2:
-        native_args.append(mu.reg_read(UC_ARM_REG_R1))
-
-    if args_count >= 3:
-        native_args.append(mu.reg_read(UC_ARM_REG_R2))
-
-    if args_count >= 4:
-        native_args.append(mu.reg_read(UC_ARM_REG_R3))
-
-    sp = mu.reg_read(UC_ARM_REG_SP)
-    sp = sp + STACK_OFFSET  # Need to offset by 4 because our hook pushes one register on the stack.
-
-    if args_count >= 5:
-        for x in range(0, args_count - 4):
-            native_args.append(int.from_bytes(mu.mem_read(sp + (x * 4), 4), byteorder='little'))
-
+        for x in range(0, args_count - max_regs_args):
+            native_args.append(int.from_bytes(mu.mem_read(sp + (x * ptr_sz), ptr_sz), byteorder='little'))
+        #
+    #
     return native_args
+#
 
 
 def native_translate_arg(emu, val):
@@ -82,7 +96,7 @@ def native_translate_arg(emu, val):
 def native_write_arg_register(emu, reg, val):
     emu.mu.reg_write(reg, native_translate_arg(emu, val))
 
-
+#定义native层回调到python的方法
 def native_method(func):
     def native_method_wrapper(*argv):
         """
@@ -99,26 +113,32 @@ def native_method(func):
 
         if args_count < 0:
             raise RuntimeError("NativeMethod accept at least (self, mu) or (mu).")
-
-        native_args = native_read_args(mu, args_count)
+        
+        native_args = native_read_args_in_hook_code(emu, args_count)
 
         if len(argv) == 1:
             result = func(mu, *native_args)
         else:
             le = len(native_args)
             result = func(argv[0], mu, *native_args)
-
+        #
+        ret_reg0 = UC_ARM_REG_R0
+        ret_reg1 = UC_ARM_REG_R1
+        if (emu.get_arch() == emu_const.ARCH_ARM64):
+            ret_reg0 = UC_ARM64_REG_X0
+            ret_reg1 = UC_ARM64_REG_X1
+        #
         if result is not None:
             if(isinstance(result, tuple)):
                 #tuple作为特殊返回8字节数据约定
                 rlow = result[0]
                 rhigh = result[1]
-                native_write_arg_register(emu, UC_ARM_REG_R0, rlow)
-                native_write_arg_register(emu, UC_ARM_REG_R1, rhigh)
+                native_write_arg_register(emu, ret_reg0, rlow)
+                native_write_arg_register(emu, ret_reg1, rhigh)
             else:
                 #FIXME handle python基本类型str int float,处理返回值逻辑略为混乱，
                 #返回值的问题统一在这里处理掉
-                native_write_arg_register(emu, UC_ARM_REG_R0, result)
+                native_write_arg_register(emu, ret_reg0, result)
             #
         #
     #

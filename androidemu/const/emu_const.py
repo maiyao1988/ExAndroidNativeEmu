@@ -1,0 +1,3 @@
+
+ARCH_ARM32 = 1
+ARCH_ARM64 = 2

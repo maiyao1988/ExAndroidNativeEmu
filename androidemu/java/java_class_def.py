@@ -25,6 +25,7 @@ class JavaClassDef(type):
             if hasattr(func[1], 'jvm_method'):
                 method = func[1].jvm_method
                 cls.jvm_methods[method.jvm_id] = method
+            #
         #
         # Register all defined Java fields.
         if jvm_fields is not None:
@@ -94,6 +95,7 @@ class JavaClassDef(type):
             return cls.jvm_super.find_method_by_id(jvm_id)
         #
         return None
+    #
 
     def find_field(cls, name, signature, is_static):
         for field in cls.jvm_fields.values():

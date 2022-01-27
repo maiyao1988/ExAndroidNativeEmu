@@ -1,3 +1,4 @@
+from .activity_thread import ActivityThread, ActivityManagerNative
 from ..java_class_def import JavaClassDef
 from ..java_field_def import JavaFieldDef
 from ..java_method_def import java_method_def, JavaMethodDef
@@ -9,16 +10,39 @@ from .field import *
 import io
 
 class Class(metaclass=JavaClassDef, jvm_name='java/lang/Class'):
-    class_loader = None
     _basic_types = ["Z", "B", "C", "D", "F", "I", "J", "S"]
-    def __init__(self, pyclazz):
+    def __init__(self, pyclazz, class_loader):
+        self.class_loader = class_loader
         self.__pyclazz = pyclazz
         self.__descriptor_represent = pyclazz.jvm_name
     #
 
     @java_method_def(name='getClassLoader', signature='()Ljava/lang/ClassLoader;', native=False)
     def getClassLoader(self, emu):
-        return Class.class_loader
+        return self.class_loader
+    #
+
+    @staticmethod
+    @java_method_def(name='forName', args_list=["jstring"], signature='(Ljava/lang/String;)Ljava/lang/Class;',
+                     native=False)
+    def forName(emu, name):
+        clz_name = name.get_py_string()
+        if clz_name == 'android.app.ActivityThread':
+            return Class(ActivityThread, emu.java_classloader)
+        elif clz_name == 'android.app.ActivityManagerNative':
+            return Class(ActivityManagerNative, emu.java_classloader)
+        else:
+            raise NotImplementedError()
+
+    #
+
+    # FIXME -
+    @java_method_def(name='getMethod', args_list=["jstring", "jobject"]
+        , signature='(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;'
+        , native=False)
+    def getMethod(self, emu, name, parameterTypes):
+        return self.getDeclaredMethod(emu, name, parameterTypes)
+
     #
 
     @java_method_def(name='getName', signature='()Ljava/lang/String;', native=False)

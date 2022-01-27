@@ -19,10 +19,10 @@ class JavaClassLoader(metaclass=JavaClassDef, jvm_name='java/lang/ClassLoader'):
         if clazz.jvm_name in self.class_by_name:
             raise KeyError('The class \'%s\' is already registered.' % clazz.jvm_name)
         #
-        if (clazz == Class):
-            clazz.class_loader = self
+        if (clazz.class_object == None):
+            #FIXME 两个emulaotr add_class是同一个class 实例,会互相影响
+            clazz.class_object = Class(clazz, self)
         #
-        clazz.class_object = Class(clazz)
         self.class_by_id[clazz.jvm_id] = clazz
         self.class_by_name[clazz.jvm_name] = clazz
     #

@@ -1,9 +1,11 @@
 import traceback
 import os
 import sys
+import logging
 from unicorn import *
 from ..utils.misc_utils import page_end, page_start
 
+#android中，不论64还是32，PAGE_SIZE都是4096
 PAGE_SIZE = 0x1000
 
 
@@ -18,7 +20,7 @@ class MemoryMap:
     #
 
     @staticmethod
-    def __is_multiple(addr):
+    def __is_page_align(addr):
         return addr % PAGE_SIZE == 0
     #
     @staticmethod
@@ -66,7 +68,7 @@ class MemoryMap:
                 if (map_base > self._alloc_max_addr or map_base < self._alloc_min_addr):
                     raise RuntimeError("mmap error map_base 0x%08X out of range (0x%08X-0x%08X)!!!"%(map_base, self._alloc_min_addr, self._alloc_max_addr))
                 #
-                print("before mem_map addr:0x%08X, sz:0x%08X"%(map_base, size))
+                logging.debug("before mem_map addr:0x%08X, sz:0x%08X"%(map_base, size))
 
                 self.__mu.mem_map(map_base, size, perms=prot)
                 return map_base
@@ -123,7 +125,7 @@ class MemoryMap:
         while (sz_left > 0):
             this_read = os.read(fd, sz_left)
             len_this_read = len(this_read)
-            print (len_this_read)
+            #print (len_this_read)
             if (len_this_read <= 0):
                 break
             b_read = b_read + this_read
@@ -133,31 +135,39 @@ class MemoryMap:
     #
 
     def map(self, address, size, prot=UC_PROT_READ | UC_PROT_WRITE, vf=None, offset=0):
-        if not self.__is_multiple(address):
-            raise Exception('map addr was not multiple of page size (%d, %d).' % (address, PAGE_SIZE))
+        if not self.__is_page_align(address):
+            raise RuntimeError('map addr was not multiple of page size (%d, %d).' % (address, PAGE_SIZE))
         #
 
-        print("map addr:0x%08X, end:0x%08X, sz:0x%08X off=0x%08X"%(address, address+size, size, offset))
+        logging.debug("map addr:0x%08X, end:0x%08X, sz:0x%08X off=0x%08X"%(address, address+size, size, offset))
         #traceback.print_stack()
         al_address = address
         al_size = page_end(al_address+size) - al_address
         res_addr = self.__map(al_address, al_size, prot)
         if (res_addr != -1 and vf != None):
+            #需要mmap映射文件的时候,开辟一块内存,并将文件内容复制过去模拟
+            if (not self.__is_page_align(offset)):
+                raise RuntimeError('map offset was not multiple of page size (%d, %d).' % (offset, PAGE_SIZE))
+            #
+            if (offset > 0xffffffff):
+                raise NotImplementedError("map offset %d > 4G not support now"%offset)
+            #
             ori_off = os.lseek(vf.descriptor, 0, os.SEEK_CUR)
+
+            #logging.debug("mmap file ori_off %d"%(ori_off,))
             os.lseek(vf.descriptor, offset, os.SEEK_SET)
-            #data = os.read(vf.descriptor, size)
             data = self.__read_fully(vf.descriptor, size)
-            print("read for offset %d sz %d data sz:%d"%(offset, size, len(data)))
+            logging.debug("read for offset %d sz %d data sz:%d"%(offset, size, len(data)))
             #print("data:%r"%data)
             self.__mu.mem_write(res_addr, data)
-            self.__file_map_addr[al_address]=(al_address+al_size, offset, vf)
+            self.__file_map_addr[res_addr]=(res_addr+al_size, offset, vf)
             os.lseek(vf.descriptor, ori_off, os.SEEK_SET)
         #
         return res_addr
     #
 
     def protect(self, addr, len, prot):
-        if not self.__is_multiple(addr):
+        if not self.__is_page_align(addr):
             raise Exception('addr was not multiple of page size (%d, %d).' % (addr, PAGE_SIZE))
         #
 
@@ -166,7 +176,7 @@ class MemoryMap:
             self.__mu.mem_protect(addr, len_in, prot)
         except unicorn.UcError as e:
             #TODO:just for debug
-            print("Warning mprotect with addr: 0x%08X len: 0x%08X prot:0x%08X failed!!!"%(addr, len, prot))
+            logging.warning("Warning mprotect with addr: 0x%08X len: 0x%08X prot:0x%08X failed!!!"%(addr, len, prot))
             #self.dump_maps(sys.stdout)
             #raise
             return -1
@@ -174,12 +184,12 @@ class MemoryMap:
         return 0
 
     def unmap(self, addr, size):
-        if not self.__is_multiple(addr):
+        if not self.__is_page_align(addr):
             raise RuntimeError('addr was not multiple of page size (%d, %d).' % (addr, PAGE_SIZE))
 
         size = page_end(addr+size) - addr
         try:
-            print("unmap 0x%08X sz=0x0x%08X end=0x0x%08X"%(addr,size, addr+size))
+            logging.debug("unmap 0x%08X sz=0x0x%08X end=0x0x%08X"%(addr,size, addr+size))
             if (addr in self.__file_map_addr):
                 file_map_attr = self.__file_map_addr[addr]
                 if (addr+size != file_map_attr[0]):

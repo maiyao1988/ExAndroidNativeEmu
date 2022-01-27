@@ -61,6 +61,15 @@ class Method(metaclass=JavaClassDef,
 
     #
 
+    @java_method_def(
+        name="setAccessible",
+        signature="(Z)V",
+        args_list=['jboolean']
+    )
+    def setAccessible(self, emu, flag):
+        pass
+    #
+
     def __repr__(self):
         return "Method(%s, %s)"%(self.declaringClass, self._method)
     #

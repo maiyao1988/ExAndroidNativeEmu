@@ -80,6 +80,10 @@ class Long(metaclass=JavaClassDef, jvm_name='java/lang/Long'):
     def getClass(self, emu):
         return self.class_object
     #
+
+    def get_py_value(self):
+        return self.__value
+    #
 #
 
 

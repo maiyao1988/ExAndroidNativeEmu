@@ -13,6 +13,9 @@ This is a personal improved version of [AndroidNativeEmu](https://github.com/Aeo
  - Fix R_ARM_ABS32 relocation bug.
  - Use program header to load so instead of section header
  - Support Java reflection
+ - Support Arm64
+ - Support multi-threaded like pthread_create etc.
+ - Add Function hook feature
  
 ## TODO
  - Simulate linker TLS initialization.

@@ -101,17 +101,6 @@ class UserInfo(metaclass=JavaClassDef, jvm_name='com/ss/android/common/applog/Us
     def __init__(self):
         pass
 
-class java_lang_System(metaclass=JavaClassDef, jvm_name='java/lang/System'):
-    def __init__(self):
-        pass
-
-    @java_method_def(name='getProperty', args_list=["jstring"], signature='(Ljava/lang/String;)Ljava/lang/String;',
-                     native=False)
-    def getProperty(self, *args, **kwargs):
-        print(args[0])
-        return String("2.1.0")
-
-
 class java_lang_StackTraceElement(metaclass=JavaClassDef, jvm_name='java/lang/StackTraceElement'):
     def __init__(self, _name):
         self.name = _name
@@ -193,7 +182,6 @@ mnt = MemoryMonitor(emulator)
 # emulator.java_classloader.add_class(MainActivity)
 emulator.java_classloader.add_class(XGorgen)
 emulator.java_classloader.add_class(UserInfo)
-emulator.java_classloader.add_class(java_lang_System)
 emulator.java_classloader.add_class(java_lang_Thread)
 emulator.java_classloader.add_class(java_lang_StackTraceElement)
 

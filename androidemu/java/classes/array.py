@@ -50,6 +50,14 @@ class ByteArray(Array, metaclass=JavaClassDef, jvm_name="[B", jvm_super=Array):
 
 #
 
+#外面用到，因为与Array jvm name不同，所以暂时手动定义，与Array作用一样
+class ObjectArray(Array, metaclass=JavaClassDef, jvm_name="[Ljava/lang/Object;", jvm_super=Array):
+    def __init__(self, item_list):
+        Array.__init__(self, item_list)
+    #
+
+#
+
 class ClassArray(Array, metaclass=JavaClassDef, jvm_name="[Ljava/lang/Class;", jvm_super=Array):
     def __init__(self, item_list):
         Array.__init__(self, item_list)

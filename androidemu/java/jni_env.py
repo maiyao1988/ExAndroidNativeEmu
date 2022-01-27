@@ -16,6 +16,7 @@ from .constant_values import JAVA_NULL
 from ..utils import memory_helpers
 from unicorn import *
 from ..utils import debug_utils
+from ..const import emu_const
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,16 @@ class JNIEnv:
         self._class_loader = class_loader
         self._locals = ReferenceTable(start=1, max_entries=2048)
         self._globals = ReferenceTable(start=4096, max_entries=512000)
+        arch = emu.get_arch()
+        if (arch == emu_const.ARCH_ARM32):
+            self.__read_args = self.__read_args32
+            self.__read_args_v = self.__read_args_v32
+        elif(arch == emu_const.ARCH_ARM64):
+            self.__read_args = self.__read_args64
+            self.__read_args_v = self.__read_args_v64
+        else:
+            raise NotImplementedError("unsupport arch %d"%arch)
+        #
 
         (self.address_ptr, self.address) = hooker.write_function_table({
             4: self.get_version,
@@ -320,20 +331,20 @@ class JNIEnv:
     #
 
     #args is a tuple or list
-    def read_args(self, mu, args, args_list):
+    def __read_args32(self, mu, args, args_type_list):
         #在这里处理八个字节参数问题，
         #1.第一个参数为jlong jdouble 直接跳过列表第一个成员，因为第一个成员刚好是call_xxx的第三个参数，根据调用约定，如果这个参数是8个字节，则直接跳过R3寄存器使用栈
         #2.jlong或者jdouble需要两个arg成一个参数，对应用层透明
-        if args_list is None:
+        if args_type_list is None:
             return []
         #
         result = []
         args_index = 0
-        n = len(args_list)
+        n = len(args_type_list)
         nargs = len(args)
         args_list_index = 0
         while args_list_index < n:
-            arg_name = args_list[args_list_index]
+            arg_name = args_type_list[args_list_index]
             if (args_index == 0 and arg_name in ("jlong", "jdouble")):
                 #处理第一个参数(call_xxx第四个参数)跳过问题
                 args_index =  args_index + 1
@@ -346,7 +357,7 @@ class JNIEnv:
             elif arg_name in ("jlong", "jdouble"):
                 args_index = args_index + 1
                 if (args_index >= nargs):
-                    raise RuntimeError("read_args get long on args_list, buf args len is not enough to read heigh bytes")
+                    raise RuntimeError("read_args get long on args_type_list, but args len is not enough to read high bytes")
                 #
                 vh = args[args_index]
                 value = (vh << 32) | v
@@ -370,13 +381,45 @@ class JNIEnv:
         return result
     #
 
-
-    def read_args_v(self, mu, args_ptr, args_list):
+    def __read_args64(self, mu, args, args_type_list):
+        #64w位情况简单得多，因为寄存器的大小为8字节，因此jlong，jdouble直接一个寄存器能装下，直接读即可
+        if args_type_list is None:
+            return []
+        #
         result = []
-        if args_list is None:
+        n = len(args_type_list)
+        nargs = len(args)
+
+        for args_index in nargs:
+            arg_name = args_type_list[args_index]
+            v = args[args_index]
+            if arg_name in ('jint', "jchar", "jbyte", "jboolean", "jlong", "jdouble"):
+                result.append(v)
+            #
+            elif arg_name == 'jstring' or arg_name == "jobject":
+                ref = v
+                jobj = self.get_reference(ref)
+                obj = None
+                if (jobj == None):
+                    logging.warning("arg_name %s ref %d is not vaild maybe wrong arglist"%(arg_name, ref))
+                    obj = JAVA_NULL
+                else:
+                    obj = jobj.value
+                result.append(obj)
+            else:
+                raise NotImplementedError('Unknown arg name %s' % arg_name)
+            #
+        #
+        return result
+    #
+
+
+    def __read_args_v32(self, mu, args_ptr, args_type_list):
+        result = []
+        if args_type_list is None:
             return result
         #
-        for arg_name in args_list:
+        for arg_name in args_type_list:
             #使用指针arg_ptr的作为call_xxx_v第四个参数,不会出现跳过第四个参数的情况,因为arg_ptr总是四个字节
             v = int.from_bytes(mu.mem_read(args_ptr, 4), byteorder='little')
             if arg_name in ('jint', "jchar", "jbyte", "jboolean"):
@@ -405,12 +448,43 @@ class JNIEnv:
         return result
     #
 
+    def __read_args_v64(self, mu, args_ptr, args_type_list):
+        result = []
+        if args_type_list is None:
+            return result
+        #
+        ptr_size = self._emu.get_ptr_size()            
+        for arg_name in args_type_list:
+            v = int.from_bytes(mu.mem_read(args_ptr, ptr_size), byteorder='little')
+            if arg_name in ('jint', "jchar", "jbyte", "jboolean", "jlong", "jdouble"):
+                result.append(v)
+            
+            elif arg_name == 'jstring' or arg_name == "jobject":
+                ref = v
+                jobj = self.get_reference(ref)
+                obj = None
+                if (jobj == None):
+                    logging.warning("arg_name %s ref %d is not vaild maybe wrong arglist"%(arg_name, ref))
+                    obj = JAVA_NULL
+                else:
+                    obj = jobj.value
+                result.append(obj)
+            else:
+                raise NotImplementedError('Unknown arg name %s' % arg_name)
+            #
+            args_ptr = args_ptr + ptr_size
+        #
+        return result
+    #
+
     #arg_type = 0 tuple or list, 1 arg_v, 2 array
-    def read_args_common(self, mu, args_ptr, args_list, arg_type):
+    def __read_args_common(self, mu, args, args_type_list, arg_type):
         if (arg_type == 0):
-            return self.read_args(mu, args_ptr, args_list)
+            args_items = args
+            return self.__read_args(mu, args_items, args_type_list)
         elif (arg_type == 1):
-            return self.read_args_v(mu, args_ptr, args_list)
+            args_ptr = args
+            return self.__read_args_v(mu, args_ptr, args_type_list)
         else:
             raise RuntimeError("arg_type %d not support"%arg_type)
         #
@@ -427,7 +501,9 @@ class JNIEnv:
 
     @native_method
     def get_version(self, mu, env):
-        raise NotImplementedError()
+        logger.debug("JNIEnv->GetVersion() was called")
+        return 65542
+    #
 
     @native_method
     def define_class(self, mu, env):
@@ -501,12 +577,49 @@ class JNIEnv:
     #
 
     @native_method
-    def get_superclass(self, mu, env):
-        raise NotImplementedError()
+    def get_superclass(self, mu, env, clazz_idx):
+        jclazz = self.get_reference(clazz_idx)
+        if not isinstance(jclazz, jclass):
+            raise ValueError('Expected a jclass.')
+
+        # Create class instance.
+        class_obj = jclazz.value
+        pyclass = class_obj.get_py_clazz()
+
+        logger.debug("JNIEnv->GetSuperClass (%s) is called"%pyclass.jvm_name)
+
+        pyclazz_super = pyclass.jvm_super
+        if (not pyclazz_super):
+            raise RuntimeError("super class for %s is None!!! you should at least inherit Object!!!")
+        #
+        logger.debug("JNIEnv->GetSuperClass (%s) return (%s)"%(pyclass.jvm_name, pyclazz_super.jvm_name))
+        clazz_super_object = pyclazz_super.class_object
+        return self.add_local_reference(jclass(clazz_super_object))
 
     @native_method
-    def is_assignable_from(self, mu, env):
-        raise NotImplementedError()
+    def is_assignable_from(self, mu, env, clazz_idx1, clazz_idx2):
+        jclazz1 = self.get_reference(clazz_idx1)
+        jclazz2 = self.get_reference(clazz_idx2)
+        # Create class instance.
+        class_obj1 = jclazz1.value
+        pyclass1 = class_obj1.get_py_clazz()
+
+        class_obj2 = jclazz2.value
+        pyclass2 = class_obj2.get_py_clazz()
+
+        logger.debug("JNIEnv->IsAssignableFrom (%s,%s) is called"%(pyclass1.jvm_name, pyclass2.jvm_name))
+        r = JNI_FALSE
+        jvm_super = pyclass1.jvm_super
+        while jvm_super != None:
+            if (jvm_super == pyclass2):
+                r = JNI_TRUE
+                break
+            #
+            jvm_super = jvm_super.jvm_super
+        #
+        logger.debug("JNIEnv->IsAssignableFrom (%s,%s) return (%d)"%(pyclass1.jvm_name, pyclass2.jvm_name, r))
+        return r
+    #
 
     @native_method
     def to_reflected_field(self, mu, env):
@@ -567,7 +680,7 @@ class JNIEnv:
         if jobj == 0:
             return 0
 
-        obj = self.get_local_reference(jobj)
+        obj = self.get_reference(jobj)
 
         if obj is None:
             # TODO: Implement global > global support (?)
@@ -671,7 +784,7 @@ class JNIEnv:
         logger.debug("JNIEnv->NewObjectX(%s, %s, %r) was called" % (pyclazz.jvm_name, method.name, args))
 
         # Parse arguments.
-        constructor_args = self.read_args_common(mu, args, method.args_list, args_type)
+        constructor_args = self.__read_args_common(mu, args, method.args_list, args_type)
 
         # Execute function.
         method.func(obj, self._emu, *constructor_args)
@@ -754,13 +867,13 @@ class JNIEnv:
         
         pyclazz = class_obj.get_py_clazz()
 
-        print("get_method_id type %s"%(pyclazz))
+        logging.debug("get_method_id type %s"%(pyclazz))
         method = pyclazz.find_method(name, sig)
 
         if method is None:
             # TODO: Proper Java error?
             raise RuntimeError("Could not find method ('%s', '%s') in class %s." % (name, sig, pyclazz.jvm_name))
-
+        logger.debug("JNIEnv->GetMethodId(%d, %s, %s) return 0x%08X"%(clazz_idx, name, sig, method.jvm_id))
         return method.jvm_id
     #
 
@@ -783,9 +896,14 @@ class JNIEnv:
             method.signature, args))
 
         # Parse arguments.
-        constructor_args = self.read_args_common(mu, args, method.args_list, args_type)
+        constructor_args = self.__read_args_common(mu, args, method.args_list, args_type)
 
-        v = method.func(pyobj, self._emu, *constructor_args)
+        sig = method.signature
+        name = method.name
+        #因为要支持多态,通过method_id找到的方法可能是基类的方法,不可以直接调用,需要获取签名和名字,通过子类的find_method才可以找到真正的实现方法.
+
+        real_method = pyobj.__class__.find_method(name, sig)
+        v = real_method.func(pyobj, self._emu, *constructor_args)
 
         if (not is_wide):
             return v
@@ -1160,41 +1278,80 @@ class JNIEnv:
         raise NotImplementedError()
     #
 
-    @native_method
-    def set_object_field(self, mu, env):
-        raise NotImplementedError()
+    def __set_xxx_field(self, mu, env, obj_idx, field_id, value, is_obj_value = False):
+        obj = self.get_reference(obj_idx)
+
+        if not isinstance(obj, jobject):
+            raise ValueError('Expected a jobject.')
+
+        pyobj = JNIEnv.jobject_to_pyobject(obj)
+        field = pyobj.__class__.find_field_by_id(field_id)
+
+        if field is None:
+            # TODO: Proper Java error?
+            raise RuntimeError("Could not find field %d in object %s by id." % (field_id, pyobj.jvm_name))
+        #
+        logger.debug("JNIEnv->SetXXXField(%s, %s <%s>, %r) was called" % (pyobj.jvm_name,
+                                                                         field.name,
+                                                                         field.signature, 
+                                                                         value))
+
+        v = None
+        if (is_obj_value):
+            value_idx = value
+            value_obj = self.get_reference(value_idx)
+            v = JNIEnv.jobject_to_pyobject(value_obj)
+        #
+        else:
+            v = value
+        #
+        setattr(pyobj, field.name, v)
+    #
 
     @native_method
-    def set_boolean_field(self, mu, env):
-        raise NotImplementedError()
+    def set_object_field(self, mu, env, obj_idx, field_id, value):
+        self.__set_xxx_field(mu, env, obj_idx, field_id, value, True)
+    #
 
     @native_method
-    def set_byte_field(self, mu, env):
-        raise NotImplementedError()
+    def set_boolean_field(self, mu, env, obj_idx, field_id, value):
+        self.__set_xxx_field(mu, env, obj_idx, field_id, value)
+    #
 
     @native_method
-    def set_char_field(self, mu, env):
-        raise NotImplementedError()
+    def set_byte_field(self, mu, env, obj_idx, field_id, value):
+        self.__set_xxx_field(mu, env, obj_idx, field_id, value)
+    #
 
     @native_method
-    def set_short_field(self, mu, env):
-        raise NotImplementedError()
+    def set_char_field(self, mu, env, obj_idx, field_id, value):
+        self.__set_xxx_field(mu, env, obj_idx, field_id, value)
+    #
 
     @native_method
-    def set_int_field(self, mu, env):
-        raise NotImplementedError()
+    def set_short_field(self, mu, env, obj_idx, field_id, value):
+        self.__set_xxx_field(mu, env, obj_idx, field_id, value)
+    #
 
     @native_method
-    def set_long_field(self, mu, env):
-        raise NotImplementedError()
+    def set_int_field(self, mu, env, obj_idx, field_id, value):
+        self.__set_xxx_field(mu, env, obj_idx, field_id, value)
+    #
 
     @native_method
-    def set_float_field(self, mu, env):
-        raise NotImplementedError()
+    def set_long_field(self, mu, env, obj_idx, field_id, value):
+        self.__set_xxx_field(mu, env, obj_idx, field_id, value)
+    #
 
     @native_method
-    def set_double_field(self, mu, env):
-        raise NotImplementedError()
+    def set_float_field(self, mu, env, obj_idx, field_id, value):
+        self.__set_xxx_field(mu, env, obj_idx, field_id, value)
+    #
+
+    @native_method
+    def set_double_field(self, mu, env, obj_idx, field_id, value):
+        self.__set_xxx_field(mu, env, obj_idx, field_id, value)
+    #
 
     @native_method
     def get_static_method_id(self, mu, env, clazz_idx, name_ptr, sig_ptr):
@@ -1223,6 +1380,7 @@ class JNIEnv:
 
         if method.ignore:
             return 0
+        logger.debug("JNIEnv->GetStaticMethodId(%d, %s, %s) return 0x%08X" % (clazz_idx, name, sig, method.jvm_id))
 
         return method.jvm_id
 
@@ -1249,7 +1407,7 @@ class JNIEnv:
             method.signature, args))
 
         # Parse arguments.
-        constructor_args = self.read_args_common(mu, args, method.args_list, args_type)
+        constructor_args = self.__read_args_common(mu, args, method.args_list, args_type)
 
         v = method.func(self._emu, *constructor_args)
         #FIXME python的double怎么办？？？
@@ -1433,6 +1591,9 @@ class JNIEnv:
             raise RuntimeError(
                 "Could not find static field ('%s', '%s') in class %s." % (name, sig, pyclazz.jvm_name))
 
+        if field.ignore:
+            return 0
+
         return field.jvm_id
     #
 
@@ -1466,22 +1627,22 @@ class JNIEnv:
     #
 
     @native_method
-    def get_static_boolean_field(self, mu, env):
+    def get_static_boolean_field(self, mu, env, clazz_idx, field_id):
         return self.__get_static_xxx_field(mu, env, clazz_idx, field_id)
     #
 
     @native_method
-    def get_static_byte_field(self, mu, env):
+    def get_static_byte_field(self, mu, env, clazz_idx, field_id):
         return self.__get_static_xxx_field(mu, env, clazz_idx, field_id)
     #
 
     @native_method
-    def get_static_char_field(self, mu, env):
+    def get_static_char_field(self, mu, env, clazz_idx, field_id):
         return self.__get_static_xxx_field(mu, env, clazz_idx, field_id)
     #
 
     @native_method
-    def get_static_short_field(self, mu, env):
+    def get_static_short_field(self, mu, env, clazz_idx, field_id):
         return self.__get_static_xxx_field(mu, env, clazz_idx, field_id)
     #
 
@@ -1582,27 +1743,37 @@ class JNIEnv:
         return idx
 
     @native_method
-    def get_string_utf_length(self, mu, env):
-        raise NotImplementedError()
-    #
-
-    @native_method
-    def get_string_utf_chars(self, mu, env, string, is_copy_ptr):
-        logger.debug("JNIEnv->GetStringUtfChars(%u, %x) was called" % (string, is_copy_ptr))
-
-        if is_copy_ptr != 0:
-            raise NotImplementedError()
+    def get_string_utf_length(self, mu, env, string):
+        
         str_ref = self.get_reference(string)
         str_obj = str_ref.value
         if (str_obj == JAVA_NULL):
             return 0
         #
         str_val = str_obj.get_py_string()
+        return len(str_val)
+    #
+
+    @native_method
+    def get_string_utf_chars(self, mu, env, string, is_copy_ptr):
+        logger.debug("JNIEnv->GetStringUtfChars(%u, %x) was called" % (string, is_copy_ptr))
+
+
+        str_ref = self.get_reference(string)
+        str_obj = str_ref.value
+        if (str_obj == JAVA_NULL):
+            return JAVA_NULL
+        #
+        str_val = str_obj.get_py_string()
         #FIXME use malloc
         str_ptr = self._emu.memory.map(0, len(str_val)+1, UC_PROT_READ | UC_PROT_WRITE)
 
         logger.debug("=> %s" % str_val)
-
+        if is_copy_ptr != 0:
+            #TODO 观察行为,真机总是返回true,但是根据文档,返回false应该也没问题
+            #https://stackoverflow.com/questions/30992989/is-iscopy-field-always-necessary-in-android
+            mu.mem_write(is_copy_ptr, int(0).to_bytes(1, byteorder='little'))
+        #
         memory_helpers.write_utf8(mu, str_ptr, str_val)
 
         return str_ptr
@@ -1682,6 +1853,8 @@ class JNIEnv:
 
         array_pyobj = JNIEnv.jobject_to_pyobject(array_obj)
         pyobj_item = array_pyobj[item_idx]
+        if (pyobj_item == JAVA_NULL):
+            return JAVA_NULL
         return self.add_local_reference(jobject(pyobj_item))
     #
 
@@ -1911,19 +2084,20 @@ class JNIEnv:
     def register_natives(self, mu, env, clazz_id, methods, methods_count):
         logger.debug("JNIEnv->RegisterNatives(%d, 0x%08X, %d) was called" % (clazz_id, methods, methods_count))
 
-        clazz = self.get_local_reference(clazz_id)
+        clazz = self.get_reference(clazz_id)
 
         if not isinstance(clazz, jclass):
-            raise ValueError('Expected a jclass.')
+            raise ValueError('Expected a jclass but type %r value %r getted.'%(type(clazz), clazz))
 
         class_obj = clazz.value
         
         pyclazz = class_obj.get_py_clazz()
+        ptr_sz = self._emu.get_ptr_size()
 
         for i in range(0, methods_count):
-            ptr_name = memory_helpers.read_ptr(mu, (i * 12) + methods)
-            ptr_sign = memory_helpers.read_ptr(mu, (i * 12) + methods + 4)
-            ptr_func = memory_helpers.read_ptr(mu, (i * 12) + methods + 8)
+            ptr_name = memory_helpers.read_ptr_sz(mu, (i * 3*ptr_sz) + methods, ptr_sz)
+            ptr_sign = memory_helpers.read_ptr_sz(mu, (i * 3*ptr_sz) + methods + ptr_sz, ptr_sz)
+            ptr_func = memory_helpers.read_ptr_sz(mu, (i * 3*ptr_sz) + methods + 2*ptr_sz, ptr_sz)
 
             name = memory_helpers.read_utf8(mu, ptr_name)
             signature = memory_helpers.read_utf8(mu, ptr_sign)
@@ -1989,7 +2163,7 @@ class JNIEnv:
         """
         Returns JNI_TRUE when there is a pending exception; otherwise, returns JNI_FALSE.
         """
-        logger.debug("JNIEnv->ExceptionCheck() was called")
+        #logger.debug("JNIEnv->ExceptionCheck() was called")
         # TODO: Implement
         return JNI_FALSE
 

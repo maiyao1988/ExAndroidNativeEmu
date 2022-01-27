@@ -28,6 +28,8 @@ class Pcb:
     #
 
     def get_fd_detail(self, fd):
+        if (fd not in self._fds):
+            return None
         return self._fds[fd]
     #
 
@@ -38,10 +40,4 @@ class Pcb:
     def remove_fd(self, fd):
         self._fds.pop(fd)
     #
-#
-
-_pcb = Pcb()
-def get_pcb():
-    global _pcb
-    return _pcb
 #
