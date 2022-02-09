@@ -2,12 +2,11 @@
 
 This is a personal improved version of [AndroidNativeEmu](https://github.com/AeonLucid/AndroidNativeEmu).Allow running android elf code on pc.
 
-## Difference between AndroidNativeEmu
+## Improvment compare with AndroidNativeEmu
  - Rewrite memory mapping module, fully support jemalloc
  - More debug utils, pretty printing for instruction and memory.
  - Some misc bug fix
  - Stop all runing when getting exception  instead of just skiping one emulator runing for easily bug detecting...
- - Support ELF DT_INIT call
  - Auto Load dependency so.
  - Auto generate /proc/\[pid\]/maps according to current memory map
  - Fix R_ARM_ABS32 relocation bug.
@@ -18,31 +17,24 @@ This is a personal improved version of [AndroidNativeEmu](https://github.com/Aeo
  - Add Function hook feature
  
 ## TODO
- - Simulate linker TLS initialization.
- - Support well known virtual file like /proc/self/maps...
+ - ~~Simulate linker TLS initialization.~~
+ - ~~Support well known virtual file like /proc/self/maps...~~
  - ~~Get rid of dependency on Section Header when loading ELF~~.
  
 ## Usage
 
 > In the future this will be possible through pypi.
 
-Make sure you are using python 3.7.
+Make sure you are using python 3.7 above.
 
 1. Clone the repository
 2. Run `pip install -r requirements.txt`
 3. Run `python example_jni.py`
 
-> If you have trouble getting the `keystone-engine` dependency on Windows (as I did):
-> 1. Clone their [repository](https://github.com/keystone-engine/keystone)
-> 2. Open a terminal in `bindings/python`
-> 3. Run `python setup.py install` (Make sure you are using python 3.7)
-> 4. Download their `Windows - Core engine` package [here](http://www.keystone-engine.org/download/) for your python arch.
-> 5. Put the `keystone.dll` in `C:\location_to_python\Lib\site-packages\keystone\`.
 
 ## Dependencies
 
 - [Unicorn CPU emulator framework](https://github.com/unicorn-engine/unicorn)
-- [Keystone assembler framework](https://github.com/keystone-engine/keystone)
 
 
 ### Text sources
