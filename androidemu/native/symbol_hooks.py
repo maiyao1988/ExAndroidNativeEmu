@@ -130,7 +130,7 @@ class SymbolHooks:
         logger.debug("Called dlsym(0x%x, %s)" % (handle, symbol_str))
         global_handle = 0xffffffff
         if (self._emu.get_arch() == emu_const.ARCH_ARM64):
-            global_handle = 0xffffffffffffffff
+            global_handle = 0
         #
 
         if handle == global_handle:
