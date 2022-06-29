@@ -93,6 +93,7 @@ class VirtualFileSystem:
         self.__memory_map = memory_map
         self.__pcb = emu.get_pcb()
         self.__clear_proc_dir()
+        self.__root_list = set(["/dev/__properties__"])
         if (self.__emu.get_arch() == emu_const.ARCH_ARM32):
             syscall_handler.set_handler(0x3, "read", 3, self._handle_read)
             syscall_handler.set_handler(0x4, "write", 3, self._handle_write)
@@ -332,21 +333,37 @@ class VirtualFileSystem:
         #
     #
 
-    def __get_config_uid(self, filename_in_vm):
+    def __norm_file_name(self, filename_in_vm):
         filename_norm = os.path.normpath(filename_in_vm)
         global g_isWin
         if (g_isWin):
             #windows的路径标准化之后是反斜杠的，这里换成linux的正斜杠
-            filename_norm.replace("\\", "/")
-        root_list = set(["/dev/__properties__"])
+            filename_norm = filename_norm.replace("\\", "/")
+        #
+        return filename_norm
+    #
+
+    def __get_config_uid(self, filename_in_vm):
+        filename_norm = self.__norm_file_name(filename_in_vm)
         uid = 0
-        #注意linux c打开/dev/__properties__检测是不是root，如果不是root初始化失败而崩溃
-        if (filename_norm in root_list):
+        #注意linux c打开/dev/__properties__检测是不是root，如果不是root初始化失败而崩溃,如果其他组或者本组用户可写也会崩溃！！！
+        if (filename_norm in self.__root_list):
             uid = 0
         #
         else:
             uid = self.__cfg.get("uid")
         return uid
+    #
+
+    def __fix_st_mode(self, filename_in_vm, st_mode):
+        filename_norm = self.__norm_file_name(filename_in_vm)
+        #注意linux c打开/dev/__properties__检测是不是root，如果不是root初始化失败而崩溃,如果其他组或者本组用户可写也会崩溃！！！
+        if (filename_norm in self.__root_list):
+            #在root里面其他组和本组不可写
+            st_mode = st_mode & (~0o0000020) #S_IWGRP
+            st_mode = st_mode & (~0o0000002) #S_IWOTH
+        #
+        return st_mode
     #
 
     def _handle_read(self, mu, fd, buf_addr, count):
@@ -553,7 +570,8 @@ class VirtualFileSystem:
         if (os.path.exists(file_path)):
             stats = os.stat(file_path)
             uid = self.__get_config_uid(filename)
-            file_helpers.stat_to_memory2(mu, buf_ptr, stats, uid)
+            st_mode = self.__fix_st_mode(filename, stats.st_mode)
+            file_helpers.stat_to_memory2(mu, buf_ptr, stats, uid, st_mode)
             return 0
         else:
             return -1
@@ -565,9 +583,10 @@ class VirtualFileSystem:
         logging.debug("lstat64 %s"%filename)
         file_path = self.__translate_path(filename)
         if (os.path.exists(file_path)):
-            stats = os.lstat(file_path)
+            stats = os.stat(file_path)
             uid = self.__get_config_uid(filename)
-            file_helpers.stat_to_memory2(mu, buf_ptr, stats, uid)
+            st_mode = self.__fix_st_mode(filename, stats.st_mode)
+            file_helpers.stat_to_memory2(mu, buf_ptr, stats, uid, st_mode)
             return 0
         else:
             return -1
@@ -582,11 +601,12 @@ class VirtualFileSystem:
         #
         stats = os.fstat(fd)
         uid = self.__get_config_uid(detail.name)
+        st_mode = self.__fix_st_mode(detail.name, stats.st_mode)
         if (self.__emu.get_arch() == emu_const.ARCH_ARM32):
-            file_helpers.stat_to_memory2(mu, stat_ptr, stats, uid)
+            file_helpers.stat_to_memory2(mu, stat_ptr, stats, uid, st_mode)
         else:
             #64
-            file_helpers.stat_to_memory64(mu, stat_ptr, stats, uid)
+            file_helpers.stat_to_memory64(mu, stat_ptr, stats, uid, st_mode)
         #
     #
 
@@ -657,9 +677,10 @@ class VirtualFileSystem:
         f_flags = {uint32_t} 1062
         f_spare = {uint32_t [4]} 
         '''
-        f_sid = 0
+        f_fsid = 0
         if (hasattr(statv, "f_fsid")):
-            f_sid = statv["f_fsid"]
+            print(statv)
+            f_fsid = statv.f_fsid
         #
         if (self.__emu.get_arch() == emu_const.ARCH_ARM32):
             mu.mem_write(buf, int(0xef53).to_bytes(4, 'little'))
@@ -718,7 +739,7 @@ class VirtualFileSystem:
         path = memory_helpers.read_utf8(mu, path_ptr)
 
         path = self.__dirfd_2_path(dfd, path)
-        if (filepath == None):
+        if (path == None):
             return -1
         #
         vfs_path = self.__translate_path(path)
@@ -747,12 +768,11 @@ class VirtualFileSystem:
 
         On success, fstatat() returns 0. On error, -1 is returned and errno is set to indicate the error.
         """
-        pathname = memory_helpers.read_utf8(mu, pathname_ptr)
-        uid = self.__get_config_uid(pathname)
+        pathname_vm = memory_helpers.read_utf8(mu, pathname_ptr)
 
-        logging.debug("fstatat64 patename=[%s]"%pathname)
-        pathname = self.__dirfd_2_path(dirfd, pathname)
-        if (pathname == None):
+        logging.debug("fstatat64 patename=[%s]"%pathname_vm)
+        pathname_vm = self.__dirfd_2_path(dirfd, pathname_vm)
+        if (pathname_vm == None):
             return -1
         #
         if not flags == 0:
@@ -762,22 +782,23 @@ class VirtualFileSystem:
                 pass
             # raise NotImplementedError("Flags has not been implemented yet.")
 
-        logging.debug("File fstatat64 '%s'" % pathname)
-        pathname = self.__translate_path(pathname)
+        logging.debug("File fstatat64 '%s'" % pathname_vm)
+        pathname = self.__translate_path(pathname_vm)
 
         if not os.path.exists(pathname):
             logging.warning('> File was not found.')
             return -1
-
-        logging.debug('> File was found.')
-
+        #
         stat = os.stat(pathname)
+        uid = self.__get_config_uid(pathname_vm)
+        st_mode = self.__fix_st_mode(pathname_vm, stat.st_mode)
+
         # stat = os.stat(path=file_path, dir_fd=None, follow_symlinks=False)
         if (self.__emu.get_arch() == emu_const.ARCH_ARM32):
-            file_helpers.stat_to_memory2(mu, buf, stat, uid)
+            file_helpers.stat_to_memory2(mu, buf, stat, uid, st_mode)
         else:
             #arm64
-            file_helpers.stat_to_memory64(mu, buf, stat, uid)
+            file_helpers.stat_to_memory64(mu, buf, stat, uid, st_mode)
         return 0
     #
 

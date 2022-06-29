@@ -2,7 +2,7 @@ import json
 import os
 from os import stat_result
 from unicorn import Uc
-def stat_to_memory2(uc, buf_ptr, stat, uid):
+def stat_to_memory2(uc, buf_ptr, stat, uid, st_mode):
     '''
     unsigned long long st_dev; 
     unsigned char __pad0[4]; 
@@ -45,7 +45,7 @@ def stat_to_memory2(uc, buf_ptr, stat, uid):
     uc.mem_write(buf_ptr, int(stdev).to_bytes(8, byteorder='little'))
     uc.mem_write(buf_ptr + 8, int(0).to_bytes(4, byteorder='little'))  # PAD 4
     uc.mem_write(buf_ptr + 12, int(st_ino).to_bytes(4, byteorder='little'))
-    uc.mem_write(buf_ptr + 16, int(stat.st_mode).to_bytes(4, byteorder='little'))
+    uc.mem_write(buf_ptr + 16, int(st_mode).to_bytes(4, byteorder='little'))
     uc.mem_write(buf_ptr + 20, int(stat.st_nlink).to_bytes(4, byteorder='little'))
     uc.mem_write(buf_ptr + 24, int(uid).to_bytes(4, byteorder='little'))
     uc.mem_write(buf_ptr + 28, int(uid).to_bytes(4, byteorder='little'))
@@ -61,7 +61,7 @@ def stat_to_memory2(uc, buf_ptr, stat, uid):
 #
 
 
-def stat_to_memory64(uc, buf_ptr, stat, uid):
+def stat_to_memory64(uc, buf_ptr, stat, uid, st_mode):
     st_rdev = 0
     if (hasattr(stat, "st_rdev")):
         st_rdev = stat.st_rdev
@@ -83,7 +83,7 @@ def stat_to_memory64(uc, buf_ptr, stat, uid):
     
     uc.mem_write(buf_ptr, int(stdev).to_bytes(8, byteorder='little'))
     uc.mem_write(buf_ptr + 8, int(st_ino).to_bytes(8, byteorder='little'))
-    uc.mem_write(buf_ptr + 16, int(stat.st_mode).to_bytes(4, byteorder='little'))
+    uc.mem_write(buf_ptr + 16, int(st_mode).to_bytes(4, byteorder='little'))
     uc.mem_write(buf_ptr + 20, int(stat.st_nlink).to_bytes(4, byteorder='little'))
     uc.mem_write(buf_ptr + 24, int(uid).to_bytes(4, byteorder='little'))
     uc.mem_write(buf_ptr + 28, int(uid).to_bytes(4, byteorder='little'))
