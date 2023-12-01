@@ -134,3 +134,6 @@ data = 'acde74a94e6b493a3399fac83c7c08b35D58B21D9582AF77647FC9902E36AE70f9c001e9
 data = bytearray(bytes.fromhex(data))
 result = x.leviathan(emulator, 1562848170, data)
 ```
+
+## 免责声明
+本项目仅仅是个人学习用途。本人不对任何对该项目进行修改而用于其他用途引起的任何问题负责。

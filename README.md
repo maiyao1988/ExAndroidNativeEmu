@@ -50,3 +50,6 @@ Make sure you are using python 3.7 above.
 - https://github.com/lunixbochs/usercorn
 - https://github.com/slick1015/pad_unpacker (SVC 0 instruction)
 - https://github.com/AeonLucid/AndroidNativeEmu
+
+### Disclaimer
+- This Project is just for personal educational purposed only.You can modify it for your personal used.But we do not take any resonsibility for issues caused by any self-modified of this project.
