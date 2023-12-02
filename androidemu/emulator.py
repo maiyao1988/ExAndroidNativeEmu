@@ -245,7 +245,7 @@ class Emulator:
     #
 
     def load_library(self, filename, do_init=True):
-        libmod = self.modules.load_module(filename, True)
+        libmod = self.modules.load_module(filename, do_init)
         return libmod
     #
 
